@@ -1,0 +1,106 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import { electronAPI } from '@electron-toolkit/preload'
+
+const api = {
+  // Feeds
+  getFeeds: () => ipcRenderer.invoke('feeds:getAll'),
+  addFeed: (url: string, folderId: string, customTitle?: string) => ipcRenderer.invoke('feeds:add', url, folderId, customTitle),
+  previewFeed: (url: string) => ipcRenderer.invoke('feeds:preview', url),
+  updateFeed: (id: string, changes: object) => ipcRenderer.invoke('feeds:update', id, changes),
+  deleteFeed: (id: string) => ipcRenderer.invoke('feeds:delete', id),
+  fetchFeed: (id: string) => ipcRenderer.invoke('feeds:fetchOne', id),
+  fetchAllFeeds: () => ipcRenderer.invoke('feeds:fetchAll'),
+
+  // Folders
+  getFolders: () => ipcRenderer.invoke('folders:getAll'),
+  addFolder: (name: string) => ipcRenderer.invoke('folders:add', name),
+  updateFolder: (id: string, name: string) => ipcRenderer.invoke('folders:update', id, name),
+  deleteFolder: (id: string) => ipcRenderer.invoke('folders:delete', id),
+  reorderFolders: (ids: string[]) => ipcRenderer.invoke('folders:reorder', ids),
+
+  // Articles
+  getArticles: (query: object) => ipcRenderer.invoke('articles:get', query),
+  getArticleCount: (query: object) => ipcRenderer.invoke('articles:getCount', query),
+  getUnreadCounts: () => ipcRenderer.invoke('articles:getUnreadCounts'),
+  getTodayArticles: () => ipcRenderer.invoke('articles:getToday'),
+  markRead: (id: string, read: boolean) => ipcRenderer.invoke('articles:markRead', id, read),
+  markAllRead: (feedId?: string) => ipcRenderer.invoke('articles:markAllRead', feedId),
+  starArticle: (id: string, starred: boolean) => ipcRenderer.invoke('articles:star', id, starred),
+  deleteArticle: (id: string) => ipcRenderer.invoke('articles:delete', id),
+  fetchArticleContent: (id: string) => ipcRenderer.invoke('articles:fetchContent', id),
+  getArticleById: (id: string) => ipcRenderer.invoke('articles:getById', id),
+
+  // Settings
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  saveSettings: (s: object) => ipcRenderer.invoke('settings:save', s),
+
+  // Notifications
+  getNotificationHistory: () => ipcRenderer.invoke('notifications:getHistory'),
+  clearNotificationHistory: () => ipcRenderer.invoke('notifications:clearHistory'),
+  previewNotification: (notifSettings?: object) => ipcRenderer.invoke('notifier:preview', notifSettings),
+
+  // OPML
+  importOpml: () => ipcRenderer.invoke('opml:import'),
+  exportOpml: () => ipcRenderer.invoke('opml:export'),
+
+  // Shell
+  openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
+
+  // Displays
+  getDisplays: () => ipcRenderer.invoke('displays:getAll'),
+
+  // App
+  getVersions: () => ipcRenderer.invoke('app:getVersions'),
+  cleanup: (days: number) => ipcRenderer.invoke('app:cleanup', days),
+  exportBackup: () => ipcRenderer.invoke('app:exportBackup'),
+  importBackup: () => ipcRenderer.invoke('app:importBackup'),
+  showInputContextMenu: () => ipcRenderer.invoke('showInputContextMenu'),
+  showReadOnlyContextMenu: () => ipcRenderer.invoke('showReadOnlyContextMenu'),
+  openDataFolder: () => ipcRenderer.invoke('app:openDataFolder'),
+  scanFeeds: () => ipcRenderer.invoke('app:scanFeeds'),
+
+  // Event listeners
+  onArticlesUpdated: (cb: (data: { feedId: string; count: number }) => void) => {
+    const handler = (_: unknown, data: { feedId: string; count: number }) => cb(data)
+    ipcRenderer.on('articles:updated', handler)
+    return () => ipcRenderer.removeListener('articles:updated', handler)
+  },
+  onOpenArticle: (cb: (feedId: string, articleId: string) => void) => {
+    const handler = (_: unknown, data: { feedId: string; articleId: string }) => cb(data.feedId, data.articleId)
+    ipcRenderer.on('app:openArticle', handler)
+    return () => ipcRenderer.removeListener('app:openArticle', handler)
+  },
+
+  // Notifier specific
+  dismissNotification: (id: string) => ipcRenderer.send('notifier:dismiss', id),
+  clearAllNotifications: () => ipcRenderer.send('notifier:clearAll'),
+  markNotificationRead: (articleId: string) => ipcRenderer.send('notifier:markRead', articleId),
+  snoozeNotifications: (minutes: number) => ipcRenderer.send('notifier:snooze', minutes),
+  openInApp: (feedId: string, articleId: string) => ipcRenderer.send('notifier:openInApp', feedId, articleId),
+  setHover: (isHovering: boolean) => ipcRenderer.send('notifier:hover', isHovering),
+  pickSoundFile: () => ipcRenderer.invoke('notifications:pickSoundFile'),
+  onNotifierStack: (cb: (stack: object[], settings: object) => void) => {
+    const handler = (_: unknown, stack: object[], settings: object) => cb(stack, settings)
+    ipcRenderer.on('notifier:stack', handler)
+    return () => ipcRenderer.removeListener('notifier:stack', handler)
+  },
+
+  // Window controls (for custom titlebar)
+  windowMinimize: () => ipcRenderer.send('window:minimize'),
+  windowMaximize: () => ipcRenderer.send('window:maximize'),
+  windowClose: () => ipcRenderer.send('window:close')
+}
+
+if (process.contextIsolated) {
+  try {
+    contextBridge.exposeInMainWorld('electron', electronAPI)
+    contextBridge.exposeInMainWorld('api', api)
+  } catch (error) {
+    console.error(error)
+  }
+} else {
+  ;(window as any).electron = electronAPI
+  ;(window as any).api = api
+}
+
+export type API = typeof api
