@@ -1,0 +1,164 @@
+import React, { useEffect, useCallback, useState } from 'react'
+import { useFeedsStore } from './store/feeds.store'
+import { useArticlesStore } from './store/articles.store'
+import { useUIStore } from './store/ui.store'
+import { useSettingsStore } from './store/settings.store'
+import { useColumnResize } from './hooks/useColumnResize'
+import TopBar from './components/TopBar'
+import Sidebar from './components/Sidebar'
+import ArticleList from './components/ArticleList'
+import ArticleViewer from './components/ArticleViewer'
+import SettingsPanel from './components/SettingsPanel'
+import AddFeedModal from './components/AddFeedModal'
+import EditFeedModal from './components/EditFeedModal'
+import AddFolderModal from './components/AddFolderModal'
+import InboxPanel from './components/InboxPanel'
+import NotificationHistoryPanel from './components/NotificationHistoryPanel'
+import AboutModal from './components/AboutModal'
+import DoctorPanel from './components/DoctorPanel'
+
+export default function App(): JSX.Element {
+  const { loadAll, refreshUnreadCounts } = useFeedsStore()
+  const { load, refresh } = useArticlesStore()
+  const { selectedFeedId, selectedArticleId, activePanel, layout, unreadOnly, search, closePanel } = useUIStore()
+  const { load: loadSettings, settings } = useSettingsStore()
+
+  // ── Resize hooks — MUST be at top level, before any conditionals ──────────
+  const [sidebarDragging, setSidebarDragging] = useState(false)
+  const [listDragging, setListDragging] = useState(false)
+  const { startDrag: startSidebarDrag } = useColumnResize('sidebar', 220, 140, 480)
+  const { startDrag: startListDrag } = useColumnResize('articleList', 320, 180, 620)
+
+  // Bootstrap
+  useEffect(() => {
+    loadSettings()
+    loadAll()
+    load({ limit: 60, offset: 0 })
+  }, [])
+
+  // Apply layout + font sizes from saved settings as CSS vars
+  useEffect(() => {
+    if (settings.layout) useUIStore.setState({ layout: settings.layout })
+    if (settings.unreadOnly) useUIStore.setState({ unreadOnly: settings.unreadOnly })
+    if (settings.sidebarFontSize) {
+      document.documentElement.style.setProperty('--sidebar-font-size', `${settings.sidebarFontSize}px`)
+    }
+    if (settings.listFontSize) {
+      document.documentElement.style.setProperty('--list-font-size', `${settings.listFontSize}px`)
+    }
+    document.documentElement.setAttribute('data-theme', settings.theme || 'dark')
+  }, [settings.layout, settings.unreadOnly, settings.sidebarFontSize, settings.listFontSize, settings.theme])
+
+  // React to feed/filter changes
+  useEffect(() => {
+    const query: Record<string, unknown> = { limit: 60, offset: 0 }
+    if (selectedFeedId === 'starred') {
+      query.starredOnly = true
+    } else if (selectedFeedId) {
+      query.feedId = selectedFeedId
+    }
+    if (unreadOnly) query.unreadOnly = true
+    if (search) query.search = search
+    load(query)
+  }, [selectedFeedId, unreadOnly, search])
+
+  // Listen for new articles from main process
+  useEffect(() => {
+    const unsub = window.api.onArticlesUpdated(() => {
+      refresh()
+      refreshUnreadCounts()
+    })
+    return unsub
+  }, [])
+
+  // Listen for open article requests (e.g. from notifier click)
+  useEffect(() => {
+    const unsub = window.api.onOpenArticle((feedId, articleId) => {
+      useUIStore.setState({ selectedFeedId: feedId, selectedArticleId: articleId || null, activePanel: null })
+    })
+    return unsub
+  }, [])
+
+  // Keyboard shortcuts
+  const handleKey = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && activePanel) closePanel()
+  }, [activePanel])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [handleKey])
+
+  // Drag handlers (track active state for .active class on handle)
+  const handleSidebarDrag = useCallback((e: React.MouseEvent) => {
+    setSidebarDragging(true)
+    startSidebarDrag(e)
+    const onUp = (): void => {
+      setSidebarDragging(false)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mouseup', onUp)
+  }, [startSidebarDrag])
+
+  const handleListDrag = useCallback((e: React.MouseEvent) => {
+    setListDragging(true)
+    startListDrag(e)
+    const onUp = (): void => {
+      setListDragging(false)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mouseup', onUp)
+  }, [startListDrag])
+
+  const showArticleList = layout !== 'one-panel'
+  const showSidebar = layout === 'three-panel'
+
+  return (
+    <div id="root">
+      <TopBar />
+      <div className="app-layout">
+        {showSidebar && <Sidebar />}
+        {showSidebar && (
+          <div
+            className={`resize-handle${sidebarDragging ? ' active' : ''}`}
+            onMouseDown={handleSidebarDrag}
+            title="Drag to resize sidebar"
+          />
+        )}
+        <div className="main-area">
+          {showArticleList && <ArticleList />}
+          {showArticleList && (
+            <div
+              className={`resize-handle${listDragging ? ' active' : ''}`}
+              onMouseDown={handleListDrag}
+              title="Drag to resize article list"
+            />
+          )}
+          <ArticleViewer key={selectedArticleId} />
+        </div>
+      </div>
+
+      {/* Panels */}
+      {activePanel === 'settings' && (
+        <div className="panel-overlay">
+          <SettingsPanel />
+        </div>
+      )}
+      {activePanel === 'inbox' && (
+        <div className="panel-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
+          <InboxPanel />
+        </div>
+      )}
+      {activePanel === 'history' && (
+        <div className="panel-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
+          <NotificationHistoryPanel />
+        </div>
+      )}
+      {activePanel === 'addFeed' && <AddFeedModal />}
+      {activePanel === 'editFeed' && <EditFeedModal />}
+      {activePanel === 'addFolder' && <AddFolderModal />}
+      {activePanel === 'about' && <AboutModal />}
+      {activePanel === 'doctor' && <DoctorPanel />}
+    </div>
+  )
+}
