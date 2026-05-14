@@ -62,9 +62,9 @@ function createMainWindow(): BrowserWindow {
     return { action: 'deny' }
   })
 
-  // Minimize to tray on close
+  // Minimize to tray on close (respect setting)
   win.on('close', (e) => {
-    if (!app.isQuitting) {
+    if (!(app as any).isQuitting && getSettings().minimizeToTray) {
       e.preventDefault()
       win.hide()
     }
@@ -112,6 +112,7 @@ app.whenReady().then(() => {
         link: article.link,
         feedName: feedTitle,
         icon: feedIcon,
+        thumbnail: article.thumbnail,
         createdAt: Date.now(),
         feedId: feedId,
         articleId: article.id

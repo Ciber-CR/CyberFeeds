@@ -14,6 +14,12 @@ export function initDb(): void {
   db.pragma('cache_size = -32000') // 32MB cache
   db.pragma('foreign_keys = ON')
   createSchema()
+  migrate()
+}
+
+function migrate(): void {
+  try { db.exec('ALTER TABLE articles ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE notification_history ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
 }
 
 function createSchema(): void {
@@ -44,6 +50,7 @@ function createSchema(): void {
       content TEXT NOT NULL DEFAULT '',
       snippet TEXT NOT NULL DEFAULT '',
       author TEXT,
+      thumbnail TEXT,
       read INTEGER NOT NULL DEFAULT 0,
       starred INTEGER NOT NULL DEFAULT 0,
       guid TEXT NOT NULL,
@@ -58,6 +65,7 @@ function createSchema(): void {
       link TEXT NOT NULL,
       feedName TEXT NOT NULL,
       icon TEXT,
+      thumbnail TEXT,
       articleId TEXT,
       createdAt INTEGER NOT NULL
     );
@@ -243,14 +251,22 @@ export function getUnreadCountByFeed(): Record<string, number> {
 
 export function insertArticles(articles: Omit<Article, 'feedTitle' | 'feedIcon'>[]): Omit<Article, 'feedTitle' | 'feedIcon'>[] {
   const stmt = db.prepare(`
-    INSERT OR IGNORE INTO articles (id, feedId, title, link, pubDate, content, snippet, author, read, starred, guid)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
+    INSERT OR IGNORE INTO articles (id, feedId, title, link, pubDate, content, snippet, author, thumbnail, read, starred, guid)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
   `)
   const inserted: Omit<Article, 'feedTitle' | 'feedIcon'>[] = []
   db.transaction(() => {
     for (const a of articles) {
-      const result = stmt.run(a.id, a.feedId, a.title, a.link, a.pubDate, a.content, a.snippet, a.author ?? null, a.guid)
-      if (result.changes > 0) inserted.push(a)
+      try {
+        const result = stmt.run(a.id, a.feedId, a.title, a.link, a.pubDate, a.content, a.snippet, a.author ?? null, a.thumbnail ?? null, a.guid)
+        if (result.changes > 0) inserted.push(a)
+      } catch (err: any) {
+        if (err.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+          console.warn(`[DB] Skipping article ${a.id}: feed ${a.feedId} no longer exists`)
+        } else {
+          throw err
+        }
+      }
     }
   })()
   return inserted
@@ -308,9 +324,9 @@ export function getNotificationHistory(limit = 200): NotificationHistoryItem[] {
 
 export function addNotificationHistory(item: NotificationHistoryItem): void {
   db.prepare(`
-    INSERT OR REPLACE INTO notification_history (id, title, body, link, feedName, icon, articleId, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(item.id, item.title, item.body, item.link, item.feedName, item.icon ?? null, item.articleId ?? null, item.createdAt)
+    INSERT OR REPLACE INTO notification_history (id, title, body, link, feedName, icon, thumbnail, articleId, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(item.id, item.title, item.body, item.link, item.feedName, item.icon ?? null, item.thumbnail ?? null, item.articleId ?? null, item.createdAt)
   // Keep only last 200
   db.prepare(`
     DELETE FROM notification_history WHERE id NOT IN (

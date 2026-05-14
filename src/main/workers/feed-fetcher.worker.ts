@@ -22,6 +22,7 @@ interface ParsedArticle {
   snippet: string
   author?: string
   guid: string
+  thumbnail?: string
 }
 
 interface FeedResult {
@@ -50,6 +51,54 @@ function cleanHtml(html: string): string {
 function truncate(str: string, max: number): string {
   if (str.length <= max) return str
   return str.slice(0, max) + '...'
+}
+
+/**
+ * Extract the best thumbnail URL from an RSS item.
+ * Priority: media:content → media:thumbnail → enclosure (image) → og:image → first <img> in content
+ */
+function extractThumbnail(item: any): string | undefined {
+  // 1. media:content (image type, with url)
+  const mediaContent = item['media:content']
+  if (mediaContent && typeof mediaContent === 'object') {
+    const mc = Array.isArray(mediaContent) ? mediaContent.find((m: any) => m['@_type']?.startsWith('image')) || mediaContent[0] : mediaContent
+    const url = mc['@_url'] || mc.url
+    if (url) return url
+  }
+
+  // 2. media:thumbnail
+  const mediaThumbnail = item['media:thumbnail']
+  if (mediaThumbnail && typeof mediaThumbnail === 'object') {
+    const mt = Array.isArray(mediaThumbnail) ? mediaThumbnail[0] : mediaThumbnail
+    const url = mt['@_url'] || mt.url
+    if (url) return url
+  }
+
+  // 3. item.thumbnail (rss-parser exposes this for some feeds)
+  if (item.thumbnail) return item.thumbnail
+
+  // 4. enclosure with image type
+  const enclosures = item.enclosures || item['media:enclosure']
+  if (enclosures) {
+    const enc = Array.isArray(enclosures) ? enclosures : [enclosures]
+    for (const e of enc) {
+      const url = e['@_url'] || e.url
+      const type = (e['@_type'] || e.type || '').toLowerCase()
+      if (url && type.startsWith('image')) return url
+    }
+  }
+
+  // 5. og:image meta tag in content
+  const rawContent = item['content:encoded'] || item.content || ''
+  const ogMatch = rawContent.match(/<meta\s+(?:property|"og:image")\s*=\s*"(og:image)"\s+content\s*=\s*"([^"]+)"/i)
+    || rawContent.match(/<meta\s+content\s*=\s*"([^"]+)"\s+(?:property|"og:image")\s*=\s*"(og:image)"/i)
+  if (ogMatch) return ogMatch[1]
+
+  // 6. First <img> tag in content
+  const imgMatch = rawContent.match(/<img[^>]+src\s*=\s*"([^"]+)"/i)
+  if (imgMatch) return imgMatch[1]
+
+  return undefined
 }
 
 async function fetchFeed(feedId: string, url: string): Promise<FeedResult> {
@@ -107,6 +156,7 @@ async function fetchFeed(feedId: string, url: string): Promise<FeedResult> {
       const rawContent = item['content:encoded'] || item.content || item.contentSnippet || ''
       const rawSnippet = item.contentSnippet || cleanHtml(rawContent)
       const pubDate = item.pubDate ? new Date(item.pubDate).getTime() : lastFetched
+      const thumbnail = extractThumbnail(item)
 
       return {
         id,
@@ -117,7 +167,8 @@ async function fetchFeed(feedId: string, url: string): Promise<FeedResult> {
         content: rawContent,
         snippet: truncate(cleanHtml(rawSnippet), 300),
         author: item.creator || item.author || undefined,
-        guid
+        guid,
+        thumbnail
       }
     })
     return { feedId, articles, lastFetched }

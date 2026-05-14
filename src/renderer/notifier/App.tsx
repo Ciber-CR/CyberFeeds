@@ -134,6 +134,16 @@ export default function NotifierApp(): JSX.Element {
       >
         {state.stack.map(item => (
           <div key={item.id} className="notif-card" onClick={() => handleOpen(item)}>
+            {item.thumbnail && state.settings?.showThumbnails && (
+              <div className="notif-thumbnail">
+                <img
+                  src={item.thumbnail}
+                  alt=""
+                  loading="lazy"
+                  onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
+                />
+              </div>
+            )}
             <div className="notif-header">
               {item.icon ? (
                 <img
@@ -186,12 +196,12 @@ export default function NotifierApp(): JSX.Element {
             bottom: 8,
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'rgba(30,30,46,0.95)',
-            border: '1px solid rgba(255,255,255,0.2)',
+            background: 'rgba(0, 170, 255, 0.65)',
+            border: '1px solid rgba(0, 170, 255, 0.5)',
             borderRadius: 12,
             padding: '3px 12px',
             fontSize: 10,
-            color: '#ccc',
+            color: '#ffffff',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',

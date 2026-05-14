@@ -313,7 +313,8 @@ body {
 .notif-actions { display: flex; gap: 6px; margin-top: 4px; }
 .notif-btn { font-size: 11px; padding: 3px 8px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg-2); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
 .notif-btn:hover { border-color: var(--accent); color: var(--accent); }
-
+.notif-thumbnail { width: 100%; height: 100px; border-radius: 4px; overflow: hidden; flex-shrink: 0; background: var(--bg-2); margin-bottom: 2px; }
+.notif-thumbnail img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .clear-all-btn { font-size: 10px; padding: 3px 10px; border-radius: 4px; background: rgba(30,30,46,0.92); border: 1px solid rgba(255,255,255,0.18); color: #ccc; font-weight: 500; letter-spacing: 0.3px; cursor: pointer; transition: all 0.15s; }
 .clear-all-btn:hover { background: rgba(248,81,73,0.9); border-color: rgba(248,81,73,1); color: #fff; }
 

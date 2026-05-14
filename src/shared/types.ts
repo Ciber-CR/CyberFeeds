@@ -32,6 +32,7 @@ export interface Article {
   read: number // 0 | 1
   starred: number // 0 | 1
   guid: string
+  thumbnail?: string
 }
 
 export interface NotificationHistoryItem {
@@ -41,6 +42,7 @@ export interface NotificationHistoryItem {
   link: string
   feedName: string
   icon?: string
+  thumbnail?: string
   articleId?: string
   feedId?: string
   createdAt: number
@@ -51,6 +53,7 @@ export interface AppSettings {
   layout: 'three-panel' | 'two-panel' | 'one-panel'
   pollingInterval: number
   autoStart: boolean
+  minimizeToTray: boolean
   unreadOnly: boolean
   compactArticleList: boolean
   cleanupReadDays: number
@@ -81,6 +84,7 @@ export interface NotificationSettings {
   keywordFilters: string[]
   snoozedUntil: number | null
   openBehavior: 'browser' | 'app'
+  showThumbnails: boolean
 }
 
 export interface WindowState {
@@ -101,6 +105,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   layout: 'three-panel',
   pollingInterval: 15,
   autoStart: false,
+  minimizeToTray: true,
   unreadOnly: false,
   compactArticleList: false,
   cleanupReadDays: 30,
@@ -127,6 +132,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     feedFilters: [],
     keywordFilters: [],
     snoozedUntil: null,
-    openBehavior: 'app'
+    openBehavior: 'app',
+    showThumbnails: true
   }
 }

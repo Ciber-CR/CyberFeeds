@@ -70,6 +70,11 @@ const api = {
     ipcRenderer.on('app:openArticle', handler)
     return () => ipcRenderer.removeListener('app:openArticle', handler)
   },
+  onOpenSettings: (cb: () => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('app:openSettings', handler)
+    return () => ipcRenderer.removeListener('app:openSettings', handler)
+  },
 
   // Notifier specific
   dismissNotification: (id: string) => ipcRenderer.send('notifier:dismiss', id),
