@@ -123,9 +123,7 @@ app.whenReady().then(() => {
   })
 
   // Start polling
-  if (settings.notifications.enabled || true) {
-    startPolling(settings.pollingInterval)
-  }
+  startPolling(settings.pollingInterval)
 
   // Auto-start
   app.setLoginItemSettings({ openAtLogin: settings.autoStart })

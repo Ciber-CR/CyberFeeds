@@ -312,9 +312,12 @@ export function registerIpc(): void {
   ipcMain.handle('settings:get', () => db.getSettings())
 
   ipcMain.handle('settings:save', (_, settings) => {
+    const current = db.getSettings()
     db.saveSettings(settings)
     updateNotifierSettings(settings.notifications)
-    polling.restartPolling(settings.pollingInterval)
+    if (settings.pollingInterval !== current.pollingInterval) {
+      polling.restartPolling(settings.pollingInterval)
+    }
 
     // Auto-start
     try {

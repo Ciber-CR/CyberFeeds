@@ -54,14 +54,10 @@ export default function AboutModal(): JSX.Element {
             Version 2.0.0 "Obsidian"
           </div>
 
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 32, padding: '0 10px' }}>
-            <p style={{ marginBottom: 10 }}>
-              A high-performance, local-first RSS and Atom feed reader designed for power users who value speed, privacy, and a clean reading experience.
-            </p>
-            <p>
-              Built to manage thousands of feeds effortlessly, featuring smart background synchronization, dynamic desktop notifications, and a completely distraction-free offline reading environment.
-            </p>
-          </div>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 32 }}>
+            A high-performance, minimalist RSS reader designed for power users who value speed, 
+            privacy, and a clean reading experience.
+          </p>
 
           <div style={{ textAlign: 'left' }}>
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
