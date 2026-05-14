@@ -59,6 +59,10 @@ export interface AppSettings {
   unreadOnly: boolean
   compactArticleList: boolean
   cleanupReadDays: number
+  autoCleanup: boolean
+  autoCleanup: boolean
+  autoCleanup: boolean
+  autoCleanup: boolean
   readerFallback: boolean
   readingFontSize: number
   readingLineHeight: number
@@ -113,6 +117,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   unreadOnly: false,
   compactArticleList: false,
   cleanupReadDays: 30,
+  autoCleanup: false,
   readerFallback: true,
   readingFontSize: 16,
   readingLineHeight: 1.7,

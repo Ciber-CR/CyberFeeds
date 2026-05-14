@@ -412,11 +412,11 @@ export function restoreBackupData(data: any): void {
     // Restore starred articles
     if (Array.isArray(data.starredArticles)) {
       const stmt = db.prepare(`
-        INSERT OR IGNORE INTO articles (id, feedId, title, link, pubDate, content, snippet, author, read, starred, guid)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT OR IGNORE INTO articles (id, feedId, title, link, pubDate, content, snippet, author, thumbnail, read, starred, guid)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       for (const a of data.starredArticles) {
-        stmt.run(a.id, a.feedId, a.title, a.link, a.pubDate, a.content, a.snippet, a.author, a.read, a.starred, a.guid)
+        stmt.run(a.id, a.feedId, a.title, a.link, a.pubDate, a.content, a.snippet, a.author, a.thumbnail, a.read, a.starred, a.guid)
       }
     }
 

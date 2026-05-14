@@ -125,6 +125,11 @@ app.whenReady().then(() => {
     mainWindow?.webContents.send('articles:updated', { feedId, count: inserted.length })
   })
 
+  // Auto cleanup on startup
+  if (settings.autoCleanup && settings.cleanupReadDays > 0) {
+    db.cleanupOldArticles(settings.cleanupReadDays)
+  }
+
   // Start polling
   startPolling(settings.pollingInterval)
 

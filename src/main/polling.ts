@@ -48,6 +48,11 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
     if (result.done) {
       isPolling = false
       worker.terminate()
+      // Auto cleanup after poll cycle
+      const settings = db.getSettings()
+      if (settings.autoCleanup && settings.cleanupReadDays > 0) {
+        db.cleanupOldArticles(settings.cleanupReadDays)
+      }
       if (pendingPoll) {
         pollFeeds()
       }
