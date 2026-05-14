@@ -55,6 +55,7 @@ export interface AppSettings {
   autoStart: boolean
   minimizeToTray: boolean
   showArticleThumbnails: boolean
+  customBrowserPath: string
   unreadOnly: boolean
   compactArticleList: boolean
   cleanupReadDays: number
@@ -108,6 +109,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoStart: false,
   minimizeToTray: true,
   showArticleThumbnails: true,
+  customBrowserPath: '',
   unreadOnly: false,
   compactArticleList: false,
   cleanupReadDays: 30,

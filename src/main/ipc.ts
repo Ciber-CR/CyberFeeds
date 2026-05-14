@@ -405,7 +405,30 @@ export function registerIpc(): void {
 
   // ─── Shell ────────────────────────────────────────────────────────────────
 
-  ipcMain.handle('shell:openExternal', (_, url: string) => shell.openExternal(url))
+  ipcMain.handle('shell:openExternal', async (_, url: string) => {
+    const settings = db.getSettings()
+    if (settings.customBrowserPath) {
+      const { execFile } = require('child_process')
+      return new Promise<void>((resolve) => {
+        execFile(settings.customBrowserPath, [url], () => resolve())
+      })
+    }
+    return shell.openExternal(url)
+  })
+
+  ipcMain.handle('app:pickBrowser', async () => {
+    const win = BrowserWindow.getAllWindows()[0]
+    const result = await dialog.showOpenDialog(win || undefined, {
+      title: 'Select browser executable',
+      filters: [
+        { name: 'Executables', extensions: ['exe'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    })
+    if (result.canceled || !result.filePaths[0]) return null
+    return result.filePaths[0]
+  })
 
   // ─── Displays ─────────────────────────────────────────────────────────────
 

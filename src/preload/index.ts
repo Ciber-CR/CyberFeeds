@@ -45,6 +45,7 @@ const api = {
 
   // Shell
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
+  pickBrowser: () => ipcRenderer.invoke('app:pickBrowser'),
 
   // Displays
   getDisplays: () => ipcRenderer.invoke('displays:getAll'),

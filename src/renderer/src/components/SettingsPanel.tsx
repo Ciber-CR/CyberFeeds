@@ -128,6 +128,55 @@ export default function SettingsPanel(): JSX.Element {
             </div>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Show article thumbnails</span>
           </label>
+
+          {/* Browser selection */}
+          <div className="form-group" style={{ marginTop: 8 }}>
+            <label className="form-label">External links open in</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <select
+                className="form-select"
+                value={local.customBrowserPath ? 'custom' : 'default'}
+                onChange={async e => {
+                  if (e.target.value === 'default') {
+                    update({ customBrowserPath: '' })
+                  }
+                }}
+                style={{ flex: 1 }}
+              >
+                <option value="default">System default</option>
+                <option value="custom">Custom browser</option>
+              </select>
+              <button
+                className="btn btn-ghost"
+                onClick={async () => {
+                  const path = await window.api.pickBrowser()
+                  if (path) {
+                    update({ customBrowserPath: path })
+                  }
+                }}
+                disabled={!local.customBrowserPath}
+                style={{
+                  fontSize: 12,
+                  padding: '4px 10px',
+                  color: local.customBrowserPath ? 'var(--accent)' : 'var(--text-muted)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-2)',
+                  cursor: local.customBrowserPath ? 'pointer' : 'not-allowed'
+                }}
+                title={local.customBrowserPath || 'Select a browser first'}
+              >
+                {local.customBrowserPath
+                  ? local.customBrowserPath.split(/[\\/]/).pop()
+                  : 'Pick…'}
+              </button>
+            </div>
+            {local.customBrowserPath && (
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                {local.customBrowserPath}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Notifications ─────────────────────────────────────── */}
