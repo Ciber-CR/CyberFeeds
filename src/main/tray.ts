@@ -4,16 +4,55 @@ import { pollFeeds } from './polling'
 import { restoreMainWindow } from './index'
 
 let tray: Tray | null = null
+let _mainWindow: BrowserWindow | null = null
 
 export function createTray(mainWindow: BrowserWindow): Tray {
   const iconPath = path.join(__dirname, '../../resources/tray.png')
   tray = new Tray(iconPath)
+  _mainWindow = mainWindow
 
+  buildMenu()
+
+  tray.setToolTip('CyberFeeds')
+
+  tray.on('click', () => {
+    const win = _mainWindow
+    if (!win || win.isDestroyed()) return
+    if (win.isVisible()) {
+      win.hide()
+    } else {
+      restoreMainWindow()
+    }
+  })
+
+  tray.on('double-click', () => {
+    restoreMainWindow()
+  })
+
+  return tray
+}
+
+function buildMenu(): void {
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Show CyberFeeds',
+      label: 'Show / Hide',
       click: () => {
+        const win = _mainWindow
+        if (!win || win.isDestroyed()) return
+        if (win.isVisible()) {
+          win.hide()
+        } else {
+          restoreMainWindow()
+        }
+      }
+    },
+    {
+      label: 'Settings',
+      click: () => {
+        const win = _mainWindow
+        if (!win || win.isDestroyed()) return
         restoreMainWindow()
+        win.webContents.send('app:openSettings')
       }
     },
     {
@@ -26,15 +65,7 @@ export function createTray(mainWindow: BrowserWindow): Tray {
       click: () => { app.quit() }
     }
   ])
-
-  tray.setToolTip('CyberFeeds')
-  tray.setContextMenu(contextMenu)
-
-  tray.on('double-click', () => {
-    restoreMainWindow()
-  })
-
-  return tray
+  tray?.setContextMenu(contextMenu)
 }
 
 export function destroyTray(): void {

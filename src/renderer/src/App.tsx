@@ -79,6 +79,14 @@ export default function App(): JSX.Element {
     return unsub
   }, [])
 
+  // Listen for open settings requests (e.g. from tray menu)
+  useEffect(() => {
+    const unsub = window.api.onOpenSettings(() => {
+      useUIStore.setState({ activePanel: 'settings' })
+    })
+    return unsub
+  }, [])
+
   // Keyboard shortcuts
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape' && activePanel) closePanel()

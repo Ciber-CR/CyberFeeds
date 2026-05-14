@@ -114,6 +114,13 @@ export default function SettingsPanel(): JSX.Element {
             </div>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Start with Windows</span>
           </label>
+          <label className="toggle">
+            <div className={`toggle-track ${local.minimizeToTray ? 'on' : ''}`}
+              onClick={() => update({ minimizeToTray: !local.minimizeToTray })}>
+              <div className="toggle-thumb" />
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Minimize to tray on close</span>
+          </label>
         </div>
 
         {/* ── Notifications ─────────────────────────────────────── */}
@@ -126,6 +133,14 @@ export default function SettingsPanel(): JSX.Element {
               <div className="toggle-thumb" />
             </div>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Enable notifications</span>
+          </label>
+
+          <label className="toggle" style={{ marginBottom: 14 }}>
+            <div className={`toggle-track ${local.notifications.showThumbnails ? 'on' : ''}`}
+              onClick={() => updateNotif({ showThumbnails: !local.notifications.showThumbnails })}>
+              <div className="toggle-thumb" />
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Show article thumbnails</span>
           </label>
 
           {/* Monitor selector */}

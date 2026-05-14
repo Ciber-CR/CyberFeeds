@@ -14,6 +14,7 @@ let isHovering = false
 
 // Pixel height of each notification card (content + gap)
 const CARD_H = 140
+const THUMB_H = 102 // 100px img + 2px margin-bottom
 const CARD_GAP = 6
 const CLEAR_BAR_H = 36
 const WIN_PAD = 12
@@ -69,7 +70,9 @@ function applyPositionToWindow(
   const visibleCards = Math.min(Math.max(1, cardCount), s.maxStack)
   const clearBar = cardCount > 1 ? CLEAR_BAR_H : 0
   const gaps = Math.max(0, visibleCards - 1) * CARD_GAP
-  const winH = visibleCards * CARD_H + gaps + WIN_PAD + clearBar
+  const visible = displayStack.slice(0, visibleCards)
+  const thumbCount = settings.showThumbnails ? visible.filter(n => n.thumbnail).length : 0
+  const winH = visibleCards * CARD_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar
   win.setSize(winW, winH)
   const { x, y } = calcPosition(winW, winH, s)
   win.setPosition(x, y)
