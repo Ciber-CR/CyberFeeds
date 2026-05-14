@@ -55,7 +55,7 @@ function truncate(str: string, max: number): string {
 
 /**
  * Extract the best thumbnail URL from an RSS item.
- * Priority: media:content → media:thumbnail → enclosure (image) → og:image → first <img> in content
+ * Priority: media:content → media:thumbnail → rss-parser fields → enclosure → og:image → first <img>
  */
 function extractThumbnail(item: any): string | undefined {
   // 1. media:content (image type, with url)
@@ -74,10 +74,33 @@ function extractThumbnail(item: any): string | undefined {
     if (url) return url
   }
 
-  // 3. item.thumbnail (rss-parser exposes this for some feeds)
+  // 3. rss-parser: item.thumbnail (string URL)
   if (item.thumbnail) return item.thumbnail
 
-  // 4. enclosure with image type
+  // 4. rss-parser: item.thumbnails (array of { url, width, height })
+  if (item.thumbnails && Array.isArray(item.thumbnails) && item.thumbnails.length > 0) {
+    // Pick highest resolution
+    const best = item.thumbnails.reduce((a: any, b: any) =>
+      (a.width || 0) * (a.height || 0) > (b.width || 0) * (b.height || 0) ? a : b
+    )
+    if (best.url) return best.url
+  }
+
+  // 5. rss-parser: item.media.thumbnail (nested in media group)
+  if (item.media && item.media.thumbnail) {
+    const mt = item.media.thumbnail
+    if (typeof mt === 'string') return mt
+    if (mt.url) return mt.url
+    if (mt['@_url']) return mt['@_url']
+  }
+
+  // 6. rss-parser: item.media.content (nested media:content)
+  if (item.media && item.media.content) {
+    const mc = Array.isArray(item.media.content) ? item.media.content[0] : item.media.content
+    if (mc && mc.url && !mc.url.includes('youtube.com/watch')) return mc.url
+  }
+
+  // 7. enclosure with image type
   const enclosures = item.enclosures || item['media:enclosure']
   if (enclosures) {
     const enc = Array.isArray(enclosures) ? enclosures : [enclosures]
@@ -88,15 +111,22 @@ function extractThumbnail(item: any): string | undefined {
     }
   }
 
-  // 5. og:image meta tag in content
+  // 8. og:image meta tag in content
   const rawContent = item['content:encoded'] || item.content || ''
   const ogMatch = rawContent.match(/<meta\s+(?:property|"og:image")\s*=\s*"(og:image)"\s+content\s*=\s*"([^"]+)"/i)
     || rawContent.match(/<meta\s+content\s*=\s*"([^"]+)"\s+(?:property|"og:image")\s*=\s*"(og:image)"/i)
   if (ogMatch) return ogMatch[1]
 
-  // 6. First <img> tag in content
+  // 9. First <img> tag in content
   const imgMatch = rawContent.match(/<img[^>]+src\s*=\s*"([^"]+)"/i)
   if (imgMatch) return imgMatch[1]
+
+  // 10. YouTube fallback: extract video ID from link and construct thumbnail URL
+  const link = item.link || ''
+  const ytMatch = link.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/)
+  if (ytMatch) {
+    return `https://i.ytimg.com/vi/${ytMatch[1]}/maxresdefault.jpg`
+  }
 
   return undefined
 }

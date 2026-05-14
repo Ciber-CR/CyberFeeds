@@ -90,7 +90,7 @@ function createSchema(): void {
     CREATE INDEX IF NOT EXISTS idx_articles_starred ON articles(starred, pubDate DESC);
     CREATE INDEX IF NOT EXISTS idx_articles_guid ON articles(guid);
 
-    INSERT OR IGNORE INTO window_state (id, width, height, maximized) VALUES (1, 1280, 800, 1);
+    INSERT OR IGNORE INTO window_state (id, width, height, maximized) VALUES (1, 1280, 800, 0);
   `)
 
   // Seed default settings if empty

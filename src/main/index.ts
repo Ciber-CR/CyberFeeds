@@ -79,6 +79,8 @@ function createMainWindow(): BrowserWindow {
 
   win.on('resize', saveState)
   win.on('move', saveState)
+  win.on('maximize', saveState)
+  win.on('unmaximize', saveState)
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
