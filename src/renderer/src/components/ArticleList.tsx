@@ -4,6 +4,7 @@ import { Star, Search, Filter } from 'lucide-react'
 import { useArticlesStore } from '../store/articles.store'
 import { useUIStore } from '../store/ui.store'
 import { useFeedsStore } from '../store/feeds.store'
+import { useSettingsStore } from '../store/settings.store'
 import type { Article } from '../types'
 
 function formatDate(ts: number): string {
@@ -93,11 +94,16 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   }, [selectedFeedId, unreadCounts, totalCount, feeds])
 
   const ITEM_H = 90
+  const ITEM_H_WITH_THUMB = 140
 
   const rowVirtualizer = useVirtualizer({
     count: articles.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => ITEM_H,
+    estimateSize: (index) => {
+      const article = articles[index]
+      if (article?.thumbnail && settings.showArticleThumbnails) return ITEM_H_WITH_THUMB
+      return ITEM_H
+    },
     overscan: 8
   })
 
@@ -283,6 +289,7 @@ interface ArticleItemProps {
 
 const ArticleItem = memo(function ArticleItem({ article, selected, onSelect, onContextMenu, style, measureRef, dataIndex }: ArticleItemProps) {
   const { markRead, starArticle } = useArticlesStore()
+  const { settings } = useSettingsStore()
 
   const handleClick = useCallback(() => {
     onSelect(article.id)
@@ -303,6 +310,18 @@ const ArticleItem = memo(function ArticleItem({ article, selected, onSelect, onC
       onContextMenu={(e) => onContextMenu(e, article.id)}
       style={style}
     >
+      {/* Thumbnail strip */}
+      {article.thumbnail && settings.showArticleThumbnails && (
+        <div className="article-thumbnail">
+          <img
+            src={article.thumbnail}
+            alt=""
+            loading="lazy"
+            onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
+          />
+        </div>
+      )}
+
       {/* Title row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
         <div style={{ marginTop: 1, flexShrink: 0 }}>

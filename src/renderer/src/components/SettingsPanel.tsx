@@ -121,6 +121,13 @@ export default function SettingsPanel(): JSX.Element {
             </div>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Minimize to tray on close</span>
           </label>
+          <label className="toggle">
+            <div className={`toggle-track ${local.showArticleThumbnails ? 'on' : ''}`}
+              onClick={() => update({ showArticleThumbnails: !local.showArticleThumbnails })}>
+              <div className="toggle-thumb" />
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Show article thumbnails</span>
+          </label>
         </div>
 
         {/* ── Notifications ─────────────────────────────────────── */}

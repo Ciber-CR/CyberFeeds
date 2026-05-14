@@ -54,6 +54,7 @@ export interface AppSettings {
   pollingInterval: number
   autoStart: boolean
   minimizeToTray: boolean
+  showArticleThumbnails: boolean
   unreadOnly: boolean
   compactArticleList: boolean
   cleanupReadDays: number
@@ -93,6 +94,7 @@ export interface WindowState {
   width: number
   height: number
   maximized: boolean
+  fullscreen: boolean
 }
 
 export interface NotifierPatch {
@@ -106,6 +108,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   pollingInterval: 15,
   autoStart: false,
   minimizeToTray: true,
+  showArticleThumbnails: true,
   unreadOnly: false,
   compactArticleList: false,
   cleanupReadDays: 30,
