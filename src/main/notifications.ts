@@ -37,8 +37,12 @@ function calcPosition(
   s: NotificationSettings
 ): { x: number; y: number } {
   const displays = screen.getAllDisplays()
-  const display = displays.find(d => d.id === s.displayId) || screen.getPrimaryDisplay()
-  const { workArea: wa } = display
+  const display = displays.find(d => d.id === s.displayId)
+  if (!display) {
+    console.warn(`[Notifier] Display ${s.displayId} not found, falling back to primary`)
+  }
+  const resolved = display ?? screen.getPrimaryDisplay()
+  const { workArea: wa } = resolved
   const mx = Math.round(s.marginX)
   const my = Math.round(s.marginY)
 
@@ -152,8 +156,9 @@ export function showNotification(item: NotificationHistoryItem): void {
       // Play custom sound file via the notifier renderer
       const win = ensureWindow()
       const filePath = settings.soundFile.replace(/\\/g, '/')
+      const encoded = encodeURI(`file:///${filePath}`)
       win.webContents.executeJavaScript(
-        `(function(){ var a = new Audio('file:///${filePath}'); a.volume = 0.7; a.play().catch(()=>{}); })()`
+        `(function(){ var a = new Audio('${encoded}'); a.volume = 0.7; a.play().catch(()=>{}); })()`
       ).catch(() => {})
     } else {
       shell.beep()

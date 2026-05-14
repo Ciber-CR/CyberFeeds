@@ -6,6 +6,7 @@ import type { Feed } from './types'
 
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 let isPolling = false
+let pendingPoll = false
 let onNewArticlesCallback: ((feedId: string, insertedArticles: any[], feedTitle: string, feedIcon?: string) => void) | null = null
 
 export function setOnNewArticles(cb: (feedId: string, insertedArticles: any[], feedTitle: string, feedIcon?: string) => void): void {
@@ -22,8 +23,12 @@ function getWorkerPath(): string {
 }
 
 export async function pollFeeds(feeds?: Feed[]): Promise<void> {
-  if (isPolling) return
+  if (isPolling) {
+    pendingPoll = true
+    return
+  }
   isPolling = true
+  pendingPoll = false
 
   const feedsToFetch = feeds || db.getFeeds()
   if (feedsToFetch.length === 0) {
@@ -43,6 +48,9 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
     if (result.done) {
       isPolling = false
       worker.terminate()
+      if (pendingPoll) {
+        pollFeeds()
+      }
       return
     }
 
@@ -72,10 +80,16 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
   worker.on('error', (err) => {
     console.error('[Polling] Worker error:', err)
     isPolling = false
+    if (pendingPoll) {
+      pollFeeds()
+    }
   })
 
   worker.on('exit', () => {
     isPolling = false
+    if (pendingPoll) {
+      pollFeeds()
+    }
   })
 }
 
