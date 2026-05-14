@@ -53,17 +53,37 @@ function truncate(str: string, max: number): string {
   return str.slice(0, max) + '...'
 }
 
+/** Validate a URL is a real image, not a placeholder */
+function isValidImage(url: string): boolean {
+  if (!url || typeof url !== 'string') return false
+  const lower = url.toLowerCase()
+  // Skip known placeholders
+  if (lower.includes('default_avatar') || lower.includes('self') || lower.includes('removed') || lower.includes('default_removal')) return false
+  // Must look like an image URL
+  if (lower.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/)) return true
+  // CDNs like i.redd.it, i.ytimg.com, thumbs.redditmedia.com are valid
+  if (lower.includes('i.redd.it') || lower.includes('i.ytimg.com') || lower.includes('thumbs.redditmedia.com') || lower.includes('redditstatic.com')) return true
+  return false
+}
+
 /**
  * Extract the best thumbnail URL from an RSS item.
- * Priority: media:content → media:thumbnail → rss-parser fields → enclosure → og:image → first <img>
+ * Priority: media:content (image) → media:thumbnail → rss-parser fields → enclosure → og:image → <img> / data-src
  */
 function extractThumbnail(item: any): string | undefined {
-  // 1. media:content (image type, with url)
+  // 1. media:content — find the first image-type entry
   const mediaContent = item['media:content']
   if (mediaContent && typeof mediaContent === 'object') {
-    const mc = Array.isArray(mediaContent) ? mediaContent.find((m: any) => m['@_type']?.startsWith('image')) || mediaContent[0] : mediaContent
-    const url = mc['@_url'] || mc.url
-    if (url) return url
+    const arr = Array.isArray(mediaContent) ? mediaContent : [mediaContent]
+    for (const mc of arr) {
+      const url = mc['@_url'] || mc.url
+      const type = (mc['@_type'] || mc.type || '').toLowerCase()
+      if (url && isValidImage(url)) return url
+    }
+    // Fallback: take first URL even if type isn't image
+    const first = arr[0]
+    const firstUrl = first?.['@_url'] || first?.url
+    if (firstUrl && isValidImage(firstUrl)) return firstUrl
   }
 
   // 2. media:thumbnail
@@ -71,33 +91,32 @@ function extractThumbnail(item: any): string | undefined {
   if (mediaThumbnail && typeof mediaThumbnail === 'object') {
     const mt = Array.isArray(mediaThumbnail) ? mediaThumbnail[0] : mediaThumbnail
     const url = mt['@_url'] || mt.url
-    if (url) return url
+    if (url && isValidImage(url)) return url
   }
 
   // 3. rss-parser: item.thumbnail (string URL)
-  if (item.thumbnail) return item.thumbnail
+  if (item.thumbnail && isValidImage(item.thumbnail)) return item.thumbnail
 
   // 4. rss-parser: item.thumbnails (array of { url, width, height })
   if (item.thumbnails && Array.isArray(item.thumbnails) && item.thumbnails.length > 0) {
-    // Pick highest resolution
     const best = item.thumbnails.reduce((a: any, b: any) =>
       (a.width || 0) * (a.height || 0) > (b.width || 0) * (b.height || 0) ? a : b
     )
-    if (best.url) return best.url
+    if (best.url && isValidImage(best.url)) return best.url
   }
 
   // 5. rss-parser: item.media.thumbnail (nested in media group)
   if (item.media && item.media.thumbnail) {
     const mt = item.media.thumbnail
-    if (typeof mt === 'string') return mt
-    if (mt.url) return mt.url
-    if (mt['@_url']) return mt['@_url']
+    if (typeof mt === 'string' && isValidImage(mt)) return mt
+    if (mt.url && isValidImage(mt.url)) return mt.url
+    if (mt['@_url'] && isValidImage(mt['@_url'])) return mt['@_url']
   }
 
   // 6. rss-parser: item.media.content (nested media:content)
   if (item.media && item.media.content) {
     const mc = Array.isArray(item.media.content) ? item.media.content[0] : item.media.content
-    if (mc && mc.url && !mc.url.includes('youtube.com/watch')) return mc.url
+    if (mc && mc.url && isValidImage(mc.url)) return mc.url
   }
 
   // 7. enclosure with image type
@@ -107,7 +126,7 @@ function extractThumbnail(item: any): string | undefined {
     for (const e of enc) {
       const url = e['@_url'] || e.url
       const type = (e['@_type'] || e.type || '').toLowerCase()
-      if (url && type.startsWith('image')) return url
+      if (url && type.startsWith('image') && isValidImage(url)) return url
     }
   }
 
@@ -115,11 +134,11 @@ function extractThumbnail(item: any): string | undefined {
   const rawContent = item['content:encoded'] || item.content || ''
   const ogMatch = rawContent.match(/<meta\s+(?:property|"og:image")\s*=\s*"(og:image)"\s+content\s*=\s*"([^"]+)"/i)
     || rawContent.match(/<meta\s+content\s*=\s*"([^"]+)"\s+(?:property|"og:image")\s*=\s*"(og:image)"/i)
-  if (ogMatch) return ogMatch[1]
+  if (ogMatch && isValidImage(ogMatch[1])) return ogMatch[1]
 
-  // 9. First <img> tag in content
-  const imgMatch = rawContent.match(/<img[^>]+src\s*=\s*"([^"]+)"/i)
-  if (imgMatch) return imgMatch[1]
+  // 9. <img> with src or data-src (Reddit uses data-src for lazy loading)
+  const imgSrcMatch = rawContent.match(/<img[^>]+(?:src|data-src)\s*=\s*"([^"]+)"/i)
+  if (imgSrcMatch && isValidImage(imgSrcMatch[1])) return imgSrcMatch[1]
 
   // 10. YouTube fallback: extract video ID from link and construct thumbnail URL
   const link = item.link || ''
