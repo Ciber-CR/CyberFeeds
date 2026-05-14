@@ -54,12 +54,7 @@ function createMainWindow(): BrowserWindow {
 
   if (windowState.maximized) win.maximize()
 
-  win.on('ready-to-show', () => {
-    win.show()
-    if (windowState.fullscreen) {
-      win.setFullScreen(true)
-    }
-  })
+  win.on('ready-to-show', () => win.show())
 
   // Open external links in browser
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -79,13 +74,11 @@ function createMainWindow(): BrowserWindow {
   const saveState = (): void => {
     if (win.isDestroyed()) return
     const bounds = win.getBounds()
-    saveWindowState({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, maximized: win.isMaximized(), fullscreen: win.isFullScreen() })
+    saveWindowState({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, maximized: win.isMaximized() })
   }
 
   win.on('resize', saveState)
   win.on('move', saveState)
-  win.on('enter-full-screen', saveState)
-  win.on('leave-full-screen', saveState)
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])

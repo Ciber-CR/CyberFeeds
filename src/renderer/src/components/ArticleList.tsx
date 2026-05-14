@@ -63,6 +63,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const { selectedArticleId, selectedFeedId, unreadOnly, search, selectArticle, setUnreadOnly, setSearch } = useUIStore()
   const [ctx, setCtx] = React.useState<{ x: number, y: number, id: string } | null>(null)
   const { feeds, folders, unreadCounts } = useFeedsStore()
+  const { settings } = useSettingsStore()
   const parentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<ReturnType<typeof setTimeout>>()
   const prevSelectedId = useRef<string | null>(null)

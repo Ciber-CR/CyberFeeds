@@ -20,7 +20,6 @@ export function initDb(): void {
 function migrate(): void {
   try { db.exec('ALTER TABLE articles ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
   try { db.exec('ALTER TABLE notification_history ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
-  try { db.exec('ALTER TABLE window_state ADD COLUMN fullscreen INTEGER NOT NULL DEFAULT 1') } catch { /* already exists */ }
 }
 
 function createSchema(): void {
@@ -82,8 +81,7 @@ function createSchema(): void {
       y INTEGER,
       width INTEGER NOT NULL DEFAULT 1280,
       height INTEGER NOT NULL DEFAULT 800,
-      maximized INTEGER NOT NULL DEFAULT 0,
-      fullscreen INTEGER NOT NULL DEFAULT 1
+      maximized INTEGER NOT NULL DEFAULT 1
     );
 
     CREATE INDEX IF NOT EXISTS idx_articles_feed ON articles(feedId);
@@ -92,7 +90,7 @@ function createSchema(): void {
     CREATE INDEX IF NOT EXISTS idx_articles_starred ON articles(starred, pubDate DESC);
     CREATE INDEX IF NOT EXISTS idx_articles_guid ON articles(guid);
 
-    INSERT OR IGNORE INTO window_state (id, width, height, maximized) VALUES (1, 1280, 800, 0);
+    INSERT OR IGNORE INTO window_state (id, width, height, maximized) VALUES (1, 1280, 800, 1);
   `)
 
   // Seed default settings if empty
@@ -361,14 +359,14 @@ export function saveSettings(settings: AppSettings): void {
 
 export function getWindowState(): WindowState {
   const row = db.prepare('SELECT * FROM window_state WHERE id = 1').get() as any
-  if (!row) return { width: 1280, height: 800, maximized: false, fullscreen: true }
-  return { ...row, maximized: row.maximized === 1, fullscreen: row.fullscreen === 1 }
+  if (!row) return { width: 1280, height: 800, maximized: true }
+  return { ...row, maximized: row.maximized === 1 }
 }
 
 export function saveWindowState(state: WindowState): void {
   db.prepare(`
-    UPDATE window_state SET x=?, y=?, width=?, height=?, maximized=?, fullscreen=? WHERE id=1
-  `).run(state.x ?? null, state.y ?? null, state.width, state.height, state.maximized ? 1 : 0, state.fullscreen ? 1 : 0)
+    UPDATE window_state SET x=?, y=?, width=?, height=?, maximized=? WHERE id=1
+  `).run(state.x ?? null, state.y ?? null, state.width, state.height, state.maximized ? 1 : 0)
 }
 
 export function getDb(): Database.Database {
