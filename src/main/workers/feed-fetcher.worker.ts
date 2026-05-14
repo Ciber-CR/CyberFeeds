@@ -150,9 +150,77 @@ function extractThumbnail(item: any): string | undefined {
   return undefined
 }
 
+/** Detect if a URL is a Reddit feed and return the JSON API URL */
+function toRedditJsonUrl(url: string): string | null {
+  const lower = url.toLowerCase()
+  // Match: /r/subreddit/.rss, /r/subreddit/rss/, /r/subreddit/.rss/, etc.
+  const match = lower.match(/reddit\.com\/r\/([^/]+)\.rss/)
+  if (match) return `https://www.reddit.com/r/${match[1]}/.json?limit=100`
+  // Match: old.reddit.com, new.reddit.com
+  const match2 = lower.match(/(?:old|new)\.reddit\.com\/r\/([^/]+)\.rss/)
+  if (match2) return `https://www.reddit.com/r/${match2[1]}/.json?limit=100`
+  return null
+}
+
+/** Fetch from Reddit's JSON API and convert to feed items */
+async function fetchRedditJson(feedId: string, jsonUrl: string): Promise<FeedResult> {
+  const lastFetched = Date.now()
+  const resp = await fetch(jsonUrl, {
+    headers: { 'User-Agent': 'CyberFeeds/2.0' }
+  })
+  if (!resp.ok) throw new Error(`Reddit JSON API returned ${resp.status}`)
+
+  const data = await resp.json()
+  const posts = data.data?.children || []
+
+  const articles: ParsedArticle[] = posts.map((post: any) => {
+    const d = post.data
+    const guid = d.permalink || d.url || d.id
+    const id = makeId(feedId, guid)
+    const pubDate = d.created ? Math.floor(d.created * 1000) : lastFetched
+
+    // Get thumbnail from preview images (highest res)
+    let thumbnail: string | undefined
+    if (d.preview?.images?.[0]?.sources?.[0]) {
+      const src = d.preview.images[0].sources[0]
+      thumbnail = src.url
+    } else if (d.thumbnail && d.thumbnail !== 'self' && d.thumbnail !== 'default' && d.thumbnail !== 'image' && !d.thumbnail.includes('default_removal') && !d.thumbnail.includes('default_gallery')) {
+      thumbnail = d.thumbnail
+    }
+
+    // Build content from selftext + link
+    const content = d.selftext_html || d.selftext || (d.url ? `<a href="${d.url}">${d.url}</a>` : '')
+
+    return {
+      id,
+      feedId,
+      title: d.title?.trim() || '(No title)',
+      link: `https://www.reddit.com${d.permalink}`,
+      pubDate: isNaN(pubDate) ? lastFetched : pubDate,
+      content,
+      snippet: truncate(cleanHtml(content), 300),
+      author: d.author || undefined,
+      guid,
+      thumbnail
+    }
+  })
+
+  return { feedId, articles, lastFetched }
+}
+
 async function fetchFeed(feedId: string, url: string): Promise<FeedResult> {
   const lastFetched = Date.now()
   try {
+    // Reddit special handling — use JSON API for thumbnails
+    const redditJsonUrl = toRedditJsonUrl(url)
+    if (redditJsonUrl) {
+      try {
+        return await fetchRedditJson(feedId, redditJsonUrl)
+      } catch (err) {
+        console.warn(`[Worker] Reddit JSON failed for ${url}, falling back to RSS...`, err)
+      }
+    }
+
     let feed: any
     try {
       feed = await parser.parseURL(url)
