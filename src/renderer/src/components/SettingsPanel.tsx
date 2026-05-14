@@ -130,7 +130,7 @@ export default function SettingsPanel(): JSX.Element {
           </label>
 
           {/* Browser selection */}
-          <div className="form-group" style={{ marginTop: 8 }}>
+          <div className="form-group" style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border-muted)' }}>
             <label className="form-label">External links open in</label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <select
@@ -139,6 +139,17 @@ export default function SettingsPanel(): JSX.Element {
                 onChange={async e => {
                   if (e.target.value === 'default') {
                     update({ customBrowserPath: '' })
+                  } else if (e.target.value === 'custom') {
+                    const path = await window.api.pickBrowser()
+                    if (path) {
+                      update({ customBrowserPath: path })
+                    } else {
+                      // User cancelled, revert select
+                      setTimeout(() => {
+                        const sel = document.querySelector('select[value="custom"]') as HTMLSelectElement | null
+                        if (sel) sel.value = 'default'
+                      }, 0)
+                    }
                   }
                 }}
                 style={{ flex: 1 }}
@@ -154,21 +165,18 @@ export default function SettingsPanel(): JSX.Element {
                     update({ customBrowserPath: path })
                   }
                 }}
-                disabled={!local.customBrowserPath}
                 style={{
                   fontSize: 12,
                   padding: '4px 10px',
-                  color: local.customBrowserPath ? 'var(--accent)' : 'var(--text-muted)',
+                  color: 'var(--accent)',
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-sm)',
                   background: 'var(--bg-2)',
-                  cursor: local.customBrowserPath ? 'pointer' : 'not-allowed'
+                  cursor: 'pointer'
                 }}
-                title={local.customBrowserPath || 'Select a browser first'}
+                title="Browse for browser executable"
               >
-                {local.customBrowserPath
-                  ? local.customBrowserPath.split(/[\\/]/).pop()
-                  : 'Pick…'}
+                Pick…
               </button>
             </div>
             {local.customBrowserPath && (
@@ -374,6 +382,13 @@ export default function SettingsPanel(): JSX.Element {
               value={local.cleanupReadDays}
               onChange={e => update({ cleanupReadDays: Number(e.target.value) })} />
           </div>
+          <label className="toggle">
+            <div className={`toggle-track ${local.autoCleanup ? 'on' : ''}`}
+              onClick={() => update({ autoCleanup: !local.autoCleanup })}>
+              <div className="toggle-thumb" />
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Auto clean on startup</span>
+          </label>
           <button className="btn btn-danger" style={{ fontSize: 12, marginTop: 4 }}
             onClick={() => window.api.cleanup(local.cleanupReadDays)}>
             Run Clean Up Now
