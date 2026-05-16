@@ -68,10 +68,10 @@ function applyPositionToWindow(
 ): void {
   const winW = s.maxWidth
   const visibleCards = Math.min(Math.max(1, cardCount), s.maxStack)
-  const clearBar = cardCount > 1 ? CLEAR_BAR_H : 0
+  const clearBar = cardCount > 0 ? CLEAR_BAR_H : 0
   const gaps = Math.max(0, visibleCards - 1) * CARD_GAP
   const visible = displayStack.slice(0, visibleCards)
-  const thumbCount = settings.showThumbnails ? visible.filter(n => n.thumbnail).length : 0
+  const thumbCount = s.showThumbnails ? visible.filter(n => n.thumbnail).length : 0
   const winH = visibleCards * CARD_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar
   win.setSize(winW, winH)
   const { x, y } = calcPosition(winW, winH, s)
@@ -81,7 +81,7 @@ function applyPositionToWindow(
 function createNotifierWindow(s: NotificationSettings): BrowserWindow {
   const win = new BrowserWindow({
     width: s.maxWidth,
-    height: CARD_H + WIN_PAD,        // start at 1-card height
+    height: CARD_H + CLEAR_BAR_H + WIN_PAD, // 1 card + clear bar
     frame: false,
     transparent: true,
     resizable: false,
@@ -142,12 +142,24 @@ function pushToWindow(s: NotificationSettings = settings): void {
 }
 
 export function showNotification(item: NotificationHistoryItem): void {
-  if (!settings.enabled) return
-  if (settings.snoozedUntil && Date.now() < settings.snoozedUntil) return
-  if (settings.feedFilters.includes(item.feedId || '')) return
+  if (!settings.enabled) {
+    console.warn('[Notifier] Notification suppressed: notifications are disabled')
+    return
+  }
+  if (settings.snoozedUntil && Date.now() < settings.snoozedUntil) {
+    console.warn('[Notifier] Notification suppressed: snoozed until', new Date(settings.snoozedUntil).toISOString())
+    return
+  }
+  if (settings.feedFilters.includes(item.feedId || '')) {
+    console.warn(`[Notifier] Notification suppressed: feed ${item.feedId} is filtered`)
+    return
+  }
 
   const combined = `${item.title} ${item.body}`.toLowerCase()
-  if (settings.keywordFilters.some(kw => combined.includes(kw.toLowerCase()))) return
+  if (settings.keywordFilters.some(kw => combined.includes(kw.toLowerCase()))) {
+    console.warn('[Notifier] Notification suppressed: matched keyword filter')
+    return
+  }
 
   db.addNotificationHistory(item)
   displayStack.push(item)

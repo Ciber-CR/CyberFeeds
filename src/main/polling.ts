@@ -7,6 +7,16 @@ import type { Feed } from './types'
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 let isPolling = false
 let pendingPoll = false
+let pollWatchdog: ReturnType<typeof setTimeout> | null = null
+
+const POLL_WATCHDOG_MS = 5 * 60 * 1000 // 5 minutes
+
+function clearWatchdog(): void {
+  if (pollWatchdog) {
+    clearTimeout(pollWatchdog)
+    pollWatchdog = null
+  }
+}
 let onNewArticlesCallback: ((feedId: string, insertedArticles: any[], feedTitle: string, feedIcon?: string) => void) | null = null
 
 export function setOnNewArticles(cb: (feedId: string, insertedArticles: any[], feedTitle: string, feedIcon?: string) => void): void {
@@ -44,14 +54,29 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
     }
   })
 
+  clearWatchdog()
+  pollWatchdog = setTimeout(() => {
+    console.error(`[Polling] Watchdog triggered — worker did not complete within ${POLL_WATCHDOG_MS / 1000}s, terminating`)
+    worker.terminate()
+    isPolling = false
+    if (pendingPoll) {
+      pollFeeds()
+    }
+  }, POLL_WATCHDOG_MS)
+
   worker.on('message', (result: { feedId: string; articles: any[]; error?: string; lastFetched: number; done?: boolean }) => {
     if (result.done) {
+      clearWatchdog()
       isPolling = false
       worker.terminate()
       // Auto cleanup after poll cycle
       const settings = db.getSettings()
       if (settings.autoCleanup && settings.cleanupReadDays > 0) {
-        db.cleanupOldArticles(settings.cleanupReadDays)
+        try {
+          db.cleanupOldArticles(settings.cleanupReadDays)
+        } catch (err) {
+          console.error('[Polling] Cleanup error:', err)
+        }
       }
       if (pendingPoll) {
         pollFeeds()
@@ -83,6 +108,7 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
   })
 
   worker.on('error', (err) => {
+    clearWatchdog()
     console.error('[Polling] Worker error:', err)
     isPolling = false
     if (pendingPoll) {
@@ -91,6 +117,7 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
   })
 
   worker.on('exit', () => {
+    clearWatchdog()
     isPolling = false
     if (pendingPoll) {
       pollFeeds()
