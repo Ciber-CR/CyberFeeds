@@ -20,6 +20,7 @@ export function initDb(): void {
 function migrate(): void {
   try { db.exec('ALTER TABLE articles ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
   try { db.exec('ALTER TABLE notification_history ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE feeds ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0') } catch { /* already exists */ }
 }
 
 function createSchema(): void {
@@ -38,7 +39,8 @@ function createSchema(): void {
       folderId TEXT NOT NULL DEFAULT '',
       icon TEXT,
       lastFetched INTEGER,
-      errorCount INTEGER NOT NULL DEFAULT 0
+      errorCount INTEGER NOT NULL DEFAULT 0,
+      disabled INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS articles (
@@ -134,23 +136,33 @@ export function reorderFolders(ids: string[]): void {
 // ─── Feeds ─────────────────────────────────────────────────────────────────
 
 export function getFeeds(): Feed[] {
-  return db.prepare('SELECT * FROM feeds ORDER BY title ASC').all() as Feed[]
+  return db.prepare('SELECT * FROM feeds').all().map((f: any) => ({
+    ...f,
+    disabled: f.disabled === 1
+  })) as Feed[]
 }
 
 export function addFeed(feed: Feed): void {
   db.prepare(`
-    INSERT INTO feeds (id, title, url, link, folderId, icon, lastFetched, errorCount)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(feed.id, feed.title, feed.url, feed.link ?? null, feed.folderId, feed.icon ?? null, feed.lastFetched ?? null, feed.errorCount)
+    INSERT INTO feeds (id, title, url, link, folderId, icon, lastFetched, errorCount, disabled)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(feed.id, feed.title, feed.url, feed.link ?? null, feed.folderId, feed.icon ?? null, feed.lastFetched ?? null, feed.errorCount, feed.disabled ? 1 : 0)
 }
 
 export function updateFeed(feed: Partial<Feed> & { id: string }): void {
-  const existing = db.prepare('SELECT * FROM feeds WHERE id = ?').get(feed.id) as Feed
-  if (!existing) return
-  const merged = { ...existing, ...feed }
-  db.prepare(`
-    UPDATE feeds SET title=?, url=?, link=?, folderId=?, icon=?, lastFetched=?, errorCount=? WHERE id=?
-  `).run(merged.title, merged.url, merged.link ?? null, merged.folderId, merged.icon ?? null, merged.lastFetched ?? null, merged.errorCount, merged.id)
+  const sets: string[] = []
+  const values: any[] = []
+
+  for (const [key, value] of Object.entries(feed)) {
+    if (key === 'id') continue
+    sets.push(`${key} = ?`)
+    values.push(key === 'disabled' ? (value ? 1 : 0) : (value ?? null))
+  }
+
+  if (sets.length === 0) return
+
+  values.push(feed.id)
+  db.prepare(`UPDATE feeds SET ${sets.join(', ')} WHERE id = ?`).run(...values)
 }
 
 export function deleteFeed(id: string): void {
@@ -403,9 +415,9 @@ export function restoreBackupData(data: any): void {
     if (Array.isArray(data.feeds)) {
       for (const f of data.feeds) {
         db.prepare(`
-          INSERT INTO feeds (id, title, url, link, folderId, icon, lastFetched, errorCount)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(f.id, f.title, f.url, f.link, f.folderId, f.icon, f.lastFetched, f.errorCount)
+          INSERT INTO feeds (id, title, url, link, folderId, icon, lastFetched, errorCount, disabled)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(f.id, f.title, f.url, f.link, f.folderId, f.icon, f.lastFetched, f.errorCount, f.disabled ? 1 : 0)
       }
     }
 

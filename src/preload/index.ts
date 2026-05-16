@@ -10,6 +10,9 @@ const api = {
   deleteFeed: (id: string) => ipcRenderer.invoke('feeds:delete', id),
   fetchFeed: (id: string) => ipcRenderer.invoke('feeds:fetchOne', id),
   fetchAllFeeds: () => ipcRenderer.invoke('feeds:fetchAll'),
+  fetchFolder: (id: string) => ipcRenderer.invoke('feeds:fetchFolder', id),
+  togglePauseFeed: (id: string) => ipcRenderer.invoke('feeds:togglePause', id),
+  togglePauseFolder: (id: string) => ipcRenderer.invoke('feeds:togglePauseFolder', id),
 
   // Folders
   getFolders: () => ipcRenderer.invoke('folders:getAll'),
@@ -33,6 +36,7 @@ const api = {
   // Settings
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (s: object) => ipcRenderer.invoke('settings:save', s),
+  togglePolling: () => ipcRenderer.invoke('settings:togglePolling'),
 
   // Notifications
   getNotificationHistory: () => ipcRenderer.invoke('notifications:getHistory'),

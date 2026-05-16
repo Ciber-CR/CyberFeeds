@@ -16,6 +16,7 @@ export interface Feed {
   icon?: string
   lastFetched?: number
   errorCount: number
+  disabled?: boolean
 }
 
 export interface Article {
@@ -71,6 +72,7 @@ export interface AppSettings {
   sidebarFontSize: number   // px — controls sidebar items font size
   listFontSize: number       // px — controls article list font size
   notifications: NotificationSettings
+  pollingEnabled: boolean
 }
 
 export interface NotificationSettings {
@@ -143,5 +145,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     snoozedUntil: null,
     openBehavior: 'app',
     showThumbnails: true
-  }
+  },
+  pollingEnabled: true
 }

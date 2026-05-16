@@ -40,8 +40,18 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
   isPolling = true
   pendingPoll = false
 
-  const feedsToFetch = feeds || db.getFeeds()
+  const settings = db.getSettings()
+  if (!settings.pollingEnabled && !feeds) {
+    console.log('[Polling] Automatic polling is globally disabled, skipping cycle.')
+    isPolling = false
+    return
+  }
+
+  const feedsToFetch = feeds || db.getFeeds().filter(f => !f.disabled)
+  console.log(`[Polling] Starting poll cycle for ${feedsToFetch.length} feeds (Manual: ${!!feeds})`)
+
   if (feedsToFetch.length === 0) {
+    console.log('[Polling] No feeds to fetch, stopping cycle.')
     isPolling = false
     return
   }
@@ -66,6 +76,7 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
 
   worker.on('message', (result: { feedId: string; articles: any[]; error?: string; lastFetched: number; done?: boolean }) => {
     if (result.done) {
+      console.log('[Polling] Cycle complete.')
       clearWatchdog()
       isPolling = false
       worker.terminate()
@@ -73,12 +84,14 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
       const settings = db.getSettings()
       if (settings.autoCleanup && settings.cleanupReadDays > 0) {
         try {
+          console.log(`[Polling] Running auto-cleanup (days: ${settings.cleanupReadDays})`)
           db.cleanupOldArticles(settings.cleanupReadDays)
         } catch (err) {
           console.error('[Polling] Cleanup error:', err)
         }
       }
       if (pendingPoll) {
+        console.log('[Polling] Starting pending poll...')
         pollFeeds()
       }
       return
@@ -100,10 +113,13 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
 
     if (articles.length > 0) {
       const inserted = db.insertArticles(articles)
+      console.log(`[Polling] Feed ${feedId}: ${articles.length} found, ${inserted.length} new.`)
       if (inserted.length > 0 && onNewArticlesCallback) {
         const feed = db.getFeedById(feedId)
         onNewArticlesCallback(feedId, inserted, feed?.title || '', feed?.icon || undefined)
       }
+    } else {
+      console.log(`[Polling] Feed ${feedId}: No articles found.`)
     }
   })
 
@@ -127,8 +143,16 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
 
 export function startPolling(intervalMinutes: number): void {
   stopPolling()
-  pollFeeds() // immediate first poll
-  pollingTimer = setInterval(() => pollFeeds(), intervalMinutes * 60 * 1000)
+  const interval = Math.max(1, isNaN(intervalMinutes) ? 15 : intervalMinutes)
+  console.log(`[Polling] Initializing background polling every ${interval} minutes.`)
+  
+  // Immediate first poll
+  pollFeeds() 
+  
+  pollingTimer = setInterval(() => {
+    console.log('[Polling] Interval triggered.')
+    pollFeeds()
+  }, interval * 60 * 1000)
 }
 
 export function stopPolling(): void {

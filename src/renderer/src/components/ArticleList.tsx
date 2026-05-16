@@ -63,7 +63,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const { selectedArticleId, selectedFeedId, unreadOnly, search, selectArticle, setUnreadOnly, setSearch } = useUIStore()
   const [ctx, setCtx] = React.useState<{ x: number, y: number, id: string } | null>(null)
   const { feeds, folders, unreadCounts } = useFeedsStore()
-  const { settings } = useSettingsStore()
+  const { settings, togglePolling } = useSettingsStore()
   const parentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<ReturnType<typeof setTimeout>>()
   const prevSelectedId = useRef<string | null>(null)
@@ -133,35 +133,55 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     <div className="article-list-pane" onContextMenu={e => e.preventDefault()}>
       {/* Header */}
       <div className="article-list-header">
-        {selectedFeedId === 'starred' ? (
-          <Star size={16} fill="var(--star)" color="var(--star)" style={{ marginRight: 4 }} />
-        ) : selectedFeed?.icon && (
-          <FeedFavicon icon={selectedFeed.icon} title={selectedFeed.title} size={16} />
-        )}
-        <h2 style={{ marginLeft: (selectedFeedId === 'starred' || selectedFeed?.icon) ? 4 : 0 }}>{title}</h2>
-        <div style={{ flex: 1 }} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
+          {selectedFeedId === 'starred' ? (
+            <Star size={16} fill="var(--star)" color="var(--star)" style={{ marginRight: 4 }} />
+          ) : selectedFeed?.icon && (
+            <FeedFavicon icon={selectedFeed.icon} title={selectedFeed.title} size={16} />
+          )}
+          <h2 style={{ 
+            marginLeft: (selectedFeedId === 'starred' || selectedFeed?.icon) ? 4 : 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>{title}</h2>
+        </div>
+
         <div 
-          className="cyber-badge" 
-          title={unreadOnly ? `${unreadDisplayCount} unread articles` : `${unreadDisplayCount} unread / ${totalCount} total articles`}
-          style={{ cursor: 'help' }}
+          className="cyber-badge no-brackets"
+          onClick={() => togglePolling()}
+          title={`Polling: ${settings.pollingEnabled ? 'ON' : 'OFF'} | Unread: ${unreadDisplayCount} | Total: ${totalCount} | Click to toggle`}
+          style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', flexShrink: 0, margin: '0 10px', gap: 8, padding: '3px 10px' }}
         >
           <span style={{ 
-            width: 6, height: 6, borderRadius: '50%', 
-            background: 'var(--accent)', 
-            boxShadow: '0 0 5px var(--accent)', 
-            animation: 'pulse 2s infinite',
-            marginRight: 4
+            fontSize: 9, 
+            fontWeight: 700, 
+            color: settings.pollingEnabled ? 'var(--accent)' : 'var(--text-muted)',
+            opacity: 0.8
+          }}>
+            {settings.pollingEnabled ? 'MONITORING' : 'PAUSED'}
+          </span>
+          <span style={{ 
+            width: 7, height: 7, borderRadius: '50%', 
+            background: settings.pollingEnabled ? 'var(--accent)' : '#444', 
+            boxShadow: settings.pollingEnabled ? '0 0 6px var(--accent)' : 'none', 
+            animation: settings.pollingEnabled ? 'pulse 2s infinite' : 'none'
           }} />
-          {unreadOnly ? unreadDisplayCount : `${unreadDisplayCount} / ${totalCount}`}
+          <span style={{ opacity: 0.8, marginLeft: 4 }}>
+            [{unreadOnly ? unreadDisplayCount : `${unreadDisplayCount} / ${totalCount}`}]
+          </span>
         </div>
-        <button
-          className="btn btn-ghost btn-icon"
-          onClick={() => setUnreadOnly(!unreadOnly)}
-          title={unreadOnly ? 'Show all' : 'Unread only'}
-          style={unreadOnly ? { color: 'var(--accent)' } : undefined}
-        >
-          <Filter size={14} />
-        </button>
+
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={() => setUnreadOnly(!unreadOnly)}
+            title={unreadOnly ? 'Show all' : 'Unread only'}
+            style={unreadOnly ? { color: 'var(--accent)' } : undefined}
+          >
+            <Filter size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Search */}

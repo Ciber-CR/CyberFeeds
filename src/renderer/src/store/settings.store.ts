@@ -9,6 +9,7 @@ interface SettingsState {
   load: () => Promise<void>
   save: (s: AppSettings) => Promise<void>
   update: (partial: Partial<AppSettings>) => void
+  togglePolling: () => Promise<void>
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -29,5 +30,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const updated = { ...get().settings, ...partial }
     set({ settings: updated })
     window.api.saveSettings(updated)
+  },
+
+  togglePolling: async () => {
+    await window.api.togglePolling()
+    const settings = await window.api.getSettings()
+    set({ settings: { ...get().settings, ...settings } })
   }
 }))

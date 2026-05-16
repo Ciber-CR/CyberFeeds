@@ -1,5 +1,6 @@
 import { BrowserWindow, screen, ipcMain, shell } from 'electron'
 import path from 'path'
+import url from 'url'
 import { is } from '@electron-toolkit/utils'
 import * as db from './db'
 import { restoreMainWindow } from './index'
@@ -73,9 +74,10 @@ function applyPositionToWindow(
   const visible = displayStack.slice(0, visibleCards)
   const thumbCount = s.showThumbnails ? visible.filter(n => n.thumbnail).length : 0
   const winH = visibleCards * CARD_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar
-  win.setSize(winW, winH)
+
   const { x, y } = calcPosition(winW, winH, s)
-  win.setPosition(x, y)
+  // Atomic update of position and size to avoid Windows-specific lag/flicker
+  win.setBounds({ x, y, width: winW, height: winH }, false)
 }
 
 function createNotifierWindow(s: NotificationSettings): BrowserWindow {
@@ -93,7 +95,8 @@ function createNotifierWindow(s: NotificationSettings): BrowserWindow {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: false,
+      webSecurity: false
     }
   })
 
@@ -117,31 +120,83 @@ function ensureWindow(): BrowserWindow {
 }
 
 /** Push current stack to the notifier window, size & position it, show if hidden. */
-function pushToWindow(s: NotificationSettings = settings): void {
-  const win = ensureWindow()
+let isPushing = false
+async function pushToWindow(s: NotificationSettings = settings): Promise<void> {
+  if (displayStack.length === 0) return
+  if (isPushing) return // Avoid re-entry if multiple notifications arrive fast
+  
+  isPushing = true
+  try {
+    const win = ensureWindow()
 
-  // 1. Resize + reposition with EXPLICIT sizes (no getBounds() lag)
-  applyPositionToWindow(win, displayStack.length, s)
+    // Wait for renderer to be ready if window is still loading
+    if (win.webContents.isLoading()) {
+      console.log('[Notifier] Window is loading, waiting...')
+      await new Promise<void>((resolve) => {
+        win.webContents.once('did-finish-load', resolve)
+        setTimeout(resolve, 2000) // Safety fallback
+      })
+    }
 
-  // 2. Send stack to renderer
-  win.webContents.send('notifier:stack', displayStack, s)
+    if (win.isDestroyed()) return
 
-  // 3. Show
-  if (!win.isVisible()) win.showInactive()
+    console.log(`[Notifier] Pushing stack (size: ${displayStack.length}) to window`)
 
-  // 4. Auto-hide
-  if (hideTimer) clearTimeout(hideTimer)
-  if (!isHovering) {
-    hideTimer = setTimeout(() => {
-      if (notifierWindow && !notifierWindow.isDestroyed()) {
-        notifierWindow.hide()
-        displayStack.length = 0
-      }
-    }, s.duration + 500)
+    // 1. Resize + reposition with EXPLICIT sizes
+    applyPositionToWindow(win, displayStack.length, s)
+
+    // 2. Send stack to renderer
+    win.webContents.send('notifier:stack', displayStack, s)
+
+    // 3. Show
+    if (!win.isVisible()) {
+      console.log('[Notifier] Showing window (showInactive)')
+      win.showInactive()
+    }
+
+    // 4. Auto-hide
+    if (hideTimer) clearTimeout(hideTimer)
+    if (!isHovering) {
+      hideTimer = setTimeout(() => {
+        if (notifierWindow && !notifierWindow.isDestroyed()) {
+          console.log('[Notifier] Auto-hiding window')
+          notifierWindow.hide()
+          displayStack.length = 0
+        }
+      }, s.duration + 500)
+    }
+  } finally {
+    isPushing = false
+  }
+}
+
+function playNotificationSound(s: NotificationSettings): void {
+  if (s.soundFile) {
+    console.log(`[Notifier] Playing custom sound: ${s.soundFile}`)
+    try {
+      const win = ensureWindow()
+      const encoded = url.pathToFileURL(s.soundFile).toString()
+      console.log(`[Notifier] Executing JS to play: ${encoded}`)
+      win.webContents.executeJavaScript(
+        `(function(){ 
+          console.log('Attempting to play sound: ${encoded}');
+          var a = new Audio('${encoded}'); 
+          a.volume = 0.7; 
+          a.play().then(() => console.log('Sound played successfully'))
+                  .catch(e => console.error('Sound play failed:', e)); 
+        })()`
+      ).catch(err => console.error('[Notifier] JS execution failed:', err))
+    } catch (err) {
+      console.error('[Notifier] Error playing sound:', err)
+    }
+  } else {
+    console.log('[Notifier] Playing system beep')
+    shell.beep()
   }
 }
 
 export function showNotification(item: NotificationHistoryItem): void {
+  console.log(`[Notifier] showNotification triggered for: ${item.title}`)
   if (!settings.enabled) {
     console.warn('[Notifier] Notification suppressed: notifications are disabled')
     return
@@ -167,17 +222,7 @@ export function showNotification(item: NotificationHistoryItem): void {
   if (displayStack.length > HARD_CAP) displayStack.splice(0, displayStack.length - HARD_CAP)
 
   if (Date.now() - lastSoundTime > 60_000) {
-    if (settings.soundFile) {
-      // Play custom sound file via the notifier renderer
-      const win = ensureWindow()
-      const filePath = settings.soundFile.replace(/\\/g, '/')
-      const encoded = encodeURI(`file:///${filePath}`)
-      win.webContents.executeJavaScript(
-        `(function(){ var a = new Audio('${encoded}'); a.volume = 0.7; a.play().catch(()=>{}); })()`
-      ).catch(() => {})
-    } else {
-      shell.beep()
-    }
+    playNotificationSound(settings)
     lastSoundTime = Date.now()
   }
 
@@ -272,6 +317,9 @@ export function registerNotifierIpc(): void {
 
       // Push with effective (possibly unsaved) settings
       pushToWindow(effectiveSettings)
+      
+      // Play sound for preview (bypass cooldown)
+      playNotificationSound(effectiveSettings)
     } catch (err) {
       console.error('[Notifier] Preview error:', err)
     }

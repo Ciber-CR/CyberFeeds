@@ -1,7 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
-import { initDb, getSettings, getWindowState, saveWindowState, backfillFavicons } from './db'
+import { initDb, getSettings, getWindowState, saveWindowState, backfillFavicons, cleanupOldArticles } from './db'
 import { startPolling, setOnNewArticles } from './polling'
 import { registerIpc } from './ipc'
 import { initNotifier, registerNotifierIpc, showNotification } from './notifications'
@@ -96,7 +96,6 @@ app.whenReady().then(() => {
   backfillFavicons()  // Assign Google S2 favicon URLs to any feeds missing icons
   const settings = getSettings()
 
-  // Register IPC
   registerIpc()
   registerNotifierIpc()
   initNotifier(settings.notifications)
@@ -127,10 +126,11 @@ app.whenReady().then(() => {
 
   // Auto cleanup on startup
   if (settings.autoCleanup && settings.cleanupReadDays > 0) {
-    db.cleanupOldArticles(settings.cleanupReadDays)
+    cleanupOldArticles(settings.cleanupReadDays)
   }
 
   // Start polling
+  console.log(`[Main] Startup: Polling interval is ${settings.pollingInterval} minutes`)
   startPolling(settings.pollingInterval)
 
   // Auto-start
