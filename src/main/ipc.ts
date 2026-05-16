@@ -232,6 +232,36 @@ export function registerIpc(): void {
     return { ok: true }
   })
 
+  ipcMain.handle('feeds:fetchFolder', async (_, folderId: string) => {
+    const feeds = db.getFeeds().filter(f => f.folderId === folderId)
+    if (feeds.length > 0) {
+      await polling.pollFeeds(feeds)
+    }
+    return { ok: true }
+  })
+
+  ipcMain.handle('feeds:togglePause', (_, id: string) => {
+    const feed = db.getFeedById(id)
+    if (feed) {
+      const disabled = !feed.disabled
+      db.updateFeed({ id, disabled })
+      return { ok: true, disabled }
+    }
+    return { error: 'Feed not found' }
+  })
+
+  ipcMain.handle('feeds:togglePauseFolder', (_, folderId: string) => {
+    const feeds = db.getFeeds().filter(f => f.folderId === folderId)
+    if (feeds.length === 0) return { ok: true }
+    
+    // Toggle based on the first feed's state
+    const targetState = !feeds[0].disabled
+    for (const f of feeds) {
+      db.updateFeed({ id: f.id, disabled: targetState })
+    }
+    return { ok: true, disabled: targetState }
+  })
+
   // ─── Folders ─────────────────────────────────────────────────────────────
 
   ipcMain.handle('folders:getAll', () => db.getFolders())
@@ -241,6 +271,13 @@ export function registerIpc(): void {
     const folder: Folder = { id: uuid(), name, sortOrder: folders.length }
     db.addFolder(folder)
     return folder
+  })
+
+  ipcMain.handle('settings:togglePolling', () => {
+    const settings = db.getSettings()
+    const pollingEnabled = !settings.pollingEnabled
+    db.saveSettings({ ...settings, pollingEnabled })
+    return { ok: true, pollingEnabled }
   })
 
   ipcMain.handle('folders:update', (_, id: string, name: string) => {

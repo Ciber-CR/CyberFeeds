@@ -176,10 +176,11 @@ export default function NotifierApp(): JSX.Element {
               <button className="notif-btn" onClick={() => handleDismiss(item.id)}>Dismiss</button>
               <button className="notif-btn" onClick={() => { window.api.markNotificationRead(item.articleId || ''); handleDismiss(item.id) }}>Mark Read</button>
               <button className="notif-btn" onClick={() => { window.api.snoozeNotifications(15) }} title="Snooze 15m">Snooze 15m</button>
+              <button className="notif-btn" onClick={() => { window.api.snoozeNotifications(60) }} title="Snooze 1h">Snooze 1h</button>
               {item.link && (
-                <button className="notif-btn" onClick={() => handleOpen(item)} title="Open in browser">
+                <button className="notif-btn" onClick={() => handleOpen(item)} title="Open in app">
                   <ExternalLink size={10} style={{ display: 'inline', marginRight: 2 }} />
-                  Open
+                  View
                 </button>
               )}
             </div>

@@ -7,11 +7,16 @@ import RssParser from 'rss-parser'
 import crypto from 'crypto'
 import { XMLParser } from 'fast-xml-parser'
 
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 CyberFeeds/2.0'
+
 async function fetchWithTimeout(url: string, timeoutMs = 30000): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    return await fetch(url, { signal: controller.signal })
+    return await fetch(url, { 
+      signal: controller.signal,
+      headers: { 'User-Agent': USER_AGENT }
+    })
   } finally {
     clearTimeout(timer)
   }
@@ -45,7 +50,7 @@ interface FeedResult {
 const parser = new RssParser({
   timeout: 10000,
   headers: {
-    'User-Agent': 'CyberFeeds/2.0 RSS Reader',
+    'User-Agent': USER_AGENT,
     Accept: 'application/rss+xml, application/xml, text/xml, */*'
   }
 })
@@ -176,7 +181,7 @@ function toRedditJsonUrl(url: string): string | null {
 async function fetchRedditJson(feedId: string, jsonUrl: string): Promise<FeedResult> {
   const lastFetched = Date.now()
   const resp = await fetch(jsonUrl, {
-    headers: { 'User-Agent': 'CyberFeeds/2.0' }
+    headers: { 'User-Agent': USER_AGENT }
   })
   if (!resp.ok) throw new Error(`Reddit JSON API returned ${resp.status}`)
 

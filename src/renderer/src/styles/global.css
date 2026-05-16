@@ -175,6 +175,7 @@ body {
 .cyber-badge { font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(189, 147, 249, 0.4); text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 0 8px rgba(189, 147, 249, 0.2); filter: brightness(1.2); }
 .cyber-badge::before { content: '['; opacity: 0.8; }
 .cyber-badge::after { content: ']'; opacity: 0.8; }
+.cyber-badge.no-brackets::before, .cyber-badge.no-brackets::after { content: none !important; }
 .folder-header { display: flex; align-items: center; gap: 8px; padding: 10px 8px 6px; cursor: pointer; color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.1s; }
 .folder-header:hover { color: var(--accent); }
 .add-feed-btn { width: 100%; display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 13px; cursor: pointer; transition: all 0.15s; margin: 4px 0; }

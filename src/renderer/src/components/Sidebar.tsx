@@ -6,7 +6,7 @@ import { FeedFavicon } from './ArticleList'
 import type { Feed, Folder } from '../types'
 
 const Sidebar = memo(function Sidebar(): JSX.Element {
-  const { feeds, folders, unreadCounts, loadAll, deleteFeed, fetchFeed, addFolder, deleteFolder } = useFeedsStore()
+  const { feeds, folders, unreadCounts, loadAll, deleteFeed, fetchFeed, fetchFolder, togglePauseFeed, togglePauseFolder, addFolder, deleteFolder } = useFeedsStore()
   const { selectedFeedId, selectFeed, openPanel } = useUIStore()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
@@ -234,6 +234,12 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               }}>
                 Edit Feed
               </div>
+              <div className="ctx-item" onClick={() => {
+                togglePauseFeed(ctx.id)
+                setCtx(null)
+              }}>
+                {feeds.find(f => f.id === ctx.id)?.disabled ? 'Resume Feed' : 'Pause Feed'}
+              </div>
               <div className="ctx-divider" />
               <div className="ctx-item danger" onClick={async () => {
                 const feed = feeds.find(f => f.id === ctx.id)
@@ -247,6 +253,19 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
             </>
           ) : (
             <>
+              <div className="ctx-item" onClick={() => {
+                fetchFolder(ctx.id)
+                setCtx(null)
+              }}>
+                Refresh Folder
+              </div>
+              <div className="ctx-item" onClick={() => {
+                togglePauseFolder(ctx.id)
+                setCtx(null)
+              }}>
+                {feeds.filter(f => f.folderId === ctx.id)[0]?.disabled ? 'Resume Folder' : 'Pause Folder'}
+              </div>
+              <div className="ctx-divider" />
               <div className="ctx-item danger" onClick={async () => {
                 const folder = folders.find(f => f.id === ctx.id)
                 if (folder && confirm(`Are you sure you want to delete folder "${folder.name}"? Feeds inside will be unfiled.`)) {
@@ -324,17 +343,22 @@ interface FeedItemProps {
 const FeedItem = memo(function FeedItem({ feed, selected, onSelect, onContextMenu, unread, indent }: FeedItemProps) {
   return (
     <div
-      className={`sidebar-item ${selected ? 'active' : ''}`}
+      className={`sidebar-item ${selected ? 'active' : ''} ${feed.disabled ? 'paused' : ''}`}
       style={indent ? { paddingLeft: 24 } : undefined}
       onClick={() => onSelect(feed.id)}
       onContextMenu={e => onContextMenu?.(e, feed.id)}
-      title={feed.title}
+      title={feed.title + (feed.disabled ? ' (Paused)' : '')}
     >
       {/* Favicon BEFORE title, with colored letter fallback */}
-      <FeedFavicon icon={feed.icon} title={feed.title} size={15} />
-      <span className="item-label">{feed.title}</span>
+      <div style={{ opacity: feed.disabled ? 0.5 : 1 }}>
+        <FeedFavicon icon={feed.icon} title={feed.title} size={15} />
+      </div>
+      <span className="item-label" style={{ 
+        fontStyle: feed.disabled ? 'italic' : 'normal',
+        opacity: feed.disabled ? 0.6 : 1
+      }}>{feed.title}</span>
       {unread > 0 && (
-        <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
+        <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px', opacity: feed.disabled ? 0.5 : 1 }}>
           {unread}
         </div>
       )}

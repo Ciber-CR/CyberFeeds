@@ -17,7 +17,10 @@ interface FeedsState {
   reorderFolders: (ids: string[]) => Promise<void>
   refreshUnreadCounts: () => Promise<void>
   fetchFeed: (id: string) => Promise<void>
+  fetchFolder: (id: string) => Promise<void>
   fetchAll: () => Promise<void>
+  togglePauseFeed: (id: string) => Promise<void>
+  togglePauseFolder: (id: string) => Promise<void>
 }
 
 export const useFeedsStore = create<FeedsState>((set, get) => ({
@@ -93,8 +96,25 @@ export const useFeedsStore = create<FeedsState>((set, get) => ({
     get().refreshUnreadCounts()
   },
 
+  fetchFolder: async (id) => {
+    await window.api.fetchFolder(id)
+    get().refreshUnreadCounts()
+  },
+
   fetchAll: async () => {
     await window.api.fetchAllFeeds()
     get().refreshUnreadCounts()
+  },
+
+  togglePauseFeed: async (id) => {
+    await window.api.togglePauseFeed(id)
+    const feeds = await window.api.getFeeds()
+    set({ feeds })
+  },
+
+  togglePauseFolder: async (id) => {
+    await window.api.togglePauseFolder(id)
+    const feeds = await window.api.getFeeds()
+    set({ feeds })
   }
 }))

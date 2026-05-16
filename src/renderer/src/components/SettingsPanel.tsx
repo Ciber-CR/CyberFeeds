@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Settings, Monitor } from 'lucide-react'
+import { X, Settings, Monitor, Bell, Zap } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
 import type { AppSettings } from '../types'
@@ -17,7 +17,7 @@ export default function SettingsPanel(): JSX.Element {
   const [local, setLocal] = useState<AppSettings>({ ...settings })
   const [importing, setImporting] = useState(false)
   const [displays, setDisplays] = useState<DisplayInfo[]>([])
-
+  const [testing, setTesting] = useState(false)
   // Load available displays
   useEffect(() => {
     window.api.getDisplays().then((raw: any[]) => {
@@ -307,11 +307,27 @@ export default function SettingsPanel(): JSX.Element {
           </div>
 
           <button
-            className="btn btn-secondary"
-            style={{ fontSize: 12 }}
-            onClick={() => window.api.previewNotification(local.notifications)}
+            className={`btn ${testing ? 'btn-accent' : 'btn-secondary'}`}
+            style={{ 
+              fontSize: 12, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 6, 
+              transition: 'all 0.2s',
+              minWidth: 160,
+              color: testing ? '#0d1117' : 'inherit',
+              fontWeight: testing ? 700 : 400,
+              pointerEvents: testing ? 'none' : 'auto',
+              opacity: 1 // Override any inherited disabled opacity
+            }}
+            onClick={async () => {
+              setTesting(true)
+              await window.api.previewNotification(local.notifications)
+              setTimeout(() => setTesting(false), 2000)
+            }}
           >
-            Preview Notification
+            {testing ? <Zap size={14} style={{ animation: 'pulse 1s infinite' }} /> : <Bell size={14} />}
+            {testing ? 'Sending...' : 'Preview Notification'}
           </button>
         </div>
 
