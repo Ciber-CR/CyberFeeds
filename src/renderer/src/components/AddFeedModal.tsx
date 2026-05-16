@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, Globe } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
@@ -11,6 +11,9 @@ export default function AddFeedModal(): JSX.Element {
   const [preview, setPreview] = useState<any>(null)
   const [error, setError] = useState('')
   const customTitleRef = React.useRef<HTMLInputElement>(null)
+  const urlRef = React.useRef<HTMLInputElement>(null)
+
+  useEffect(() => { urlRef.current?.focus() }, [])
   const { folders, addFeed } = useFeedsStore()
   const { closePanel } = useUIStore()
 
@@ -49,13 +52,13 @@ export default function AddFeedModal(): JSX.Element {
             <label className="form-label">Feed URL</label>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
+                ref={urlRef}
                 className="form-input"
                 style={{ flex: 1 }}
                 placeholder="https://example.com/feed.xml"
                 value={url}
                 onChange={e => { setUrl(e.target.value); setPreview(null); setError('') }}
                 onKeyDown={e => e.key === 'Enter' && handlePreview()}
-                autoFocus
               />
               <button className="btn btn-secondary" onClick={handlePreview} disabled={previewing || !url} style={{ flexShrink: 0 }}>
                 {previewing ? <div className="spinner" style={{ width: 13, height: 13 }} /> : 'Preview'}

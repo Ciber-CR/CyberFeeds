@@ -7,6 +7,16 @@ import RssParser from 'rss-parser'
 import crypto from 'crypto'
 import { XMLParser } from 'fast-xml-parser'
 
+async function fetchWithTimeout(url: string, timeoutMs = 30000): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, { signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 interface WorkerMessage {
   feeds: Array<{ id: string; url: string }>
   concurrency?: number
@@ -226,14 +236,14 @@ async function fetchFeed(feedId: string, url: string): Promise<FeedResult> {
       feed = await parser.parseURL(url)
     } catch (err) {
       console.error(`[Worker] Standard RSS parsing failed for ${url}, trying robust fallback...`, err)
-      const resp = await fetch(url)
+      const resp = await fetchWithTimeout(url)
       let text = await resp.text()
 
       if (text.trim().toLowerCase().startsWith('<!doctype html') || text.trim().toLowerCase().startsWith('<html')) {
         const lowerUrl = url.toLowerCase()
         if (lowerUrl.endsWith('/rss') || lowerUrl.endsWith('/rss/')) {
           const guessUrl = lowerUrl.endsWith('/') ? `${url}feed` : `${url}/feed`
-          const guessResp = await fetch(guessUrl)
+          const guessResp = await fetchWithTimeout(guessUrl)
           if (guessResp.ok) {
             text = await guessResp.text()
           }

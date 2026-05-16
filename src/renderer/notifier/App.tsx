@@ -104,15 +104,15 @@ export default function NotifierApp(): JSX.Element {
       onMouseLeave={handleMouseLeave}
       style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'rgba(0,0,0,0.01)' }}
     >
-      {/* Clear All — fixed at top, always accessible */}
-      {state.stack.length > 1 && (
+      {/* Clear — fixed at top, always accessible */}
+      {state.stack.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px 4px', flexShrink: 0 }}>
           <button
             className="clear-all-btn"
             onClick={(e) => { e.stopPropagation(); window.api.clearAllNotifications() }}
             title="Dismiss all notifications"
           >
-            ✕ Clear All
+            ✕ {state.stack.length > 1 ? 'Clear All' : 'Clear'}
           </button>
         </div>
       )}
