@@ -98,10 +98,6 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
   return (
     <div className="article-viewer">
       <div className="viewer-toolbar">
-        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => window.api.openExternal(article.link)} title="Open in Browser">
-          <ExternalLink size={13} />
-          Open in Browser
-        </button>
         <button
           className="btn btn-ghost btn-icon"
           onClick={() => starArticle(article.id, !article.starred)}
@@ -110,8 +106,8 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
           <Star size={15} fill={article.starred ? 'var(--star)' : 'none'} color={article.starred ? 'var(--star)' : undefined} />
         </button>
         <div style={{ width: 1, height: 16, background: 'var(--border-muted)', margin: '0 4px' }} />
-        <button 
-          className="btn btn-ghost btn-icon" 
+        <button
+          className="btn btn-ghost btn-icon"
           onClick={() => update({ readingFontSize: Math.max(12, (settings.readingFontSize || 15) - 1) })}
           title="Decrease Font Size"
         >
@@ -124,6 +120,7 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
         >
           <span style={{ fontSize: 13, fontWeight: 700 }}>A+</span>
         </button>
+        <div style={{ width: 1, height: 16, background: 'var(--border-muted)', margin: '0 4px' }} />
         <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={handleSummary} title="Quick Summary">
           <FileText size={13} />
           Summary
@@ -137,6 +134,10 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
         >
           {loading ? <div className="spinner" style={{ width: 13, height: 13 }} /> : <BookOpen size={13} />}
           {fullHtml ? 'Reload' : 'Full Article'}
+        </button>
+        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => window.api.openExternal(article.link)} title="Open in Browser">
+          <ExternalLink size={13} />
+          Open in Browser
         </button>
         {needsFullFetch && !loading && (
           <button className="btn btn-ghost btn-icon" onClick={fetchFullContent} title="Auto-fetch full content">
