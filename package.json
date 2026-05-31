@@ -1,10 +1,10 @@
 {
-  "name": "cybersfeeds",
-  "productName": "CyberFeeds",
-  "version": "2.0.0",
-  "description": "CyberFeeds — Performance-first RSS Reader",
+  "name": "cybergems",
+  "productName": "CyberGems",
+  "version": "1.5.0",
+  "description": "CyberGems — Performance-first, full featured RSS Reader",
   "main": "./out/main/index.js",
-  "author": "CyberFeeds",
+  "author": "CyberGems",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
