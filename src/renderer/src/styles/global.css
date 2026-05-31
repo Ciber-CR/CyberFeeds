@@ -176,8 +176,33 @@ body {
 .cyber-badge::before { content: '['; opacity: 0.8; }
 .cyber-badge::after { content: ']'; opacity: 0.8; }
 .cyber-badge.no-brackets::before, .cyber-badge.no-brackets::after { content: none !important; }
-.folder-header { display: flex; align-items: center; gap: 8px; padding: 10px 8px 6px; cursor: pointer; color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.1s; }
+.cyber-badge.folder-badge {
+  font-size: 11px;
+  padding: 3px 9px;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(189, 147, 249, 0.3);
+  filter: brightness(1.25);
+}
+.folder-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: all 0.15s;
+}
 .folder-header:hover { color: var(--accent); }
+.folder-header .folder-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .add-feed-btn { width: 100%; display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 13px; cursor: pointer; transition: all 0.15s; margin: 4px 0; }
 .add-feed-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
 
@@ -299,12 +324,231 @@ body {
 
 /* ─── Misc ──────────────────────────────────────────────────────────────── */
 .divider { height: 1px; background: var(--border-muted); margin: 8px 0; }
+.folder-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent) 20%, var(--accent) 80%, transparent);
+  margin: 12px 8px;
+  opacity: 0.3;
+  position: relative;
+}
 .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: var(--bg-2); color: var(--text-secondary); padding: 2px 7px; border-radius: 10px; }
 .error-text { color: var(--red); font-size: 12px; }
 .text-muted { color: var(--text-muted); }
 .text-sm { font-size: 12px; }
+
+/* ─── Confirm Dialog ────────────────────────────────────────────────────── */
+.confirm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.confirm-dialog {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 480px;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.confirm-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.confirm-dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.confirm-dialog-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.confirm-dialog-close:hover {
+  background: var(--bg-2);
+  color: var(--text-primary);
+}
+
+.confirm-dialog-body {
+  padding: 20px;
+}
+
+.confirm-dialog-message {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.confirm-dialog-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.confirm-dialog-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.confirm-dialog-btn-secondary {
+  background: var(--bg-2);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.confirm-dialog-btn-secondary:hover {
+  background: var(--bg-3);
+  border-color: var(--accent);
+}
+
+.confirm-dialog-btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.confirm-dialog-btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.4);
+}
+
+.confirm-dialog-btn-warning {
+  background: var(--orange);
+  color: #ffffff;
+  border-color: var(--orange);
+}
+
+.confirm-dialog-btn-warning:hover {
+  background: #e5a82e;
+  border-color: #e5a82e;
+  box-shadow: 0 0 12px rgba(210, 153, 34, 0.4);
+}
+
+.confirm-dialog-btn-danger {
+  background: var(--red);
+  color: #ffffff;
+  border-color: var(--red);
+}
+
+.confirm-dialog-btn-danger:hover {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+  box-shadow: 0 0 12px rgba(248, 81, 73, 0.4);
+}
+
+.alert-dialog-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.alert-dialog-btn-success {
+  background: var(--green);
+  color: #ffffff;
+  border-color: var(--green);
+}
+
+.alert-dialog-btn-success:hover {
+  background: #4aca61;
+  border-color: #4aca61;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.4);
+}
+
+.alert-dialog-btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.alert-dialog-btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.4);
+}
+
+.alert-dialog-btn-warning {
+  background: var(--orange);
+  color: #ffffff;
+  border-color: var(--orange);
+}
+
+.alert-dialog-btn-warning:hover {
+  background: #e5a82e;
+  border-color: #e5a82e;
+  box-shadow: 0 0 12px rgba(210, 153, 34, 0.4);
+}
+
+.alert-dialog-btn-danger {
+  background: var(--red);
+  color: #ffffff;
+  border-color: var(--red);
+}
+
+.alert-dialog-btn-danger:hover {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+  box-shadow: 0 0 12px rgba(248, 81, 73, 0.4);
+}
 
 /* ─── Notifier Window ───────────────────────────────────────────────────── */
 .notifier-root { position: relative; padding: 8px; display: flex; flex-direction: column; gap: 0; height: 100%; overflow: hidden; }

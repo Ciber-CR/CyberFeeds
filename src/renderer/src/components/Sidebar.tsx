@@ -3,6 +3,8 @@ import { FolderOpen, FolderPlus, ChevronRight, ChevronDown, ChevronUp, ChevronsU
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
 import { FeedFavicon } from './ArticleList'
+import { useConfirm } from '../hooks/useConfirm'
+import ConfirmDialog from './ConfirmDialog'
 import type { Feed, Folder } from '../types'
 
 const Sidebar = memo(function Sidebar(): JSX.Element {
@@ -12,6 +14,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
   const [ctx, setCtx] = React.useState<{ x: number, y: number, type: 'feed' | 'folder', id: string } | null>(null)
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
 
   React.useEffect(() => {
     const handleUp = () => setCtx(null)
@@ -111,21 +114,23 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
         <div className="divider" />
 
         {/* Folders */}
-        {sortedFolders.map(folder => (
-          <FolderSection
-            key={folder.id}
-            folder={folder}
-            feeds={sortedFeeds.filter(f => f.folderId === folder.id)}
-            collapsed={collapsed.has(folder.id)}
-            onToggle={toggleFolder}
-            selectedFeedId={selectedFeedId}
-            onSelect={selectFeed}
-            unreadCounts={unreadCounts}
-            onContextMenu={(e, type, id) => {
-              e.preventDefault()
-              setCtx({ x: e.clientX, y: e.clientY, type, id })
-            }}
-          />
+        {sortedFolders.map((folder, index) => (
+          <React.Fragment key={folder.id}>
+            <FolderSection
+              folder={folder}
+              feeds={sortedFeeds.filter(f => f.folderId === folder.id)}
+              collapsed={collapsed.has(folder.id)}
+              onToggle={toggleFolder}
+              selectedFeedId={selectedFeedId}
+              onSelect={selectFeed}
+              unreadCounts={unreadCounts}
+              onContextMenu={(e, type, id) => {
+                e.preventDefault()
+                setCtx({ x: e.clientX, y: e.clientY, type, id })
+              }}
+            />
+            {index < sortedFolders.length - 1 && <div className="folder-divider" />}
+          </React.Fragment>
         ))}
 
         {/* Unfiled */}
@@ -243,8 +248,17 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               <div className="ctx-divider" />
               <div className="ctx-item danger" onClick={async () => {
                 const feed = feeds.find(f => f.id === ctx.id)
-                if (feed && confirm(`Are you sure you want to delete "${feed.title}"?`)) {
-                  await deleteFeed(ctx.id)
+                if (feed) {
+                  const confirmed = await confirm({
+                    title: 'Delete Feed',
+                    message: `Are you sure you want to delete "${feed.title}"? This action cannot be undone.`,
+                    confirmText: 'Delete',
+                    cancelText: 'Cancel',
+                    variant: 'danger'
+                  })
+                  if (confirmed) {
+                    await deleteFeed(ctx.id)
+                  }
                 }
                 setCtx(null)
               }}>
@@ -268,8 +282,17 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               <div className="ctx-divider" />
               <div className="ctx-item danger" onClick={async () => {
                 const folder = folders.find(f => f.id === ctx.id)
-                if (folder && confirm(`Are you sure you want to delete folder "${folder.name}"? Feeds inside will be unfiled.`)) {
-                  await deleteFolder(ctx.id)
+                if (folder) {
+                  const confirmed = await confirm({
+                    title: 'Delete Folder',
+                    message: `Are you sure you want to delete folder "${folder.name}"? Feeds inside will be unfiled.`,
+                    confirmText: 'Delete',
+                    cancelText: 'Cancel',
+                    variant: 'danger'
+                  })
+                  if (confirmed) {
+                    await deleteFolder(ctx.id)
+                  }
                 }
                 setCtx(null)
               }}>
@@ -279,6 +302,17 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </div>
   )
 })
@@ -305,13 +339,12 @@ const FolderSection = memo(function FolderSection({
         onClick={() => onToggle(folder.id)}
         onContextMenu={(e) => onContextMenu(e, 'folder', folder.id)}
       >
-        {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
-        <FolderOpen size={13} />
-        <span style={{ flex: 1, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+        <span className="folder-name">
           {folder.name}
         </span>
         {folderUnread > 0 && (
-          <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
+          <div className="cyber-badge folder-badge">
             {folderUnread}
           </div>
         )}
