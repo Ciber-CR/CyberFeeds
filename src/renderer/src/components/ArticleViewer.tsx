@@ -117,14 +117,13 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
         >
           <span style={{ fontSize: 11, fontWeight: 700 }}>A-</span>
         </button>
-        <button 
-          className="btn btn-ghost btn-icon" 
+        <button
+          className="btn btn-ghost btn-icon"
           onClick={() => update({ readingFontSize: Math.min(24, (settings.readingFontSize || 15) + 1) })}
           title="Increase Font Size"
         >
           <span style={{ fontSize: 13, fontWeight: 700 }}>A+</span>
         </button>
-        <div style={{ flex: 1 }} />
         <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={handleSummary} title="Quick Summary">
           <FileText size={13} />
           Summary
