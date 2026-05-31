@@ -148,13 +148,17 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<void> {
     // 2. Send stack to renderer
     win.webContents.send('notifier:stack', displayStack, s)
 
-    // 3. Show
+    // 3. Re-apply alwaysOnTop to ensure window stays in foreground
+    //    (Windows can demote z-order after repeated hide/show cycles)
+    win.setAlwaysOnTop(true, 'screen-saver')
+
+    // 4. Show
     if (!win.isVisible()) {
       console.log('[Notifier] Showing window (showInactive)')
       win.showInactive()
     }
 
-    // 4. Auto-hide
+    // 5. Auto-hide
     if (hideTimer) clearTimeout(hideTimer)
     if (!isHovering) {
       hideTimer = setTimeout(() => {
