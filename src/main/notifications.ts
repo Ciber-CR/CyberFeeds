@@ -329,10 +329,10 @@ export function registerNotifierIpc(): void {
 
       const previewItem: NotificationHistoryItem = {
         id: 'preview-' + Date.now(),
-        title: 'CyberFeeds — Notification Preview',
+        title: 'CyberGems — Notification Preview',
         body: 'Your notifications will appear like this.',
         link: '',
-        feedName: 'CyberFeeds',
+        feedName: 'CyberGems',
         createdAt: Date.now()
       }
 

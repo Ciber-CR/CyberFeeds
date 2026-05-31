@@ -48,10 +48,10 @@ export default function AboutModal(): JSX.Element {
           </div>
 
           <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Cyber<span style={{ color: 'var(--accent)' }}>Feeds</span>
+            Cyber<span style={{ color: 'var(--accent)' }}>Gems</span>
           </h1>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>
-            Version 2.0.0 "Obsidian"
+            Version 1.5.0
           </div>
 
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 32 }}>
@@ -105,12 +105,12 @@ export default function AboutModal(): JSX.Element {
           background: 'rgba(0,0,0,0.1)'
         }}>
           <div style={{ fontWeight: 600, letterSpacing: '0.05em' }}>
-            Carlos@CiberCR • 2026
+            © CyberGems • 2026
           </div>
           <button 
             className="btn btn-ghost btn-icon" 
             style={{ width: 24, height: 24, color: 'inherit' }}
-            onClick={() => window.api.openExternal('https://github.com/Ciber-CR/CyberFeeds')}
+            onClick={() => window.api.openExternal('https://github.com/Cybergems/CyberGems')}
             title="GitHub Repository"
           >
             <Github size={14} />
