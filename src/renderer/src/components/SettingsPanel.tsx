@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Settings, Monitor, Bell, Zap } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
@@ -11,7 +11,7 @@ import type { AppSettings } from '../types'
 interface DisplayInfo {
   id: number
   label: string
-  bounds: { width: number; height: number }
+  bounds: { x: number; y: number; width: number; height: number }
   isPrimary?: boolean
 }
 

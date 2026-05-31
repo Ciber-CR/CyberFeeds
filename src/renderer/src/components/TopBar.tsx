@@ -1,13 +1,11 @@
-import React, { memo } from 'react'
+import { memo } from 'react'
 import { Rss, Inbox, Bell, Settings, RefreshCw, Minus, Maximize2, X, LayoutTemplate, Info } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useFeedsStore } from '../store/feeds.store'
-import { useSettingsStore } from '../store/settings.store'
 
 const TopBar = memo(function TopBar(): JSX.Element {
   const { openPanel, setLayout, layout, isFetching } = useUIStore()
   const { fetchAll } = useFeedsStore()
-  const { settings } = useSettingsStore()
 
   const handleFetchAll = async (): Promise<void> => {
     useUIStore.setState({ isFetching: true })

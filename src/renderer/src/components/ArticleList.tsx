@@ -64,10 +64,10 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const { articles, totalCount, loading, loadingMore, loadMore, deleteArticle, removeArticleFromList, markRead } = useArticlesStore()
   const { selectedArticleId, selectedFeedId, unreadOnly, search, selectArticle, setUnreadOnly, setSearch } = useUIStore()
   const [ctx, setCtx] = React.useState<{ x: number, y: number, id: string } | null>(null)
-  const { feeds, folders, unreadCounts } = useFeedsStore()
+  const { feeds, unreadCounts } = useFeedsStore()
   const { settings, togglePolling } = useSettingsStore()
   const parentRef = useRef<HTMLDivElement>(null)
-  const searchRef = useRef<ReturnType<typeof setTimeout>>()
+  const searchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const prevSelectedId = useRef<string | null>(null)
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
 

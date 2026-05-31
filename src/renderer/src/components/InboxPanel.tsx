@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X, Inbox } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import type { Article } from '../types'

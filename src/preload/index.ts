@@ -68,17 +68,17 @@ const api = {
   onArticlesUpdated: (cb: (data: { feedId: string; count: number }) => void) => {
     const handler = (_: unknown, data: { feedId: string; count: number }) => cb(data)
     ipcRenderer.on('articles:updated', handler)
-    return () => ipcRenderer.removeListener('articles:updated', handler)
+    return () => { ipcRenderer.removeListener('articles:updated', handler) }
   },
   onOpenArticle: (cb: (feedId: string, articleId: string) => void) => {
     const handler = (_: unknown, data: { feedId: string; articleId: string }) => cb(data.feedId, data.articleId)
     ipcRenderer.on('app:openArticle', handler)
-    return () => ipcRenderer.removeListener('app:openArticle', handler)
+    return () => { ipcRenderer.removeListener('app:openArticle', handler) }
   },
   onOpenSettings: (cb: () => void) => {
     const handler = (): void => cb()
     ipcRenderer.on('app:openSettings', handler)
-    return () => ipcRenderer.removeListener('app:openSettings', handler)
+    return () => { ipcRenderer.removeListener('app:openSettings', handler) }
   },
 
   // Notifier specific
@@ -92,7 +92,7 @@ const api = {
   onNotifierStack: (cb: (stack: object[], settings: object) => void) => {
     const handler = (_: unknown, stack: object[], settings: object) => cb(stack, settings)
     ipcRenderer.on('notifier:stack', handler)
-    return () => ipcRenderer.removeListener('notifier:stack', handler)
+    return () => { ipcRenderer.removeListener('notifier:stack', handler) }
   },
 
   // Window controls (for custom titlebar)

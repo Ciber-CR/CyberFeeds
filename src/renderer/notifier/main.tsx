@@ -5,7 +5,7 @@ import '../src/styles/global.css'
 
 declare global {
   interface Window {
-    api: import('../../../preload/index').API
+    api: import('../../preload/index').API
   }
 }
 

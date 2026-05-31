@@ -44,7 +44,6 @@ export function importOpml(filePath: string): OpmlImportResult {
 }
 
 export function exportOpml(feeds: Feed[], folders: Folder[]): string {
-  const folderMap = new Map(folders.map(f => [f.id, f.name]))
   const grouped = new Map<string, Feed[]>()
 
   for (const feed of feeds) {

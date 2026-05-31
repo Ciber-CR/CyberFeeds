@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { X, Activity, ShieldAlert, CheckCircle2, RefreshCw, Trash2, AlertTriangle, Stethoscope } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useFeedsStore } from '../store/feeds.store'

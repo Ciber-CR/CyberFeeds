@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useRef, useState, useCallback } from 'react'
+import { useEffect, useReducer, useRef, useState, useCallback } from 'react'
 import { X, ExternalLink, ChevronDown } from 'lucide-react'
 import type { NotificationHistoryItem, NotificationSettings } from '@shared/types'
 

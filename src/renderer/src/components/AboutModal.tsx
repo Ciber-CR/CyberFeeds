@@ -1,4 +1,3 @@
-import React from 'react'
 import { X, Cpu, Code2, Database, Zap, Rss, Github, Folder } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 

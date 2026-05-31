@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Edit2 } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
@@ -28,7 +28,7 @@ export default function EditFeedModal(): JSX.Element | null {
   const handleSave = async (): Promise<void> => {
     if (!title.trim() || !url.trim()) return
     setLoading(true)
-    await updateFeed(feed.id, { title: title.trim(), url: url.trim(), folderId: folderId || null })
+    await updateFeed(feed.id, { title: title.trim(), url: url.trim(), folderId: folderId || '' })
     setLoading(false)
     closePanel()
   }

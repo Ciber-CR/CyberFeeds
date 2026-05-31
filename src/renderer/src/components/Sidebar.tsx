@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback } from 'react'
-import { FolderOpen, FolderPlus, ChevronRight, ChevronDown, ChevronUp, ChevronsUpDown, ChevronsDownUp, Plus, Upload, Download, Stethoscope } from 'lucide-react'
+import { FolderPlus, ChevronRight, ChevronDown, ChevronsUpDown, ChevronsDownUp, Plus, Upload, Download, Stethoscope } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
 import { FeedFavicon } from './ArticleList'
@@ -8,7 +8,7 @@ import ConfirmDialog from './ConfirmDialog'
 import type { Feed, Folder } from '../types'
 
 const Sidebar = memo(function Sidebar(): JSX.Element {
-  const { feeds, folders, unreadCounts, loadAll, deleteFeed, fetchFeed, fetchFolder, togglePauseFeed, togglePauseFolder, addFolder, deleteFolder } = useFeedsStore()
+  const { feeds, folders, unreadCounts, loadAll, deleteFeed, fetchFeed, fetchFolder, togglePauseFeed, togglePauseFolder, deleteFolder } = useFeedsStore()
   const { selectedFeedId, selectFeed, openPanel } = useUIStore()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)

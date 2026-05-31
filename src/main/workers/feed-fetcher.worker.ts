@@ -92,7 +92,6 @@ function extractThumbnail(item: any): string | undefined {
     const arr = Array.isArray(mediaContent) ? mediaContent : [mediaContent]
     for (const mc of arr) {
       const url = mc['@_url'] || mc.url
-      const type = (mc['@_type'] || mc.type || '').toLowerCase()
       if (url && isValidImage(url)) return url
     }
     // Fallback: take first URL even if type isn't image
