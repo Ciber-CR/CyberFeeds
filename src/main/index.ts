@@ -30,6 +30,7 @@ export function restoreMainWindow(): void {
 
 function createMainWindow(): BrowserWindow {
   const windowState = getWindowState()
+  const settings = getSettings()
 
   const win = new BrowserWindow({
     width: windowState.width,
@@ -52,7 +53,12 @@ function createMainWindow(): BrowserWindow {
     }
   })
 
-  if (windowState.maximized) win.maximize()
+  // Maximize on startup if setting is enabled, otherwise restore saved state
+  if (settings.startMaximized) {
+    win.maximize()
+  } else if (windowState.maximized) {
+    win.maximize()
+  }
 
   win.on('ready-to-show', () => win.show())
 
