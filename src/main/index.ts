@@ -3,7 +3,7 @@ import path from 'path'
 import { is } from '@electron-toolkit/utils'
 import { initDb, getSettings, getWindowState, saveWindowState, backfillFavicons, cleanupOldArticles } from './db'
 import { startPolling, setOnNewArticles } from './polling'
-import { registerIpc } from './ipc'
+import { registerIpc, setAutoStart } from './ipc'
 import { initNotifier, registerNotifierIpc, showNotification } from './notifications'
 import { createTray } from './tray'
 import type { NotificationHistoryItem } from './types'
@@ -30,7 +30,12 @@ export function restoreMainWindow(): void {
 
 function createMainWindow(): BrowserWindow {
   const windowState = getWindowState()
-  const settings = getSettings()
+
+  // Start hidden only when launched by Windows startup with "start minimized"
+  // enabled. The login item is registered with a `--hidden` arg in that case
+  // (see setAutoStart), so a manual launch never carries the flag and shows
+  // the window normally.
+  const startHidden = process.argv.includes('--hidden')
 
   const win = new BrowserWindow({
     width: windowState.width,
@@ -53,14 +58,14 @@ function createMainWindow(): BrowserWindow {
     }
   })
 
-  // Restore saved maximized state unless startMinimized is enabled
-  if (!settings.startMinimized && windowState.maximized) {
+  // Restore saved maximized state unless starting hidden in the tray
+  if (!startHidden && windowState.maximized) {
     win.maximize()
   }
 
-  // Show window or hide to tray based on startMinimized setting
+  // Show window or hide to tray depending on the Windows-startup launch
   win.on('ready-to-show', () => {
-    if (settings.startMinimized) {
+    if (startHidden) {
       // Don't show window, it will stay in tray
     } else {
       win.show()
@@ -145,7 +150,7 @@ app.whenReady().then(() => {
   startPolling(settings.pollingInterval)
 
   // Auto-start
-  app.setLoginItemSettings({ openAtLogin: settings.autoStart })
+  setAutoStart(settings.autoStart, settings.startMinimized)
 })
 
 app.on('before-quit', () => {

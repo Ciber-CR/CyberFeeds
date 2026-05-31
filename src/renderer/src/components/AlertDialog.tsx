@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { CheckCircle2, Info, AlertTriangle, XCircle, X } from 'lucide-react'
 
 interface AlertDialogProps {

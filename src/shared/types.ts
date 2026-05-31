@@ -62,9 +62,6 @@ export interface AppSettings {
   compactArticleList: boolean
   cleanupReadDays: number
   autoCleanup: boolean
-  autoCleanup: boolean
-  autoCleanup: boolean
-  autoCleanup: boolean
   readerFallback: boolean
   readingFontSize: number
   readingLineHeight: number

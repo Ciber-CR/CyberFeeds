@@ -7,12 +7,27 @@ import { app } from 'electron'
 import * as db from './db'
 import * as polling from './polling'
 import { importOpml, exportOpml } from './opml'
-import { showNotification, updateNotifierSettings } from './notifications'
+import { updateNotifierSettings } from './notifications'
 import type { Feed, Folder } from './types'
 import RssParser from 'rss-parser'
 import { XMLParser } from 'fast-xml-parser'
 
 const rssParser = new RssParser({ timeout: 10000 })
+
+/**
+ * Sync the Windows login item with the current settings. When the app is set
+ * to both start with Windows and start minimized, the login item is registered
+ * with a `--hidden` arg so the startup launch can be told apart from a manual
+ * one (which should always show the window).
+ */
+export function setAutoStart(autoStart: boolean, startMinimized: boolean): void {
+  try {
+    app.setLoginItemSettings({
+      openAtLogin: autoStart,
+      args: autoStart && startMinimized ? ['--hidden'] : []
+    })
+  } catch { /* ignore */ }
+}
 
 function uuid(): string { return crypto.randomUUID() }
 
@@ -357,10 +372,7 @@ export function registerIpc(): void {
     }
 
     // Auto-start
-    try {
-      const loginItemSettings = { openAtLogin: settings.autoStart }
-      app.setLoginItemSettings(loginItemSettings)
-    } catch { /* ignore */ }
+    setAutoStart(settings.autoStart, settings.startMinimized)
 
     return { ok: true }
   })

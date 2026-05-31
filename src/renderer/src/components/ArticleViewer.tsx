@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useCallback } from 'react'
+import { memo, useState, useEffect, useCallback } from 'react'
 import DOMPurify from 'dompurify'
 import { ExternalLink, RefreshCw, Star, BookOpen, FileText, Rss } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
