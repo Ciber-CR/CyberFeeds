@@ -94,7 +94,7 @@ export function exportOpml(feeds: Feed[], folders: Folder[]): string {
     '?xml': { '@_version': '1.0', '@_encoding': 'UTF-8' },
     opml: {
       '@_version': '2.0',
-      head: { title: 'CyberFeeds Subscriptions' },
+      head: { title: 'CyberGems Subscriptions' },
       body: { outline: outlines }
     }
   })
