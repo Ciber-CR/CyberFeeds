@@ -80,6 +80,7 @@ export interface NotificationSettings {
   enabled: boolean
   position: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
   displayId: number
+  displayBounds?: { x: number; y: number; width: number; height: number }  // For stable display matching
   marginX: number
   marginY: number
   maxWidth: number

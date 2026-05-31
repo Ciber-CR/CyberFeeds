@@ -39,12 +39,32 @@ function calcPosition(
   s: NotificationSettings
 ): { x: number; y: number } {
   const displays = screen.getAllDisplays()
-  const display = displays.find(d => d.id === s.displayId)
+  const primaryDisplay = screen.getPrimaryDisplay()
+
+  // Try to find display by ID first
+  let display = displays.find(d => d.id === s.displayId)
+
+  // If not found by ID, try to match by saved bounds (more stable across reboots)
+  if (!display && s.displayBounds) {
+    const saved = s.displayBounds
+    display = displays.find(d =>
+      d.bounds.x === saved.x &&
+      d.bounds.y === saved.y &&
+      d.bounds.width === saved.width &&
+      d.bounds.height === saved.height
+    )
+    if (display) {
+      console.log(`[Notifier] Display ${s.displayId} not found by ID, matched by bounds`)
+    }
+  }
+
+  // If still not found, fall back to primary
   if (!display) {
     console.warn(`[Notifier] Display ${s.displayId} not found, falling back to primary`)
+    display = primaryDisplay
   }
-  const resolved = display ?? screen.getPrimaryDisplay()
-  const { workArea: wa } = resolved
+
+  const { workArea: wa } = display
   const mx = Math.round(s.marginX)
   const my = Math.round(s.marginY)
 

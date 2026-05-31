@@ -224,7 +224,14 @@ export default function SettingsPanel(): JSX.Element {
               <select
                 className="form-select"
                 value={local.notifications.displayId}
-                onChange={e => updateNotif({ displayId: Number(e.target.value) })}
+                onChange={e => {
+                  const selectedId = Number(e.target.value)
+                  const selectedDisplay = displays.find(d => d.id === selectedId)
+                  updateNotif({
+                    displayId: selectedId,
+                    displayBounds: selectedDisplay?.bounds
+                  })
+                }}
               >
                 {displays.map(d => (
                   <option key={d.id} value={d.id}>
