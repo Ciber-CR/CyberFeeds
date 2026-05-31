@@ -53,14 +53,19 @@ function createMainWindow(): BrowserWindow {
     }
   })
 
-  // Maximize on startup if setting is enabled, otherwise restore saved state
-  if (settings.startMaximized) {
-    win.maximize()
-  } else if (windowState.maximized) {
+  // Restore saved maximized state unless startMinimized is enabled
+  if (!settings.startMinimized && windowState.maximized) {
     win.maximize()
   }
 
-  win.on('ready-to-show', () => win.show())
+  // Show window or hide to tray based on startMinimized setting
+  win.on('ready-to-show', () => {
+    if (settings.startMinimized) {
+      // Don't show window, it will stay in tray
+    } else {
+      win.show()
+    }
+  })
 
   // Open external links in browser
   win.webContents.setWindowOpenHandler(({ url }) => {
