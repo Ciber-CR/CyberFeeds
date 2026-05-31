@@ -1,14 +1,41 @@
 import Database from 'better-sqlite3'
 import { app } from 'electron'
 import path from 'path'
+import fs from 'fs'
 import type { Folder, Feed, Article, AppSettings, NotificationHistoryItem, WindowState } from './types'
 import { DEFAULT_SETTINGS } from './types'
 
 let db: Database.Database
 
 export function initDb(): void {
-  const dbPath = path.join(app.getPath('userData'), 'cybersfeeds.db')
-  db = new Database(dbPath)
+  // Check if we need to migrate from old CyberFeeds folder
+  const oldUserData = path.join(path.dirname(app.getPath('userData')), 'CyberFeeds')
+  const newUserData = app.getPath('userData')
+  const oldDbPath = path.join(oldUserData, 'cybersfeeds.db')
+  const newDbPath = path.join(newUserData, 'cybersfeeds.db')
+
+  // If old database exists and new one doesn't, copy it
+  if (fs.existsSync(oldDbPath) && !fs.existsSync(newDbPath)) {
+    console.log('[DB] Migrating data from CyberFeeds to CyberGems...')
+    try {
+      // Ensure new directory exists
+      if (!fs.existsSync(newUserData)) {
+        fs.mkdirSync(newUserData, { recursive: true })
+      }
+      // Copy database file
+      fs.copyFileSync(oldDbPath, newDbPath)
+      // Copy WAL and SHM files if they exist
+      const oldWal = oldDbPath + '-wal'
+      const oldShm = oldDbPath + '-shm'
+      if (fs.existsSync(oldWal)) fs.copyFileSync(oldWal, newDbPath + '-wal')
+      if (fs.existsSync(oldShm)) fs.copyFileSync(oldShm, newDbPath + '-shm')
+      console.log('[DB] Migration successful!')
+    } catch (err) {
+      console.error('[DB] Migration failed:', err)
+    }
+  }
+
+  db = new Database(newDbPath)
   db.pragma('journal_mode = WAL')
   db.pragma('synchronous = NORMAL')
   db.pragma('cache_size = -32000') // 32MB cache
