@@ -13,7 +13,7 @@ export function createTray(mainWindow: BrowserWindow): Tray {
 
   buildMenu()
 
-  tray.setToolTip('CyberFeeds')
+  tray.setToolTip('CyberGems')
 
   tray.on('click', () => {
     const win = _mainWindow
@@ -36,7 +36,7 @@ function buildMenu(): void {
   const version = app.getVersion()
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: `CyberFeeds v${version}`,
+      label: `CyberGems v${version}`,
       enabled: false,
       icon: nativeImage.createEmpty()
     },
