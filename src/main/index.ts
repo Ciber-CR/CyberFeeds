@@ -4,6 +4,7 @@ import { is } from '@electron-toolkit/utils'
 import { initDb, getSettings, getWindowState, saveWindowState, backfillFavicons, cleanupOldArticles } from './db'
 import { startPolling, setOnNewArticles } from './polling'
 import { registerIpc, setAutoStart } from './ipc'
+import { initUpdater } from './updater'
 import { initNotifier, registerNotifierIpc, showNotification } from './notifications'
 import { createTray } from './tray'
 import type { NotificationHistoryItem } from './types'
@@ -151,6 +152,9 @@ app.whenReady().then(() => {
 
   // Auto-start
   setAutoStart(settings.autoStart, settings.startMinimized)
+
+  // Auto-update (electron-updater). No-op in dev / unpacked builds.
+  initUpdater(settings)
 })
 
 app.on('before-quit', () => {
