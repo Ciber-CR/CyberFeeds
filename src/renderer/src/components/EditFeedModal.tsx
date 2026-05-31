@@ -67,7 +67,7 @@ export default function EditFeedModal(): JSX.Element | null {
             <label className="form-label">Folder</label>
             <select className="form-select" value={folderId} onChange={e => setFolderId(e.target.value)}>
               <option value="">No folder</option>
-              {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+              {[...folders].sort((a, b) => a.name.localeCompare(b.name)).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
           </div>
         </div>
