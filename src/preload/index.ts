@@ -81,6 +81,16 @@ const api = {
     return () => { ipcRenderer.removeListener('app:openSettings', handler) }
   },
 
+  // Updates
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  onUpdateStatus: (cb: (status: object) => void) => {
+    const handler = (_: unknown, status: object): void => cb(status)
+    ipcRenderer.on('update:status', handler)
+    return () => { ipcRenderer.removeListener('update:status', handler) }
+  },
+
   // Notifier specific
   dismissNotification: (id: string) => ipcRenderer.send('notifier:dismiss', id),
   clearAllNotifications: () => ipcRenderer.send('notifier:clearAll'),

@@ -8,6 +8,7 @@ import * as db from './db'
 import * as polling from './polling'
 import { importOpml, exportOpml } from './opml'
 import { updateNotifierSettings } from './notifications'
+import { setAutoUpdate } from './updater'
 import type { Feed, Folder } from './types'
 import RssParser from 'rss-parser'
 import { XMLParser } from 'fast-xml-parser'
@@ -373,6 +374,9 @@ export function registerIpc(): void {
 
     // Auto-start
     setAutoStart(settings.autoStart, settings.startMinimized)
+
+    // Auto-update toggle
+    setAutoUpdate(settings.autoUpdate)
 
     return { ok: true }
   })

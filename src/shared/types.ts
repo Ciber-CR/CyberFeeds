@@ -55,6 +55,7 @@ export interface AppSettings {
   pollingInterval: number
   autoStart: boolean
   startMinimized: boolean
+  autoUpdate: boolean
   minimizeToTray: boolean
   showArticleThumbnails: boolean
   customBrowserPath: string
@@ -113,6 +114,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   pollingInterval: 15,
   autoStart: false,
   startMinimized: false,
+  autoUpdate: true,
   minimizeToTray: true,
   showArticleThumbnails: true,
   customBrowserPath: '',

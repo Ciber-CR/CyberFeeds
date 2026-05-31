@@ -1,8 +1,42 @@
-import { X, Cpu, Code2, Database, Zap, Rss, Github, Folder } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Cpu, Code2, Database, Zap, Rss, Github, Folder, RefreshCw, Download, CheckCircle2 } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
+import { useSettingsStore } from '../store/settings.store'
+
+type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'not-available'; version: string }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string }
 
 export default function AboutModal(): JSX.Element {
   const { closePanel } = useUIStore()
+  const { settings, update } = useSettingsStore()
+  const [appVersion, setAppVersion] = useState('')
+  const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
+
+  useEffect(() => {
+    window.api.getVersions().then((v: { app: string }) => setAppVersion(v.app))
+    const off = window.api.onUpdateStatus((s) => setStatus(s as UpdateStatus))
+    return off
+  }, [])
+
+  const handleCheck = async (): Promise<void> => {
+    setStatus({ state: 'checking' })
+    const res = await window.api.checkForUpdates()
+    if (!res?.ok) setStatus({ state: 'error', message: res?.error || 'Update check failed' })
+  }
+
+  const handleDownload = async (): Promise<void> => {
+    await window.api.downloadUpdate()
+  }
+
+  const handleInstall = (): void => {
+    window.api.installUpdate()
+  }
 
   const techStack = [
     { name: 'Electron', version: '34.3.0', icon: <Cpu size={14} />, desc: 'Native Desktop Shell' },
@@ -50,7 +84,7 @@ export default function AboutModal(): JSX.Element {
             Cyber<span style={{ color: 'var(--accent)' }}>Feeds</span>
           </h1>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>
-            Version 1.5.0
+            Version {appVersion || '…'}
           </div>
 
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 32 }}>
@@ -86,7 +120,49 @@ export default function AboutModal(): JSX.Element {
             </div>
           </div>
 
-          <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ marginTop: 28 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
+              Updates
+              <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
+            </div>
+
+            <UpdateStatusLine status={status} />
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12 }}>
+              {status.state === 'available' && (
+                <button className="btn btn-primary" style={{ fontSize: 12, gap: 8, padding: '10px 20px' }} onClick={handleDownload}>
+                  <Download size={14} /> Download {status.version}
+                </button>
+              )}
+              {status.state === 'downloaded' ? (
+                <button className="btn btn-primary" style={{ fontSize: 12, gap: 8, padding: '10px 20px' }} onClick={handleInstall}>
+                  <CheckCircle2 size={14} /> Restart & Install
+                </button>
+              ) : (
+                <button
+                  className="btn btn-secondary"
+                  style={{ fontSize: 12, gap: 8, padding: '10px 20px' }}
+                  onClick={handleCheck}
+                  disabled={status.state === 'checking' || status.state === 'downloading'}
+                >
+                  <RefreshCw size={14} className={status.state === 'checking' ? 'spin' : ''} /> Check for updates
+                </button>
+              )}
+            </div>
+
+            <label className="toggle" style={{ justifyContent: 'center', marginTop: 14 }}>
+              <div className={`toggle-track ${settings.autoUpdate ? 'on' : ''}`}
+                onClick={() => update({ autoUpdate: !settings.autoUpdate })}>
+                <div className="toggle-thumb" />
+              </div>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                {settings.autoUpdate ? 'Automatic updates' : 'Manual updates only'}
+              </span>
+            </label>
+          </div>
+
+          <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
              <button className="btn btn-secondary" style={{ fontSize: 12, gap: 8, padding: '10px 24px' }} onClick={() => window.api.openDataFolder()}>
                <Folder size={14} /> Open Data Folder
              </button>
@@ -122,7 +198,33 @@ export default function AboutModal(): JSX.Element {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-5px); }
         }
+        .spin { animation: spin 0.8s linear infinite; }
       `}</style>
+    </div>
+  )
+}
+
+function UpdateStatusLine({ status }: { status: UpdateStatus }): JSX.Element | null {
+  const map: Record<string, { text: string; color: string }> = {
+    idle: { text: '', color: 'var(--text-muted)' },
+    checking: { text: 'Checking for updates…', color: 'var(--text-secondary)' },
+    'not-available': { text: 'You’re on the latest version.', color: 'var(--green)' },
+    available: { text: 'An update is available.', color: 'var(--accent)' },
+    downloaded: { text: 'Update ready to install.', color: 'var(--green)' },
+    error: { text: 'Could not check for updates.', color: 'var(--red)' }
+  }
+  if (status.state === 'idle') return null
+  if (status.state === 'downloading') {
+    return (
+      <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)' }}>
+        Downloading… {status.percent}%
+      </div>
+    )
+  }
+  const info = map[status.state]
+  return (
+    <div style={{ textAlign: 'center', fontSize: 12, color: info.color }}>
+      {info.text}
     </div>
   )
 }
