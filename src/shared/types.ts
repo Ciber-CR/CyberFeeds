@@ -54,7 +54,7 @@ export interface AppSettings {
   layout: 'three-panel' | 'two-panel' | 'one-panel'
   pollingInterval: number
   autoStart: boolean
-  startMaximized: boolean
+  startMinimized: boolean
   minimizeToTray: boolean
   showArticleThumbnails: boolean
   customBrowserPath: string
@@ -114,7 +114,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   layout: 'three-panel',
   pollingInterval: 15,
   autoStart: false,
-  startMaximized: false,
+  startMinimized: false,
   minimizeToTray: true,
   showArticleThumbnails: true,
   customBrowserPath: '',

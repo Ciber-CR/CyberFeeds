@@ -115,11 +115,11 @@ export default function SettingsPanel(): JSX.Element {
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Start with Windows</span>
           </label>
           <label className="toggle">
-            <div className={`toggle-track ${local.startMaximized ? 'on' : ''}`}
-              onClick={() => update({ startMaximized: !local.startMaximized })}>
+            <div className={`toggle-track ${local.startMinimized ? 'on' : ''}`}
+              onClick={() => update({ startMinimized: !local.startMinimized })}>
               <div className="toggle-thumb" />
             </div>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Start maximized</span>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Start minimized to tray</span>
           </label>
           <label className="toggle">
             <div className={`toggle-track ${local.minimizeToTray ? 'on' : ''}`}
