@@ -5,6 +5,8 @@ import { useArticlesStore } from '../store/articles.store'
 import { useUIStore } from '../store/ui.store'
 import { useFeedsStore } from '../store/feeds.store'
 import { useSettingsStore } from '../store/settings.store'
+import { useConfirm } from '../hooks/useConfirm'
+import ConfirmDialog from './ConfirmDialog'
 import type { Article } from '../types'
 
 function formatDate(ts: number): string {
@@ -67,6 +69,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const parentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<ReturnType<typeof setTimeout>>()
   const prevSelectedId = useRef<string | null>(null)
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
 
   // Auto-remove read articles from "Unread Only" view when moving to next
   useEffect(() => {
@@ -280,8 +283,15 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
             }}>
               Mark all as read
             </div>
-            <div className="ctx-item danger" onClick={() => {
-              if (window.confirm('Are you sure you want to delete all articles in the current list?')) {
+            <div className="ctx-item danger" onClick={async () => {
+              const confirmed = await confirm({
+                title: 'Delete All Articles',
+                message: 'Are you sure you want to delete all articles in the current list? This action cannot be undone.',
+                confirmText: 'Delete All',
+                cancelText: 'Cancel',
+                variant: 'danger'
+              })
+              if (confirmed) {
                 const ids = articles.map(a => a.id)
                 if (ids.length > 0) {
                   useArticlesStore.getState().deleteMultiple(ids)
@@ -294,6 +304,17 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           </div>
         )
       })()}
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </div>
   )
 })

@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { X, Activity, ShieldAlert, CheckCircle2, RefreshCw, Trash2, AlertTriangle, Stethoscope } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useFeedsStore } from '../store/feeds.store'
+import { useConfirm } from '../hooks/useConfirm'
+import ConfirmDialog from './ConfirmDialog'
 
 interface ScanResult {
   id: string
@@ -13,6 +15,7 @@ interface ScanResult {
 export default function DoctorPanel(): JSX.Element {
   const { closePanel } = useUIStore()
   const { deleteFeed } = useFeedsStore()
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
   const [results, setResults] = useState<ScanResult[]>(() => {
     const saved = localStorage.getItem('doctor_results')
     return saved ? JSON.parse(saved) : []
@@ -34,7 +37,14 @@ export default function DoctorPanel(): JSX.Element {
   }
 
   const handleDelete = async (id: string): Promise<void> => {
-    if (confirm('Are you sure you want to delete this invalid feed?')) {
+    const confirmed = await confirm({
+      title: 'Delete Invalid Feed',
+      message: 'Are you sure you want to delete this invalid feed? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteFeed(id)
       const newResults = results.filter(r => r.id !== id)
       setResults(newResults)
@@ -136,6 +146,17 @@ export default function DoctorPanel(): JSX.Element {
           Doctor scans are on-demand and do not affect background polling.
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </div>
   )
 }

@@ -80,14 +80,24 @@ export default function NotifierApp(): JSX.Element {
     window.api.dismissNotification(id)
   }
 
+  const handleViewInApp = (item: NotificationHistoryItem): void => {
+    if (item.feedId) {
+      window.api.openInApp(item.feedId, item.articleId || '')
+      handleDismiss(item.id)
+    }
+  }
+
+  const handleOpenInBrowser = (item: NotificationHistoryItem): void => {
+    if (item.link) {
+      window.api.openExternal(item.link)
+    }
+  }
+
   const handleOpen = (item: NotificationHistoryItem): void => {
     if (state.settings?.openBehavior === 'browser') {
-      if (item.link) window.api.openExternal(item.link)
+      handleOpenInBrowser(item)
     } else {
-      if (item.feedId) {
-        window.api.openInApp(item.feedId, item.articleId || '')
-        handleDismiss(item.id)
-      }
+      handleViewInApp(item)
     }
   }
 
@@ -177,10 +187,15 @@ export default function NotifierApp(): JSX.Element {
               <button className="notif-btn" onClick={() => { window.api.markNotificationRead(item.articleId || ''); handleDismiss(item.id) }}>Mark Read</button>
               <button className="notif-btn" onClick={() => { window.api.snoozeNotifications(15) }} title="Snooze 15m">Snooze 15m</button>
               <button className="notif-btn" onClick={() => { window.api.snoozeNotifications(60) }} title="Snooze 1h">Snooze 1h</button>
-              {item.link && (
-                <button className="notif-btn" onClick={() => handleOpen(item)} title="Open in app">
-                  <ExternalLink size={10} style={{ display: 'inline', marginRight: 2 }} />
+              {item.feedId && (
+                <button className="notif-btn" onClick={() => handleViewInApp(item)} title="View article in app">
                   View
+                </button>
+              )}
+              {item.link && (
+                <button className="notif-btn" onClick={() => handleOpenInBrowser(item)} title="Open link in browser">
+                  <ExternalLink size={10} style={{ display: 'inline', marginRight: 2 }} />
+                  Open
                 </button>
               )}
             </div>

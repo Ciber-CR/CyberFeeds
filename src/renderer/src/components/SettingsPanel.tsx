@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { X, Settings, Monitor, Bell, Zap } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
+import { useConfirm } from '../hooks/useConfirm'
+import { useAlert } from '../hooks/useAlert'
+import ConfirmDialog from './ConfirmDialog'
+import AlertDialog from './AlertDialog'
 import type { AppSettings } from '../types'
 
 interface DisplayInfo {
@@ -14,6 +18,8 @@ interface DisplayInfo {
 export default function SettingsPanel(): JSX.Element {
   const { closePanel } = useUIStore()
   const { settings, save } = useSettingsStore()
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
+  const { alert, alertState, handleClose } = useAlert()
   const [local, setLocal] = useState<AppSettings>({ ...settings })
   const [importing, setImporting] = useState(false)
   const [displays, setDisplays] = useState<DisplayInfo[]>([])
@@ -43,19 +49,40 @@ export default function SettingsPanel(): JSX.Element {
 
   const handleExportBackup = async (): Promise<void> => {
     const result = await window.api.exportBackup()
-    if (result.ok) alert('Backup exported successfully!')
+    if (result.ok) {
+      await alert({
+        title: 'Export Successful',
+        message: 'Backup exported successfully!',
+        variant: 'success'
+      })
+    }
   }
 
   const handleImportBackup = async (): Promise<void> => {
-    if (!confirm('This will OVERWRITE all your current feeds and settings. Continue?')) return
+    const confirmed = await confirm({
+      title: 'Import Backup',
+      message: 'This will OVERWRITE all your current feeds and settings. Continue?',
+      confirmText: 'Import',
+      cancelText: 'Cancel',
+      variant: 'warning'
+    })
+    if (!confirmed) return
     setImporting(true)
     const result = await window.api.importBackup()
     setImporting(false)
     if (result.ok) {
-      alert('Backup imported successfully! The app will reload to apply changes.')
+      await alert({
+        title: 'Import Successful',
+        message: 'Backup imported successfully! The app will reload to apply changes.',
+        variant: 'success'
+      })
       window.location.reload()
     } else if (result.error) {
-      alert(`Import failed: ${result.error}`)
+      await alert({
+        title: 'Import Failed',
+        message: `Import failed: ${result.error}`,
+        variant: 'error'
+      })
     }
   }
 
@@ -432,6 +459,26 @@ export default function SettingsPanel(): JSX.Element {
           Save Settings
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+
+      <AlertDialog
+        isOpen={alertState.isOpen}
+        title={alertState.title}
+        message={alertState.message}
+        confirmText={alertState.confirmText}
+        variant={alertState.variant}
+        onClose={handleClose}
+      />
     </div>
   )
 }
