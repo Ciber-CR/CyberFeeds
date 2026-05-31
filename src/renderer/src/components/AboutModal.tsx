@@ -48,7 +48,7 @@ export default function AboutModal(): JSX.Element {
           </div>
 
           <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Cyber<span style={{ color: 'var(--accent)' }}>Gems</span>
+            Cyber<span style={{ color: 'var(--accent)' }}>Feeds</span>
           </h1>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>
             Version 1.5.0
@@ -110,7 +110,7 @@ export default function AboutModal(): JSX.Element {
           <button 
             className="btn btn-ghost btn-icon" 
             style={{ width: 24, height: 24, color: 'inherit' }}
-            onClick={() => window.api.openExternal('https://github.com/Cybergems/CyberGems')}
+            onClick={() => window.api.openExternal('https://github.com/Cybergems/CyberFeeds')}
             title="GitHub Repository"
           >
             <Github size={14} />

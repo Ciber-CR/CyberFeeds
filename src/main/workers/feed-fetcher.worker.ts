@@ -7,7 +7,7 @@ import RssParser from 'rss-parser'
 import crypto from 'crypto'
 import { XMLParser } from 'fast-xml-parser'
 
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 CyberGems/1.5'
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 CyberFeeds/1.5'
 
 async function fetchWithTimeout(url: string, timeoutMs = 30000): Promise<Response> {
   const controller = new AbortController()
