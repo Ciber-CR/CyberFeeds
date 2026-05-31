@@ -33,7 +33,14 @@ export function createTray(mainWindow: BrowserWindow): Tray {
 }
 
 function buildMenu(): void {
+  const version = app.getVersion()
   const contextMenu = Menu.buildFromTemplate([
+    {
+      label: `CyberFeeds v${version}`,
+      enabled: false,
+      icon: nativeImage.createEmpty()
+    },
+    { type: 'separator' },
     {
       label: 'Show / Hide',
       click: () => {
