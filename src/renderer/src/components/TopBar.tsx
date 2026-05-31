@@ -25,7 +25,7 @@ const TopBar = memo(function TopBar(): JSX.Element {
     <div className="topbar">
       <div className="topbar-brand">
         <Rss size={16} />
-        <span>CyberGems</span>
+        <span>CyberFeeds</span>
       </div>
       <div className="topbar-drag" />
 
@@ -44,7 +44,7 @@ const TopBar = memo(function TopBar(): JSX.Element {
       <button className="btn btn-ghost btn-icon no-drag" onClick={() => openPanel('settings')} title="Settings">
         <Settings size={15} />
       </button>
-      <button className="btn btn-ghost btn-icon no-drag" onClick={() => openPanel('about')} title="About CyberGems">
+      <button className="btn btn-ghost btn-icon no-drag" onClick={() => openPanel('about')} title="About CyberFeeds">
         <Info size={15} />
       </button>
 
