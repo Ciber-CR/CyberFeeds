@@ -1,7 +1,7 @@
 {
-  "name": "cybergems",
+  "name": "cyberfeeds",
   "productName": "CyberFeeds",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "CyberGems — Performance-first, full featured RSS Reader",
   "main": "./out/main/index.js",
   "author": "CyberGems",
