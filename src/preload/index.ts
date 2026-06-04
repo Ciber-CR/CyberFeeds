@@ -60,7 +60,7 @@ const api = {
   exportBackup: () => ipcRenderer.invoke('app:exportBackup'),
   importBackup: () => ipcRenderer.invoke('app:importBackup'),
   showInputContextMenu: () => ipcRenderer.invoke('showInputContextMenu'),
-  showReadOnlyContextMenu: () => ipcRenderer.invoke('showReadOnlyContextMenu'),
+  showReadOnlyContextMenu: (linkUrl?: string, hasSelection?: boolean) => ipcRenderer.invoke('showReadOnlyContextMenu', linkUrl, hasSelection),
   openDataFolder: () => ipcRenderer.invoke('app:openDataFolder'),
   scanFeeds: () => ipcRenderer.invoke('app:scanFeeds'),
 
@@ -80,6 +80,16 @@ const api = {
     ipcRenderer.on('app:openSettings', handler)
     return () => { ipcRenderer.removeListener('app:openSettings', handler) }
   },
+  onNewNotification: (cb: (item: any) => void) => {
+    const handler = (_: unknown, item: any) => cb(item)
+    ipcRenderer.on('notifications:new', handler)
+    return () => { ipcRenderer.removeListener('notifications:new', handler) }
+  },
+  onOpenHistory: (cb: () => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('app:openHistory', handler)
+    return () => { ipcRenderer.removeListener('app:openHistory', handler) }
+  },
 
   // Updates
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
@@ -97,10 +107,11 @@ const api = {
   markNotificationRead: (articleId: string) => ipcRenderer.send('notifier:markRead', articleId),
   snoozeNotifications: (minutes: number) => ipcRenderer.send('notifier:snooze', minutes),
   openInApp: (feedId: string, articleId: string) => ipcRenderer.send('notifier:openInApp', feedId, articleId),
+  openHistoryInApp: () => ipcRenderer.send('notifier:openHistory'),
   setHover: (isHovering: boolean) => ipcRenderer.send('notifier:hover', isHovering),
   pickSoundFile: () => ipcRenderer.invoke('notifications:pickSoundFile'),
-  onNotifierStack: (cb: (stack: object[], settings: object) => void) => {
-    const handler = (_: unknown, stack: object[], settings: object) => cb(stack, settings)
+  onNotifierStack: (cb: (stack: object[], settings: object, language?: string) => void) => {
+    const handler = (_: unknown, stack: object[], settings: object, language?: string) => cb(stack, settings, language)
     ipcRenderer.on('notifier:stack', handler)
     return () => { ipcRenderer.removeListener('notifier:stack', handler) }
   },

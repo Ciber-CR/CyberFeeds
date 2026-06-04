@@ -8,15 +8,16 @@ import { useSettingsStore } from '../store/settings.store'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import type { Article } from '../types'
+import { useTranslation } from '../hooks/useTranslation'
 
-function formatDate(ts: number): string {
+function formatDate(ts: number, t: any): string {
   const d = new Date(ts)
   const now = new Date()
   const diffMs = now.getTime() - d.getTime()
   const diffH = diffMs / 3600000
-  if (diffH < 1) return `${Math.max(1, Math.round(diffMs / 60000))}m ago`
-  if (diffH < 24) return `${Math.round(diffH)}h ago`
-  if (diffH < 48) return 'Yesterday'
+  if (diffH < 1) return `${Math.max(1, Math.round(diffMs / 60000))}${t.articleList.timeAgo.mAgo}`
+  if (diffH < 24) return `${Math.round(diffH)}${t.articleList.timeAgo.hAgo}`
+  if (diffH < 48) return t.articleList.yesterday
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
@@ -66,6 +67,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const [ctx, setCtx] = React.useState<{ x: number, y: number, id: string } | null>(null)
   const { feeds, unreadCounts } = useFeedsStore()
   const { settings, togglePolling } = useSettingsStore()
+  const { t, language } = useTranslation()
   const parentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const prevSelectedId = useRef<string | null>(null)
@@ -84,7 +86,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   }, [selectedArticleId, unreadOnly, articles, removeArticleFromList])
 
   const selectedFeed = feeds.find(f => f.id === selectedFeedId)
-  const title = selectedFeedId === 'starred' ? 'Favorites' : (selectedFeed?.title || 'All Feeds')
+  const title = selectedFeedId === 'starred' ? t.articleList.favorites : (selectedFeed?.title || t.articleList.allFeeds)
 
   const unreadDisplayCount = React.useMemo(() => {
     if (selectedFeedId === 'starred') return totalCount
@@ -153,7 +155,9 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         <div 
           className="cyber-badge no-brackets"
           onClick={() => togglePolling()}
-          title={`Polling: ${settings.pollingEnabled ? 'ON' : 'OFF'} | Unread: ${unreadDisplayCount} | Total: ${totalCount} | Click to toggle`}
+          title={language === 'es'
+            ? `Sondeo: ${settings.pollingEnabled ? 'ENCENDIDO' : 'APAGADO'} | Sin leer: ${unreadDisplayCount} | Total: ${totalCount} | Clic para alternar`
+            : `Polling: ${settings.pollingEnabled ? 'ON' : 'OFF'} | Unread: ${unreadDisplayCount} | Total: ${totalCount} | Click to toggle`}
           style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', flexShrink: 0, margin: '0 10px', gap: 8, padding: '3px 10px' }}
         >
           <span style={{ 
@@ -162,7 +166,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
             color: settings.pollingEnabled ? 'var(--accent)' : 'var(--text-muted)',
             opacity: 0.8
           }}>
-            {settings.pollingEnabled ? 'MONITORING' : 'PAUSED'}
+            {settings.pollingEnabled ? t.articleList.monitoring : t.articleList.paused}
           </span>
           <span style={{ 
             width: 7, height: 7, borderRadius: '50%', 
@@ -179,7 +183,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           <button
             className="btn btn-ghost btn-icon"
             onClick={() => setUnreadOnly(!unreadOnly)}
-            title={unreadOnly ? 'Show all' : 'Unread only'}
+            title={unreadOnly ? t.articleList.showAll : t.articleList.unreadOnly}
             style={unreadOnly ? { color: 'var(--accent)' } : undefined}
           >
             <Filter size={14} />
@@ -194,7 +198,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           <input
             className="search-input"
             style={{ paddingLeft: 28 }}
-            placeholder="Search articles..."
+            placeholder={t.articleList.searchPlaceholder}
             defaultValue={search}
             onChange={handleSearch}
           />
@@ -209,7 +213,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           </div>
         ) : articles.length === 0 ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-            No articles
+            {t.articleList.noArticles}
           </div>
         ) : (
           <div className="article-virtual-inner" style={{ height: rowVirtualizer.getTotalSize() }}>
@@ -250,26 +254,26 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                   markRead(article.id, !article.read)
                   setCtx(null)
                 }}>
-                  {article.read ? 'Mark as unread' : 'Mark as read'}
+                  {article.read ? t.articleList.contextMenu.markAsUnread : t.articleList.contextMenu.markAsRead}
                 </div>
                 <div className="ctx-item" onClick={() => {
                   navigator.clipboard.writeText(article.link)
                   setCtx(null)
                 }}>
-                  Copy link
+                  {t.articleList.contextMenu.copyLink}
                 </div>
                 <div className="ctx-item" onClick={() => {
                   window.api.openExternal(article.link)
                   setCtx(null)
                 }}>
-                  Open in browser
+                  {t.articleList.contextMenu.openInBrowser}
                 </div>
                 <div className="ctx-divider" />
                 <div className="ctx-item danger" onClick={() => {
                   deleteArticle(article.id)
                   setCtx(null)
                 }}>
-                  Delete article
+                  {t.articleList.contextMenu.deleteArticle}
                 </div>
                 <div className="ctx-divider" />
               </>
@@ -281,14 +285,14 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               }
               setCtx(null)
             }}>
-              Mark all as read
+              {t.articleList.contextMenu.markAllAsRead}
             </div>
             <div className="ctx-item danger" onClick={async () => {
               const confirmed = await confirm({
-                title: 'Delete All Articles',
-                message: 'Are you sure you want to delete all articles in the current list? This action cannot be undone.',
-                confirmText: 'Delete All',
-                cancelText: 'Cancel',
+                title: t.articleList.dialogs.deleteAllTitle,
+                message: t.articleList.dialogs.deleteAllMsg,
+                confirmText: t.articleList.dialogs.deleteAllBtn,
+                cancelText: t.sidebar.cancel,
                 variant: 'danger'
               })
               if (confirmed) {
@@ -299,7 +303,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               }
               setCtx(null)
             }}>
-              Delete all articles
+              {t.articleList.contextMenu.deleteAllArticles}
             </div>
           </div>
         )
@@ -332,6 +336,7 @@ interface ArticleItemProps {
 const ArticleItem = memo(function ArticleItem({ article, selected, onSelect, onContextMenu, style, measureRef, dataIndex }: ArticleItemProps) {
   const { markRead, starArticle } = useArticlesStore()
   const { settings } = useSettingsStore()
+  const { t } = useTranslation()
 
   const handleClick = useCallback(() => {
     onSelect(article.id)
@@ -389,7 +394,7 @@ const ArticleItem = memo(function ArticleItem({ article, selected, onSelect, onC
           {article.feedTitle}
         </span>
         <span>·</span>
-        <span>{formatDate(article.pubDate)}</span>
+        <span>{formatDate(article.pubDate, t)}</span>
         {article.author && (
           <>
             <span>·</span>

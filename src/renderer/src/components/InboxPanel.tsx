@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { X, Inbox } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import type { Article } from '../types'
+import { useTranslation } from '../hooks/useTranslation'
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -11,6 +12,7 @@ export default function InboxPanel(): JSX.Element {
   const { closePanel, selectArticle } = useUIStore()
   const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
+  const { t } = useTranslation()
 
   useEffect(() => {
     window.api.getTodayArticles().then((data: Article[]) => {
@@ -31,15 +33,15 @@ export default function InboxPanel(): JSX.Element {
     <div className="panel">
       <div className="panel-header">
         <Inbox size={16} style={{ color: 'var(--accent)' }} />
-        <h2>Inbox Today</h2>
-        <span className="text-muted text-sm">{articles.length} articles</span>
+        <h2>{t.inbox.title}</h2>
+        <span className="text-muted text-sm">{articles.length} {t.inbox.articlesSuffix}</span>
         <button className="btn btn-ghost btn-icon" onClick={closePanel}><X size={15} /></button>
       </div>
       <div className="panel-body">
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><div className="spinner" /></div>
         ) : Object.keys(grouped).length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 32 }}>No articles today</div>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 32 }}>{t.inbox.empty}</div>
         ) : (
           Object.entries(grouped).map(([feedName, items]) => (
             <div key={feedName} className="panel-section">

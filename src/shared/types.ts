@@ -52,6 +52,7 @@ export interface NotificationHistoryItem {
 export interface AppSettings {
   theme: 'dark' | 'light' | 'dracula' | 'nord' | 'hacker' | 'monokai'
   layout: 'three-panel' | 'two-panel' | 'one-panel'
+  language: 'en' | 'es'
   pollingInterval: number
   autoStart: boolean
   startMinimized: boolean
@@ -86,6 +87,7 @@ export interface NotificationSettings {
   duration: number
   fontSize: number
   opacity: number
+  soundEnabled: boolean
   soundFile: string | null
   maxStack: number
   feedFilters: string[]
@@ -111,6 +113,7 @@ export interface NotifierPatch {
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
   layout: 'three-panel',
+  language: 'en',
   pollingInterval: 15,
   autoStart: false,
   startMinimized: false,
@@ -140,6 +143,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     duration: 6000,
     fontSize: 13,
     opacity: 0.97,
+    soundEnabled: true,
     soundFile: null,
     maxStack: 5,
     feedFilters: [],

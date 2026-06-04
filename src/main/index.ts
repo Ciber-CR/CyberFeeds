@@ -17,15 +17,10 @@ export function restoreMainWindow(): void {
   const win = mainWindow
   if (!win || win.isDestroyed()) return
 
-  // Remember if the window was maximized before it was hidden
-  const wasMaximized = win.isMaximized()
-
   if (!win.isVisible()) win.show()
   if (win.isMinimized()) win.restore()
 
-  // show() and restore() on Windows can un-maximize — re-apply
-  if (wasMaximized && !win.isMaximized()) win.maximize()
-
+  win.maximize()
   win.focus()
 }
 

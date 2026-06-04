@@ -6,9 +6,10 @@ import { useArticlesStore } from '../store/articles.store'
 import { useSettingsStore } from '../store/settings.store'
 import { FeedFavicon } from './ArticleList'
 import type { Article } from '../types'
+import { useTranslation } from '../hooks/useTranslation'
 
-function formatFullDate(ts: number): string {
-  return new Date(ts).toLocaleString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+function formatFullDate(ts: number, lang: string): string {
+  return new Date(ts).toLocaleString(lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 function makeSummary(title: string, content: string): string {
@@ -28,6 +29,7 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
   const { selectedArticleId } = useUIStore()
   const { articles, starArticle } = useArticlesStore()
   const { settings, update } = useSettingsStore()
+  const { t, language } = useTranslation()
   const [article, setArticle] = useState<Article | null>(null)
   const [fullHtml, setFullHtml] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -80,7 +82,7 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
       <div className="article-viewer">
         <div className="reader-empty">
           <Rss size={48} />
-          <p>Select an article to read</p>
+          <p>{t.articleViewer.selectToRead}</p>
         </div>
       </div>
     )
@@ -101,7 +103,7 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
         <button
           className="btn btn-ghost btn-icon"
           onClick={() => starArticle(article.id, !article.starred)}
-          title={article.starred ? 'Unstar' : 'Star'}
+          title={article.starred ? t.articleViewer.unstar : t.articleViewer.star}
         >
           <Star size={15} fill={article.starred ? 'var(--star)' : 'none'} color={article.starred ? 'var(--star)' : undefined} />
         </button>
@@ -109,51 +111,68 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
         <button
           className="btn btn-ghost btn-icon"
           onClick={() => update({ readingFontSize: Math.max(12, (settings.readingFontSize || 15) - 1) })}
-          title="Decrease Font Size"
+          title={t.articleViewer.decreaseFont}
         >
           <span style={{ fontSize: 11, fontWeight: 700 }}>A-</span>
         </button>
         <button
           className="btn btn-ghost btn-icon"
           onClick={() => update({ readingFontSize: Math.min(24, (settings.readingFontSize || 15) + 1) })}
-          title="Increase Font Size"
+          title={t.articleViewer.increaseFont}
         >
           <span style={{ fontSize: 13, fontWeight: 700 }}>A+</span>
         </button>
         <div style={{ width: 1, height: 16, background: 'var(--border-muted)', margin: '0 4px' }} />
-        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={handleSummary} title="Quick Summary">
+        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={handleSummary} title={t.articleViewer.quickSummary}>
           <FileText size={13} />
-          Summary
+          {t.articleViewer.summary}
         </button>
         <button
           className="btn btn-secondary"
           style={{ fontSize: 12 }}
           onClick={fetchFullContent}
           disabled={loading}
-          title="Load Full Article"
+          title={t.articleViewer.loadFull}
         >
           {loading ? <div className="spinner" style={{ width: 13, height: 13 }} /> : <BookOpen size={13} />}
-          {fullHtml ? 'Reload' : 'Full Article'}
+          {fullHtml ? t.articleViewer.reload : t.articleViewer.fullArticle}
         </button>
-        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => window.api.openExternal(article.link)} title="Open in Browser">
+        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => window.api.openExternal(article.link)} title={t.articleViewer.openInBrowser}>
           <ExternalLink size={13} />
-          Open in Browser
+          {t.articleViewer.openInBrowser}
         </button>
         {needsFullFetch && !loading && (
-          <button className="btn btn-ghost btn-icon" onClick={fetchFullContent} title="Auto-fetch full content">
+          <button className="btn btn-ghost btn-icon" onClick={fetchFullContent} title={t.articleViewer.autoFetch}>
             <RefreshCw size={13} />
           </button>
         )}
       </div>
 
-      <div className="viewer-content">
+      <div
+        className="viewer-content"
+        onContextMenu={(e) => {
+          e.preventDefault()
+          const target = e.target as HTMLElement
+          const a = target.closest('a')
+          let linkUrl = ''
+          if (a) {
+            if (a.closest('.reader-title')) {
+              linkUrl = article.link
+            } else if (a.href && !a.href.startsWith('javascript:') && !a.href.startsWith('#')) {
+              linkUrl = a.href
+            }
+          }
+          const hasSelection = !!window.getSelection()?.toString()
+          window.api.showReadOnlyContextMenu(linkUrl, hasSelection)
+        }}
+      >
         <div className="reader-wrap" style={{ maxWidth: settings.readingMaxWidth || 720 }}>
           <h1 className="reader-title">
             <a 
               href="#" 
               onClick={(e) => { e.preventDefault(); window.api.openExternal(article.link) }} 
               style={{ color: 'inherit', textDecoration: 'none' }}
-              title="Open in default browser"
+              title={t.articleViewer.openDefaultBrowser}
             >
               {article.title}
             </a>
@@ -165,18 +184,18 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
             {article.feedTitle && <span style={{ fontWeight: 500 }}>{article.feedTitle}</span>}
             {article.author && <><span>·</span><span>{article.author}</span></>}
             <span>·</span>
-            <span>{formatFullDate(article.pubDate)}</span>
+            <span>{formatFullDate(article.pubDate, language)}</span>
           </div>
 
           {showSummary && summary && (
             <div style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent)', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: 20, fontSize: 14, lineHeight: 1.6, color: 'var(--text-primary)' }}>
-              <strong style={{ color: 'var(--accent)', display: 'block', marginBottom: 6, fontSize: 12 }}>Quick Summary</strong>
+              <strong style={{ color: 'var(--accent)', display: 'block', marginBottom: 6, fontSize: 12 }}>{t.articleViewer.quickSummary}</strong>
               {summary}
               <button
                 onClick={() => setShowSummary(false)}
                 style={{ display: 'block', marginTop: 8, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11 }}
               >
-                Dismiss
+                {t.articleViewer.dismiss}
               </button>
             </div>
           )}
@@ -203,10 +222,6 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
               }
             }}
             onMouseLeave={() => setHoveredLink(null)}
-            onContextMenu={(e) => {
-              e.preventDefault()
-              window.api.showReadOnlyContextMenu()
-            }}
           />
         </div>
       </div>

@@ -1,6 +1,7 @@
-import { BrowserWindow, screen, ipcMain, shell } from 'electron'
+import { BrowserWindow, screen, ipcMain, shell, app } from 'electron'
 import path from 'path'
 import url from 'url'
+import fs from 'fs'
 import { is } from '@electron-toolkit/utils'
 import * as db from './db'
 import { restoreMainWindow } from './index'
@@ -21,7 +22,31 @@ const CLEAR_BAR_H = 36
 const WIN_PAD = 12
 const HARD_CAP = 50
 
-export function initNotifier(s: NotificationSettings): void { settings = s }
+export function initNotifier(s: NotificationSettings): void {
+  settings = s
+  try {
+    if (settings.displayBounds) {
+      const displays = screen.getAllDisplays()
+      const saved = settings.displayBounds
+      const matched = displays.find(d =>
+        d.bounds.x === saved.x &&
+        d.bounds.y === saved.y &&
+        d.bounds.width === saved.width &&
+        d.bounds.height === saved.height
+      )
+      if (matched && matched.id !== settings.displayId) {
+        console.log(`[Notifier] Startup auto-align: updating displayId from ${settings.displayId} to ${matched.id}`)
+        settings.displayId = matched.id
+        db.saveSettings({
+          ...db.getSettings(),
+          notifications: settings
+        })
+      }
+    }
+  } catch (err) {
+    console.error('[Notifier] Failed to auto-align display ID on startup:', err)
+  }
+}
 export function updateNotifierSettings(s: NotificationSettings): void {
   settings = s
   if (notifierWindow && !notifierWindow.isDestroyed() && notifierWindow.isVisible()) {
@@ -41,11 +66,10 @@ function calcPosition(
   const displays = screen.getAllDisplays()
   const primaryDisplay = screen.getPrimaryDisplay()
 
-  // Try to find display by ID first
-  let display = displays.find(d => d.id === s.displayId)
+  let display: any = null
 
-  // If not found by ID, try to match by saved bounds (more stable across reboots)
-  if (!display && s.displayBounds) {
+  // 1. Try to match by saved bounds first (most stable across reboots/hotplugs)
+  if (s.displayBounds) {
     const saved = s.displayBounds
     display = displays.find(d =>
       d.bounds.x === saved.x &&
@@ -54,11 +78,24 @@ function calcPosition(
       d.bounds.height === saved.height
     )
     if (display) {
-      console.log(`[Notifier] Display ${s.displayId} not found by ID, matched by bounds`)
+      // Auto-align setting if ID changed mid-run
+      if (display.id !== s.displayId) {
+        console.log(`[Notifier] Display ID changed mid-run from ${s.displayId} to ${display.id}, updating settings`)
+        s.displayId = display.id
+        db.saveSettings({
+          ...db.getSettings(),
+          notifications: s
+        })
+      }
     }
   }
 
-  // If still not found, fall back to primary
+  // 2. Fallback to ID
+  if (!display) {
+    display = displays.find(d => d.id === s.displayId)
+  }
+
+  // 3. Fallback to primary display
   if (!display) {
     console.warn(`[Notifier] Display ${s.displayId} not found, falling back to primary`)
     display = primaryDisplay
@@ -166,7 +203,7 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<void> {
     applyPositionToWindow(win, displayStack.length, s)
 
     // 2. Send stack to renderer
-    win.webContents.send('notifier:stack', displayStack, s)
+    win.webContents.send('notifier:stack', displayStack, s, db.getSettings().language || 'en')
 
     // 3. Re-apply alwaysOnTop to ensure window stays in foreground
     //    (Windows can demote z-order after repeated hide/show cycles)
@@ -195,11 +232,33 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<void> {
 }
 
 function playNotificationSound(s: NotificationSettings): void {
-  if (s.soundFile) {
-    console.log(`[Notifier] Playing custom sound: ${s.soundFile}`)
+  if (s.soundEnabled === false) {
+    console.log('[Notifier] Sound is disabled')
+    return
+  }
+
+  // Determine path to play
+  let playPath = s.soundFile
+  
+  let defaultMp3 = path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'CyberFeeds.mp3')
+  if (!fs.existsSync(defaultMp3)) {
+    defaultMp3 = path.join(app.getAppPath(), 'resources', 'CyberFeeds.mp3')
+  }
+  if (!fs.existsSync(defaultMp3)) {
+    defaultMp3 = 'C:\\CyberGems\\CyberFeeds\\CyberFeeds.mp3'
+  }
+
+  if (!playPath) {
+    if (fs.existsSync(defaultMp3)) {
+      playPath = defaultMp3
+    }
+  }
+
+  if (playPath) {
+    console.log(`[Notifier] Playing sound: ${playPath}`)
     try {
       const win = ensureWindow()
-      const encoded = url.pathToFileURL(s.soundFile).toString()
+      const encoded = url.pathToFileURL(playPath).toString()
       console.log(`[Notifier] Executing JS to play: ${encoded}`)
       win.webContents.executeJavaScript(
         `(function(){ 
@@ -251,6 +310,11 @@ export function showNotification(item: NotificationHistoryItem): void {
   }
 
   pushToWindow()
+
+  const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow)
+  if (mainWin) {
+    mainWin.webContents.send('notifications:new', item)
+  }
 }
 
 export function registerNotifierIpc(): void {
@@ -286,6 +350,15 @@ export function registerNotifierIpc(): void {
     if (mainWin) {
       restoreMainWindow()
       mainWin.webContents.send('app:openArticle', { feedId, articleId })
+    }
+  })
+
+  ipcMain.on('notifier:openHistory', () => {
+    notifierWindow?.hide()
+    const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow)
+    if (mainWin) {
+      restoreMainWindow()
+      mainWin.webContents.send('app:openHistory')
     }
   })
 

@@ -9,6 +9,8 @@ import * as polling from './polling'
 import { importOpml, exportOpml } from './opml'
 import { updateNotifierSettings } from './notifications'
 import { setAutoUpdate } from './updater'
+import { rebuildTrayMenu } from './tray'
+import { translations } from '../shared/translations'
 import type { Feed, Folder } from './types'
 import RssParser from 'rss-parser'
 import { XMLParser } from 'fast-xml-parser'
@@ -378,6 +380,9 @@ export function registerIpc(): void {
     // Auto-update toggle
     setAutoUpdate(settings.autoUpdate)
 
+    // Rebuild tray menu
+    rebuildTrayMenu()
+
     return { ok: true }
   })
 
@@ -601,12 +606,50 @@ export function registerIpc(): void {
     menu.popup()
   })
 
-  ipcMain.handle('showReadOnlyContextMenu', () => {
-    const template: MenuItemConstructorOptions[] = [
-      { role: 'copy' },
+  ipcMain.handle('showReadOnlyContextMenu', (_, linkUrl?: string, hasSelection?: boolean) => {
+    const lang = db.getSettings().language || 'en'
+    const t = translations[lang].mainProcess.webviewCtx
+    const template: MenuItemConstructorOptions[] = []
+
+    if (linkUrl) {
+      template.push(
+        {
+          label: t.openLink,
+          click: () => {
+            const settings = db.getSettings()
+            if (settings.customBrowserPath) {
+              const { execFile } = require('child_process')
+              execFile(settings.customBrowserPath, [linkUrl], (err) => {
+                if (err) console.error('Failed to open custom browser:', err)
+              })
+            } else {
+              shell.openExternal(linkUrl)
+            }
+          }
+        },
+        {
+          label: t.copyLinkAddress,
+          click: () => {
+            const { clipboard } = require('electron')
+            clipboard.writeText(linkUrl)
+          }
+        }
+      )
+
+      if (hasSelection) {
+        template.push(
+          { type: 'separator' },
+          { role: 'copy' }
+        )
+      }
+    } else {
+      template.push({ role: 'copy' })
+    }
+
+    template.push(
       { type: 'separator' },
       { role: 'selectAll' }
-    ]
+    )
     const menu = Menu.buildFromTemplate(template)
     menu.popup()
   })

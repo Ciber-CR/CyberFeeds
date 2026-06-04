@@ -1,26 +1,37 @@
-import { useState } from 'react'
-import { X, FolderPlus } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Edit2 } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
 import { useTranslation } from '../hooks/useTranslation'
 
-export default function AddFolderModal(): JSX.Element {
+export default function EditFolderModal(): JSX.Element | null {
+  const { folders, updateFolder } = useFeedsStore()
+  const { closePanel, editFolderId } = useUIStore()
+  const { t } = useTranslation()
+
+  const folder = folders.find(f => f.id === editFolderId)
+
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { addFolder } = useFeedsStore()
-  const { closePanel } = useUIStore()
-  const { t } = useTranslation()
 
-  const handleAdd = async (): Promise<void> => {
+  useEffect(() => {
+    if (folder) {
+      setName(folder.name)
+    }
+  }, [folder])
+
+  if (!folder) return null
+
+  const handleSave = async (): Promise<void> => {
     if (!name.trim()) return
     setLoading(true)
     setError('')
     try {
-      await addFolder(name.trim())
+      await updateFolder(folder.id, name.trim())
       closePanel()
     } catch (err: any) {
-      setError(err.message || t.addFolder.failedMsg)
+      setError(err.message || t.editFolder.failedMsg)
     } finally {
       setLoading(false)
     }
@@ -30,19 +41,20 @@ export default function AddFolderModal(): JSX.Element {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
       <div className="modal" style={{ maxWidth: 400 }}>
         <div className="modal-header">
-          <FolderPlus size={16} style={{ color: 'var(--accent)' }} />
-          <h2>{t.addFolder.title}</h2>
+          <Edit2 size={16} style={{ color: 'var(--accent)' }} />
+          <h2>{t.editFolder.title}</h2>
           <button className="btn btn-ghost btn-icon" onClick={closePanel}><X size={15} /></button>
         </div>
         <div className="modal-body">
           <div className="form-group">
-            <label className="form-label">{t.addFolder.nameLabel}</label>
+            <label className="form-label">{t.editFolder.nameLabel}</label>
             <input
               className="form-input"
-              placeholder={t.addFolder.placeholder}
+              placeholder={t.editFolder.placeholder}
               value={name}
               onChange={e => { setName(e.target.value); setError('') }}
-              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              onKeyDown={e => e.key === 'Enter' && handleSave()}
+              onContextMenu={() => window.api.showInputContextMenu()}
               autoFocus
             />
           </div>
@@ -50,8 +62,8 @@ export default function AddFolderModal(): JSX.Element {
         </div>
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={closePanel}>{t.sidebar.cancel}</button>
-          <button className="btn btn-primary" onClick={handleAdd} disabled={loading || !name.trim()}>
-            {loading ? <div className="spinner" style={{ width: 13, height: 13 }} /> : t.addFolder.createBtn}
+          <button className="btn btn-primary" onClick={handleSave} disabled={loading || !name.trim()}>
+            {loading ? <div className="spinner" style={{ width: 13, height: 13 }} /> : t.editFolder.saveBtn}
           </button>
         </div>
       </div>
