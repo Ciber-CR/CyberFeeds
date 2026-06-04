@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Cpu, Code2, Database, Zap, Rss, Github, Folder, RefreshCw, Download, CheckCircle2 } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
+import { useTranslation } from '../hooks/useTranslation'
 
 type UpdateStatus =
   | { state: 'idle' }
@@ -17,6 +18,7 @@ export default function AboutModal(): JSX.Element {
   const { settings, update } = useSettingsStore()
   const [appVersion, setAppVersion] = useState('')
   const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
+  const { t } = useTranslation()
 
   useEffect(() => {
     window.api.getVersions().then((v: { app: string }) => setAppVersion(v.app))
@@ -39,12 +41,12 @@ export default function AboutModal(): JSX.Element {
   }
 
   const techStack = [
-    { name: 'Electron', version: '34.3.0', icon: <Cpu size={14} />, desc: 'Native Desktop Shell' },
-    { name: 'React', version: '19.2.1', icon: <Code2 size={14} />, desc: 'UI Library' },
-    { name: 'Vite', version: '6.3.5', icon: <Zap size={14} />, desc: 'Build System' },
-    { name: 'SQLite', version: '11.9.1', icon: <Database size={14} />, desc: 'Local Database' },
-    { name: 'Zustand', version: '5.0.4', icon: <Zap size={14} />, desc: 'State Management' },
-    { name: 'Lucide', version: '0.511.0', icon: <Zap size={14} />, desc: 'Iconography' },
+    { name: 'Electron', version: '34.3.0', icon: <Cpu size={14} />, desc: t.about.techStack.electron },
+    { name: 'React', version: '19.2.1', icon: <Code2 size={14} />, desc: t.about.techStack.react },
+    { name: 'Vite', version: '6.3.5', icon: <Zap size={14} />, desc: t.about.techStack.vite },
+    { name: 'SQLite', version: '11.9.1', icon: <Database size={14} />, desc: t.about.techStack.sqlite },
+    { name: 'Zustand', version: '5.0.4', icon: <Zap size={14} />, desc: t.about.techStack.zustand },
+    { name: 'Lucide', version: '0.511.0', icon: <Zap size={14} />, desc: t.about.techStack.lucide },
   ]
 
   return (
@@ -84,18 +86,17 @@ export default function AboutModal(): JSX.Element {
             Cyber<span style={{ color: 'var(--accent)' }}>Feeds</span>
           </h1>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>
-            Version {appVersion || '…'}
+            {t.about.version.replace('{version}', appVersion || '…')}
           </div>
 
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 32 }}>
-            A high-performance, minimalist RSS reader designed for power users who value speed, 
-            privacy, and a clean reading experience.
+            {t.about.desc}
           </p>
 
           <div style={{ textAlign: 'left' }}>
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
-              Engine Core
+              {t.about.engineCore}
               <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
             </div>
             
@@ -123,49 +124,58 @@ export default function AboutModal(): JSX.Element {
           <div style={{ marginTop: 28 }}>
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
-              Updates
+              {t.about.maintenance}
               <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
             </div>
 
-            <UpdateStatusLine status={status} />
+            <UpdateStatusLine status={status} t={t} />
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12 }}>
-              {status.state === 'available' && (
-                <button className="btn btn-primary" style={{ fontSize: 12, gap: 8, padding: '10px 20px' }} onClick={handleDownload}>
-                  <Download size={14} /> Download {status.version}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: 16, 
+              marginTop: 16,
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid var(--border-muted)',
+              borderRadius: 'var(--radius)',
+              padding: '12px'
+            }}>
+              {status.state === 'available' ? (
+                <button className="btn btn-primary" style={{ fontSize: 12, gap: 6, padding: '8px 12px' }} onClick={handleDownload}>
+                  <Download size={13} /> {t.about.downloadBtn}
                 </button>
-              )}
-              {status.state === 'downloaded' ? (
-                <button className="btn btn-primary" style={{ fontSize: 12, gap: 8, padding: '10px 20px' }} onClick={handleInstall}>
-                  <CheckCircle2 size={14} /> Restart & Install
+              ) : status.state === 'downloaded' ? (
+                <button className="btn btn-primary" style={{ fontSize: 12, gap: 6, padding: '8px 12px' }} onClick={handleInstall}>
+                  <CheckCircle2 size={13} /> {t.about.installBtn}
                 </button>
               ) : (
                 <button
                   className="btn btn-secondary"
-                  style={{ fontSize: 12, gap: 8, padding: '10px 20px' }}
+                  style={{ fontSize: 12, gap: 6, padding: '8px 12px' }}
                   onClick={handleCheck}
                   disabled={status.state === 'checking' || status.state === 'downloading'}
                 >
-                  <RefreshCw size={14} className={status.state === 'checking' ? 'spin' : ''} /> Check for updates
+                  <RefreshCw size={13} className={status.state === 'checking' ? 'spin' : ''} /> {t.about.checkUpdates}
                 </button>
               )}
+
+              <label className="toggle" style={{ margin: 0, gap: 6 }}>
+                <div className={`toggle-track ${settings.autoUpdate ? 'on' : ''}`}
+                  onClick={() => update({ autoUpdate: !settings.autoUpdate })}
+                  style={{ flexShrink: 0 }}
+                >
+                  <div className="toggle-thumb" />
+                </div>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                  {t.about.autoUpdates}
+                </span>
+              </label>
+
+              <button className="btn btn-secondary" style={{ fontSize: 12, gap: 6, padding: '8px 12px' }} onClick={() => window.api.openDataFolder()}>
+                <Folder size={13} /> {t.about.openFolder}
+              </button>
             </div>
-
-            <label className="toggle" style={{ justifyContent: 'center', marginTop: 14 }}>
-              <div className={`toggle-track ${settings.autoUpdate ? 'on' : ''}`}
-                onClick={() => update({ autoUpdate: !settings.autoUpdate })}>
-                <div className="toggle-thumb" />
-              </div>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                {settings.autoUpdate ? 'Automatic updates' : 'Manual updates only'}
-              </span>
-            </label>
-          </div>
-
-          <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
-             <button className="btn btn-secondary" style={{ fontSize: 12, gap: 8, padding: '10px 24px' }} onClick={() => window.api.openDataFolder()}>
-               <Folder size={14} /> Open Data Folder
-             </button>
           </div>
         </div>
 
@@ -204,20 +214,20 @@ export default function AboutModal(): JSX.Element {
   )
 }
 
-function UpdateStatusLine({ status }: { status: UpdateStatus }): JSX.Element | null {
+function UpdateStatusLine({ status, t }: { status: UpdateStatus; t: any }): JSX.Element | null {
   const map: Record<string, { text: string; color: string }> = {
     idle: { text: '', color: 'var(--text-muted)' },
-    checking: { text: 'Checking for updates…', color: 'var(--text-secondary)' },
-    'not-available': { text: 'You’re on the latest version.', color: 'var(--green)' },
-    available: { text: 'An update is available.', color: 'var(--accent)' },
-    downloaded: { text: 'Update ready to install.', color: 'var(--green)' },
-    error: { text: 'Could not check for updates.', color: 'var(--red)' }
+    checking: { text: t.about.statuses.checking, color: 'var(--text-secondary)' },
+    'not-available': { text: t.about.statuses.latest, color: 'var(--green)' },
+    available: { text: t.about.statuses.available, color: 'var(--accent)' },
+    downloaded: { text: t.about.statuses.downloaded, color: 'var(--green)' },
+    error: { text: t.about.statuses.error, color: 'var(--red)' }
   }
   if (status.state === 'idle') return null
   if (status.state === 'downloading') {
     return (
       <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)' }}>
-        Downloading… {status.percent}%
+        {t.about.statuses.downloading.replace('{percent}', String(status.percent))}
       </div>
     )
   }

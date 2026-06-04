@@ -12,6 +12,7 @@ import SettingsPanel from './components/SettingsPanel'
 import AddFeedModal from './components/AddFeedModal'
 import EditFeedModal from './components/EditFeedModal'
 import AddFolderModal from './components/AddFolderModal'
+import EditFolderModal from './components/EditFolderModal'
 import InboxPanel from './components/InboxPanel'
 import NotificationHistoryPanel from './components/NotificationHistoryPanel'
 import AboutModal from './components/AboutModal'
@@ -34,6 +35,13 @@ export default function App(): JSX.Element {
     loadSettings()
     loadAll()
     load({ limit: 60, offset: 0 })
+
+    // Load unseen notifications count
+    const lastChecked = Number(localStorage.getItem('lastCheckedNotificationsTime') || 0)
+    window.api.getNotificationHistory().then(history => {
+      const unseen = history.filter(h => h.createdAt > lastChecked).length
+      useUIStore.setState({ unseenNotificationsCount: unseen })
+    })
   }, [])
 
   // Apply layout + font sizes from saved settings as CSS vars
@@ -83,6 +91,25 @@ export default function App(): JSX.Element {
   useEffect(() => {
     const unsub = window.api.onOpenSettings(() => {
       useUIStore.setState({ activePanel: 'settings' })
+    })
+    return unsub
+  }, [])
+
+  // Listen for real-time notifications to update unseen badge count
+  useEffect(() => {
+    const unsub = window.api.onNewNotification(() => {
+      const state = useUIStore.getState()
+      if (state.activePanel !== 'history') {
+        useUIStore.setState({ unseenNotificationsCount: state.unseenNotificationsCount + 1 })
+      }
+    })
+    return unsub
+  }, [])
+
+  // Listen for opening notification history from the notifier sub-app
+  useEffect(() => {
+    const unsub = window.api.onOpenHistory(() => {
+      useUIStore.setState({ activePanel: 'history' })
     })
     return unsub
   }, [])
@@ -165,6 +192,7 @@ export default function App(): JSX.Element {
       {activePanel === 'addFeed' && <AddFeedModal />}
       {activePanel === 'editFeed' && <EditFeedModal />}
       {activePanel === 'addFolder' && <AddFolderModal />}
+      {activePanel === 'editFolder' && <EditFolderModal />}
       {activePanel === 'about' && <AboutModal />}
       {activePanel === 'doctor' && <DoctorPanel />}
     </div>

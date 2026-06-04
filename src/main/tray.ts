@@ -2,6 +2,8 @@ import { Tray, Menu, app, BrowserWindow, nativeImage } from 'electron'
 import path from 'path'
 import { pollFeeds } from './polling'
 import { restoreMainWindow } from './index'
+import * as db from './db'
+import { translations } from '../shared/translations'
 
 let tray: Tray | null = null
 let _mainWindow: BrowserWindow | null = null
@@ -32,8 +34,15 @@ export function createTray(mainWindow: BrowserWindow): Tray {
   return tray
 }
 
+export function rebuildTrayMenu(): void {
+  buildMenu()
+}
+
 function buildMenu(): void {
   const version = app.getVersion()
+  const lang = db.getSettings().language || 'en'
+  const t = translations[lang].mainProcess.tray
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: `CyberFeeds v${version}`,
@@ -42,7 +51,7 @@ function buildMenu(): void {
     },
     { type: 'separator' },
     {
-      label: 'Show / Hide',
+      label: t.showHide,
       click: () => {
         const win = _mainWindow
         if (!win || win.isDestroyed()) return
@@ -54,7 +63,16 @@ function buildMenu(): void {
       }
     },
     {
-      label: 'Settings',
+      label: t.notifications,
+      click: () => {
+        const win = _mainWindow
+        if (!win || win.isDestroyed()) return
+        restoreMainWindow()
+        win.webContents.send('app:openHistory')
+      }
+    },
+    {
+      label: t.settings,
       click: () => {
         const win = _mainWindow
         if (!win || win.isDestroyed()) return
@@ -63,12 +81,12 @@ function buildMenu(): void {
       }
     },
     {
-      label: 'Fetch Now',
+      label: t.fetchNow,
       click: () => { pollFeeds() }
     },
     { type: 'separator' },
     {
-      label: 'Quit',
+      label: t.quit,
       click: () => { app.quit() }
     }
   ])

@@ -1,11 +1,12 @@
 import React, { memo, useState, useCallback } from 'react'
-import { FolderPlus, ChevronRight, ChevronDown, ChevronsUpDown, ChevronsDownUp, Plus, Upload, Download, Stethoscope } from 'lucide-react'
+import { FolderPlus, ChevronRight, ChevronDown, ChevronsUpDown, ChevronsDownUp, Plus, Upload, Download, Stethoscope, Rss, Star } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
 import { FeedFavicon } from './ArticleList'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import type { Feed, Folder } from '../types'
+import { useTranslation } from '../hooks/useTranslation'
 
 const Sidebar = memo(function Sidebar(): JSX.Element {
   const { feeds, folders, unreadCounts, loadAll, deleteFeed, fetchFeed, fetchFolder, togglePauseFeed, togglePauseFolder, deleteFolder } = useFeedsStore()
@@ -15,6 +16,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
   const [importMsg, setImportMsg] = useState('')
   const [ctx, setCtx] = React.useState<{ x: number, y: number, type: 'feed' | 'folder', id: string } | null>(null)
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
+  const { t } = useTranslation()
 
   React.useEffect(() => {
     const handleUp = () => setCtx(null)
@@ -55,14 +57,14 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
       const result = await window.api.importOpml()
       if (result.canceled) { setImporting(false); return }
       await loadAll()
-      setImportMsg(`✓ ${result.added} feeds added`)
+      setImportMsg(`✓ ${result.added} ${t.sidebar.feedsAdded}`)
       setTimeout(() => setImportMsg(''), 3000)
     } catch {
-      setImportMsg('Import failed')
+      setImportMsg(t.sidebar.importFailed)
       setTimeout(() => setImportMsg(''), 3000)
     }
     setImporting(false)
-  }, [loadAll])
+  }, [loadAll, t])
 
   const sortedFolders = React.useMemo(() => [...folders].sort((a, b) => a.name.localeCompare(b.name)), [folders])
   const sortedFeeds = React.useMemo(() => [...feeds].sort((a, b) => a.title.localeCompare(b.title)), [feeds])
@@ -77,14 +79,8 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           className={`sidebar-item ${selectedFeedId === null ? 'active' : ''}`}
           onClick={() => selectFeed(null)}
         >
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, overflow: 'hidden' }}>
-            <span style={{
-              width: 15, height: 15, borderRadius: 3, background: 'var(--accent)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 9, fontWeight: 700, color: '#0d1117', flexShrink: 0
-            }}>∞</span>
-            <span className="item-label">All Feeds</span>
-          </span>
+          <Rss size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <span className="item-label">{t.sidebar.allFeeds}</span>
           {totalUnread > 0 && (
             <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
               {totalUnread}
@@ -96,14 +92,8 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           className={`sidebar-item ${selectedFeedId === 'starred' ? 'active' : ''}`}
           onClick={() => selectFeed('starred')}
         >
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, overflow: 'hidden' }}>
-            <span style={{
-              width: 15, height: 15, borderRadius: 3, background: 'var(--star)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 9, color: '#0d1117', flexShrink: 0
-            }}>★</span>
-            <span className="item-label">Favorites</span>
-          </span>
+          <Star size={15} style={{ color: 'var(--star)', fill: 'var(--star)', flexShrink: 0 }} />
+          <span className="item-label">{t.sidebar.favorites}</span>
           {totalStarred > 0 && (
             <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
               {totalStarred}
@@ -161,7 +151,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
             className="add-feed-btn"
             style={{ flex: 0, padding: '6px 8px' }}
             onClick={toggleAll}
-            title={collapsed.size > 0 ? 'Expand All' : 'Collapse All'}
+            title={collapsed.size > 0 ? t.sidebar.expandAll : t.sidebar.collapseAll}
           >
             {collapsed.size > 0 ? <ChevronsUpDown size={13} /> : <ChevronsDownUp size={13} />}
           </button>
@@ -170,21 +160,21 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
             className="add-feed-btn"
             style={{ flex: 0, padding: '6px 8px' }}
             onClick={handleAddFolder}
-            title="New Folder"
+            title={t.sidebar.newFolder}
           >
             <FolderPlus size={13} />
           </button>
 
           <button className="add-feed-btn" style={{ flex: 1 }} onClick={() => openPanel('addFeed')}>
             <Plus size={13} />
-            Add Feed
+            {t.sidebar.addFeed}
           </button>
           <button
             className="add-feed-btn"
             style={{ flex: 0, padding: '6px 8px' }}
             onClick={handleImportOpml}
             disabled={importing}
-            title="Import OPML"
+            title={t.sidebar.importOpml}
           >
             {importing
               ? <div className="spinner" style={{ width: 12, height: 12 }} />
@@ -195,7 +185,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
             className="add-feed-btn"
             style={{ flex: 0, padding: '6px 8px' }}
             onClick={() => window.api.exportOpml()}
-            title="Export OPML"
+            title={t.sidebar.exportOpml}
           >
             <Download size={13} />
           </button>
@@ -203,7 +193,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
             className="add-feed-btn"
             style={{ flex: 0, padding: '6px 8px' }}
             onClick={() => openPanel('doctor')}
-            title="Feeds Doctor"
+            title={t.sidebar.feedsDoctor}
           >
             <Stethoscope size={13} />
           </button>
@@ -221,7 +211,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           className="ctx-menu" 
           style={{ 
             left: ctx.x, 
-            top: Math.min(ctx.y, window.innerHeight - (ctx.type === 'feed' ? 120 : 50)) 
+            top: Math.min(ctx.y, window.innerHeight - 130) 
           }} 
           onClick={e => e.stopPropagation()}
         >
@@ -231,29 +221,29 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 fetchFeed(ctx.id)
                 setCtx(null)
               }}>
-                Refresh Feed
+                {t.sidebar.refreshFeed}
               </div>
               <div className="ctx-item" onClick={() => {
                 openPanel('editFeed', ctx.id)
                 setCtx(null)
               }}>
-                Edit Feed
+                {t.sidebar.editFeed}
               </div>
               <div className="ctx-item" onClick={() => {
                 togglePauseFeed(ctx.id)
                 setCtx(null)
               }}>
-                {feeds.find(f => f.id === ctx.id)?.disabled ? 'Resume Feed' : 'Pause Feed'}
+                {feeds.find(f => f.id === ctx.id)?.disabled ? t.sidebar.resumeFeed : t.sidebar.pauseFeed}
               </div>
               <div className="ctx-divider" />
               <div className="ctx-item danger" onClick={async () => {
                 const feed = feeds.find(f => f.id === ctx.id)
                 if (feed) {
                   const confirmed = await confirm({
-                    title: 'Delete Feed',
-                    message: `Are you sure you want to delete "${feed.title}"? This action cannot be undone.`,
-                    confirmText: 'Delete',
-                    cancelText: 'Cancel',
+                    title: t.sidebar.deleteFeedTitle,
+                    message: t.sidebar.deleteFeedMsg.replace('{title}', feed.title),
+                    confirmText: t.sidebar.delete,
+                    cancelText: t.sidebar.cancel,
                     variant: 'danger'
                   })
                   if (confirmed) {
@@ -262,7 +252,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 }
                 setCtx(null)
               }}>
-                Delete Feed
+                {t.sidebar.deleteFeed}
               </div>
             </>
           ) : (
@@ -271,23 +261,29 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 fetchFolder(ctx.id)
                 setCtx(null)
               }}>
-                Refresh Folder
+                {t.sidebar.refreshFolder}
+              </div>
+              <div className="ctx-item" onClick={() => {
+                openPanel('editFolder', ctx.id)
+                setCtx(null)
+              }}>
+                {t.sidebar.renameFolder}
               </div>
               <div className="ctx-item" onClick={() => {
                 togglePauseFolder(ctx.id)
                 setCtx(null)
               }}>
-                {feeds.filter(f => f.folderId === ctx.id)[0]?.disabled ? 'Resume Folder' : 'Pause Folder'}
+                {feeds.filter(f => f.folderId === ctx.id)[0]?.disabled ? t.sidebar.resumeFolder : t.sidebar.pauseFolder}
               </div>
               <div className="ctx-divider" />
               <div className="ctx-item danger" onClick={async () => {
                 const folder = folders.find(f => f.id === ctx.id)
                 if (folder) {
                   const confirmed = await confirm({
-                    title: 'Delete Folder',
-                    message: `Are you sure you want to delete folder "${folder.name}"? Feeds inside will be unfiled.`,
-                    confirmText: 'Delete',
-                    cancelText: 'Cancel',
+                    title: t.sidebar.deleteFolderTitle,
+                    message: t.sidebar.deleteFolderMsg.replace('{name}', folder.name),
+                    confirmText: t.sidebar.delete,
+                    cancelText: t.sidebar.cancel,
                     variant: 'danger'
                   })
                   if (confirmed) {
@@ -296,7 +292,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 }
                 setCtx(null)
               }}>
-                Delete Folder
+                {t.sidebar.deleteFolder}
               </div>
             </>
           )}
@@ -374,14 +370,15 @@ interface FeedItemProps {
 }
 
 const FeedItem = memo(function FeedItem({ feed, selected, onSelect, onContextMenu, unread, indent }: FeedItemProps) {
-  return (
-    <div
-      className={`sidebar-item ${selected ? 'active' : ''} ${feed.disabled ? 'paused' : ''}`}
-      style={indent ? { paddingLeft: 24 } : undefined}
-      onClick={() => onSelect(feed.id)}
-      onContextMenu={e => onContextMenu?.(e, feed.id)}
-      title={feed.title + (feed.disabled ? ' (Paused)' : '')}
-    >
+    const { t } = useTranslation()
+    return (
+      <div
+        className={`sidebar-item ${selected ? 'active' : ''} ${feed.disabled ? 'paused' : ''}`}
+        style={indent ? { paddingLeft: 24 } : undefined}
+        onClick={() => onSelect(feed.id)}
+        onContextMenu={e => onContextMenu?.(e, feed.id)}
+        title={feed.title + (feed.disabled ? ` (${t.articleList.paused.toLowerCase()})` : '')}
+      >
       {/* Favicon BEFORE title, with colored letter fallback */}
       <div style={{ opacity: feed.disabled ? 0.5 : 1 }}>
         <FeedFavicon icon={feed.icon} title={feed.title} size={15} />

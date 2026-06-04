@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useState, useCallback } from 'react'
 import { X, ExternalLink, ChevronDown } from 'lucide-react'
 import type { NotificationHistoryItem, NotificationSettings } from '@shared/types'
+import { translations } from '@shared/translations'
 
 interface State {
   stack: NotificationHistoryItem[]
@@ -21,9 +22,13 @@ function reducer(state: State, action: Action): State {
 
 export default function NotifierApp(): JSX.Element {
   const [state, dispatch] = useReducer(reducer, { stack: [], settings: null })
+  const [lang, setLang] = useState<'en' | 'es'>('en')
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrolledToBottom, setScrolledToBottom] = useState(true)
   const hoverOffTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [historyHovered, setHistoryHovered] = useState(false)
+
+  const t = translations[lang] || translations.en
 
   // Debounced hover handlers — prevents flicker from transparent gaps between cards
   const handleMouseEnter = useCallback(() => {
@@ -50,8 +55,9 @@ export default function NotifierApp(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    const unsub = window.api.onNotifierStack((stack: any, settings: any) => {
+    const unsub = window.api.onNotifierStack((stack: any, settings: any, language: any) => {
       dispatch({ type: 'SET_STACK', stack: stack as NotificationHistoryItem[], settings: settings as NotificationSettings })
+      if (language) setLang(language)
     })
     return unsub
   }, [])
@@ -114,15 +120,30 @@ export default function NotifierApp(): JSX.Element {
       onMouseLeave={handleMouseLeave}
       style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'rgba(0,0,0,0.01)' }}
     >
-      {/* Clear — fixed at top, always accessible */}
+      {/* Clear & See History — fixed at top, always accessible */}
       {state.stack.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px 4px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px 4px', flexShrink: 0 }}>
+          <button
+            className="clear-all-btn"
+            style={{
+              marginRight: 'auto',
+              backgroundColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(30,30,46,0.92)',
+              borderColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(255,255,255,0.18)',
+              color: historyHovered ? '#0d1117' : '#ccc'
+            }}
+            onMouseEnter={() => setHistoryHovered(true)}
+            onMouseLeave={() => setHistoryHovered(false)}
+            onClick={(e) => { e.stopPropagation(); window.api.openHistoryInApp() }}
+            title={t.notifier.seeHistory}
+          >
+            📋 {t.notifier.seeHistory}
+          </button>
           <button
             className="clear-all-btn"
             onClick={(e) => { e.stopPropagation(); window.api.clearAllNotifications() }}
-            title="Dismiss all notifications"
+            title={t.notifier.clearAll}
           >
-            ✕ {state.stack.length > 1 ? 'Clear All' : 'Clear'}
+            ✕ {state.stack.length > 1 ? t.notifier.clearAll : t.notifier.clear}
           </button>
         </div>
       )}
@@ -175,7 +196,7 @@ export default function NotifierApp(): JSX.Element {
               <button
                 className="notif-close"
                 onClick={e => { e.stopPropagation(); handleDismiss(item.id) }}
-                title="Dismiss"
+                title={t.notifier.dismiss}
               >
                 <X size={12} />
               </button>
@@ -183,19 +204,19 @@ export default function NotifierApp(): JSX.Element {
             <div className="notif-title">{item.title}</div>
             {item.body && <div className="notif-body" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.body}</div>}
             <div className="notif-actions" onClick={e => e.stopPropagation()}>
-              <button className="notif-btn" onClick={() => handleDismiss(item.id)}>Dismiss</button>
-              <button className="notif-btn" onClick={() => { window.api.markNotificationRead(item.articleId || ''); handleDismiss(item.id) }}>Mark Read</button>
-              <button className="notif-btn" onClick={() => { window.api.snoozeNotifications(15) }} title="Snooze 15m">Snooze 15m</button>
-              <button className="notif-btn" onClick={() => { window.api.snoozeNotifications(60) }} title="Snooze 1h">Snooze 1h</button>
+              <button className="notif-btn" onClick={() => handleDismiss(item.id)}>{t.notifier.dismiss}</button>
+              <button className="notif-btn" onClick={() => { window.api.markNotificationRead(item.articleId || ''); handleDismiss(item.id) }}>{t.notifier.markRead}</button>
+              <button className="notif-btn" onClick={() => { window.api.snoozeNotifications(15) }} title={t.notifier.snooze15}>{t.notifier.snooze15}</button>
+              <button className="notif-btn" onClick={() => { window.api.snoozeNotifications(60) }} title={t.notifier.snooze1h}>{t.notifier.snooze1h}</button>
               {item.feedId && (
-                <button className="notif-btn" onClick={() => handleViewInApp(item)} title="View article in app">
-                  View
+                <button className="notif-btn" onClick={() => handleViewInApp(item)} title={t.notifier.view}>
+                  {t.notifier.view}
                 </button>
               )}
               {item.link && (
-                <button className="notif-btn" onClick={() => handleOpenInBrowser(item)} title="Open link in browser">
+                <button className="notif-btn" onClick={() => handleOpenInBrowser(item)} title={t.notifier.open}>
                   <ExternalLink size={10} style={{ display: 'inline', marginRight: 2 }} />
-                  Open
+                  {t.notifier.open}
                 </button>
               )}
             </div>
@@ -229,7 +250,7 @@ export default function NotifierApp(): JSX.Element {
           }}
         >
           <ChevronDown size={10} />
-          {overflowCount} more
+          {overflowCount} {t.notifier.more}
         </div>
       )}
     </div>

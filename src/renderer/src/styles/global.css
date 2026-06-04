@@ -279,6 +279,41 @@ body {
 .panel-section { margin-bottom: 24px; }
 .panel-section h3 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 10px; }
 
+/* Settings Tabs */
+.settings-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+  background: var(--bg-1);
+  flex-shrink: 0;
+}
+.settings-tab-btn {
+  padding: 10px 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.settings-tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-2);
+}
+.settings-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
 /* ─── Form Controls ─────────────────────────────────────────────────────── */
 .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
 .form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
