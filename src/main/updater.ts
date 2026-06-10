@@ -80,7 +80,7 @@ function registerUpdateIpc(): void {
     try {
       // Add timeout to prevent hanging in development
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Update check timed out')), 10000)
+        setTimeout(() => reject(new Error('Update check timed out')), 3000)
       })
       const result = await Promise.race([
         autoUpdater.checkForUpdates(),
