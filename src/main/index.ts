@@ -10,6 +10,21 @@ import { createTray } from './tray'
 import type { NotificationHistoryItem } from './types'
 import crypto from 'crypto'
 
+// Single instance lock
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+}
+
+app.on('second-instance', () => {
+  // Someone tried to run a second instance, focus the existing window
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+  }
+})
+
 let mainWindow: BrowserWindow | null = null
 
 /** Restore the main window preserving maximized state. */
@@ -104,6 +119,8 @@ function createMainWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
+  if (!gotTheLock) return
+
   initDb()
   backfillFavicons()  // Assign Google S2 favicon URLs to any feeds missing icons
   const settings = getSettings()
