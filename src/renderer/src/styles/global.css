@@ -607,9 +607,9 @@ body {
 .clear-all-btn:hover { background: var(--accent, #bd93f9); border-color: var(--accent, #bd93f9); color: #0d1117; }
 
 /* ─── Context Menu ──────────────────────────────────────────────────────── */
-.ctx-menu { position: fixed; background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; min-width: 160px; z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.4); animation: fadeIn 0.1s ease; }
+.ctx-menu { position: fixed; background: var(--bg-1); border: 1px solid var(--border); border-radius: 6px; padding: 4px; min-width: 156px; z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.4); animation: fadeIn 0.1s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.ctx-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 3px; cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: all 0.1s; }
+.ctx-item { display: flex; align-items: center; gap: 8px; padding: 0 12px; min-height: 36px; border-radius: 4px; cursor: pointer; font-size: 12px; color: var(--text-secondary); transition: all 0.1s; }
 .ctx-item:hover { background: var(--bg-2); color: var(--text-primary); }
 .ctx-item.danger { color: var(--red); }
 .ctx-item.danger:hover { background: rgba(248,81,73,0.1); }
