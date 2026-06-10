@@ -78,9 +78,17 @@ function registerUpdateIpc(): void {
   ipcMain.handle('update:check', async () => {
     manualCheck = true
     try {
-      const result = await autoUpdater.checkForUpdates()
+      // Add timeout to prevent hanging in development
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Update check timed out')), 10000)
+      })
+      const result = await Promise.race([
+        autoUpdater.checkForUpdates(),
+        timeoutPromise
+      ]) as any
       return { ok: true, version: result?.updateInfo?.version }
     } catch (err) {
+      console.error('[Updater] Check failed:', err)
       return { ok: false, error: String((err as Error)?.message || err) }
     } finally {
       manualCheck = false
