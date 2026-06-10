@@ -351,6 +351,23 @@ export function clearNotificationHistory(): void {
   db.prepare('DELETE FROM notification_history').run()
 }
 
+/** Timestamp the user last opened the notification history (mirrors the main-window badge). */
+export function getNotificationsLastChecked(): number {
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('notificationsLastChecked') as { value: string } | undefined
+  return row ? Number(row.value) || 0 : 0
+}
+
+export function setNotificationsLastChecked(ts: number): void {
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('notificationsLastChecked', String(ts))
+}
+
+/** Count of notifications newer than the last "checked" time — same number as the top-bar badge. */
+export function getUnseenNotificationCount(): number {
+  const lastChecked = getNotificationsLastChecked()
+  const row = db.prepare('SELECT COUNT(*) as c FROM notification_history WHERE createdAt > ?').get(lastChecked) as { c: number }
+  return row.c
+}
+
 // ─── Settings ──────────────────────────────────────────────────────────────
 
 export function getSettings(): AppSettings {

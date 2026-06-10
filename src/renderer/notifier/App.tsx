@@ -1,30 +1,32 @@
 import { useEffect, useReducer, useRef, useState, useCallback } from 'react'
-import { X, ExternalLink, ChevronDown } from 'lucide-react'
+import { X, ExternalLink, ChevronDown, Bell } from 'lucide-react'
 import type { NotificationHistoryItem, NotificationSettings } from '@shared/types'
 import { translations } from '@shared/translations'
 
 interface State {
   stack: NotificationHistoryItem[]
   settings: NotificationSettings | null
+  unseenCount: number
 }
 
 type Action =
-  | { type: 'SET_STACK'; stack: NotificationHistoryItem[]; settings: NotificationSettings }
+  | { type: 'SET_STACK'; stack: NotificationHistoryItem[]; settings: NotificationSettings; unseenCount: number }
   | { type: 'DISMISS'; id: string }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'SET_STACK': return { stack: action.stack, settings: action.settings }
+    case 'SET_STACK': return { stack: action.stack, settings: action.settings, unseenCount: action.unseenCount }
     case 'DISMISS': return { ...state, stack: state.stack.filter(n => n.id !== action.id) }
     default: return state
   }
 }
 
 export default function NotifierApp(): JSX.Element {
-  const [state, dispatch] = useReducer(reducer, { stack: [], settings: null })
+  const [state, dispatch] = useReducer(reducer, { stack: [], settings: null, unseenCount: 0 })
   const [lang, setLang] = useState<'en' | 'es'>('en')
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrolledToBottom, setScrolledToBottom] = useState(true)
+  const [scrollbarW, setScrollbarW] = useState(0)
   const hoverOffTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [historyHovered, setHistoryHovered] = useState(false)
 
@@ -55,8 +57,8 @@ export default function NotifierApp(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    const unsub = window.api.onNotifierStack((stack: any, settings: any, language: any) => {
-      dispatch({ type: 'SET_STACK', stack: stack as NotificationHistoryItem[], settings: settings as NotificationSettings })
+    const unsub = window.api.onNotifierStack((stack: any, settings: any, language: any, unseenCount: any) => {
+      dispatch({ type: 'SET_STACK', stack: stack as NotificationHistoryItem[], settings: settings as NotificationSettings, unseenCount: Number(unseenCount) || 0 })
       if (language) setLang(language)
     })
     return unsub
@@ -68,6 +70,9 @@ export default function NotifierApp(): JSX.Element {
     if (!el) return
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
     setScrolledToBottom(atBottom)
+    // Measure the actual scrollbar width so the top bar can mirror it (keeps
+    // "Clear All" aligned with the cards' right edge, not the scrollbar).
+    setScrollbarW(el.offsetWidth - el.clientWidth)
   }, [state.stack.length])
 
   const handleScroll = useCallback(() => {
@@ -122,11 +127,14 @@ export default function NotifierApp(): JSX.Element {
     >
       {/* Clear & See History — fixed at top, always accessible */}
       {state.stack.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px 4px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: 4, paddingRight: state.stack.length > maxStack ? scrollbarW + 4 : 4, paddingBottom: 4, flexShrink: 0 }}>
           <button
             className="clear-all-btn"
             style={{
               marginRight: 'auto',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
               backgroundColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(30,30,46,0.92)',
               borderColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(255,255,255,0.18)',
               color: historyHovered ? '#0d1117' : '#ccc'
@@ -134,16 +142,25 @@ export default function NotifierApp(): JSX.Element {
             onMouseEnter={() => setHistoryHovered(true)}
             onMouseLeave={() => setHistoryHovered(false)}
             onClick={(e) => { e.stopPropagation(); window.api.openHistoryInApp() }}
-            title={t.notifier.seeHistory}
+            title={t.notifier.history}
           >
-            📋 {t.notifier.seeHistory}
+            <Bell size={12} style={{ flexShrink: 0 }} />
+            {t.notifier.history}
+            {state.unseenCount > 0 && (
+              <span style={{
+                fontWeight: 700,
+                color: historyHovered ? '#0d1117' : 'var(--accent, #bd93f9)'
+              }}>
+                {state.unseenCount > 99 ? '99+' : state.unseenCount}
+              </span>
+            )}
           </button>
           <button
             className="clear-all-btn"
             onClick={(e) => { e.stopPropagation(); window.api.clearAllNotifications() }}
-            title={t.notifier.clearAll}
+            title={t.notifier.closeAll}
           >
-            ✕ {state.stack.length > 1 ? t.notifier.clearAll : t.notifier.clear}
+            ✕ {state.stack.length > 1 ? t.notifier.closeAll : t.notifier.close}
           </button>
         </div>
       )}

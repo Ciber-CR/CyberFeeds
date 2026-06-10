@@ -38,6 +38,8 @@ export default function App(): JSX.Element {
 
     // Load unseen notifications count
     const lastChecked = Number(localStorage.getItem('lastCheckedNotificationsTime') || 0)
+    // Seed main-process DB so the notifier badge computes the same unseen count.
+    window.api.markNotificationsChecked(lastChecked)
     window.api.getNotificationHistory().then(history => {
       const unseen = history.filter(h => h.createdAt > lastChecked).length
       useUIStore.setState({ unseenNotificationsCount: unseen })

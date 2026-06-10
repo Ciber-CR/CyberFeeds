@@ -49,6 +49,7 @@ export const translations = {
       showAll: 'Show all',
       searchPlaceholder: 'Search articles...',
       noArticles: 'No articles',
+      moreBelow: 'more below',
       yesterday: 'Yesterday',
       timeAgo: {
         justNow: 'just now',
@@ -120,7 +121,7 @@ export const translations = {
         startMinimized: 'Start minimized to tray',
         requiresStartWithWindows: '(requires Start with Windows)',
         minimizeToTray: 'Minimize to tray on close',
-        showThumbnails: 'Show article thumbnails',
+        showThumbnails: 'Show featured image',
         linksOpenIn: 'External links open in',
         openOptions: {
           default: 'System default',
@@ -132,7 +133,8 @@ export const translations = {
       notifications: {
         title: 'Notifications',
         enable: 'Enable notifications',
-        showThumbnails: 'Show article thumbnails',
+        showThumbnails: 'Show featured image',
+        preloadImages: 'Show only when image is fully loaded',
         displayMonitor: 'Display / Monitor',
         singleDisplay: 'Single display detected ({width}×{height})',
         position: 'Position',
@@ -268,8 +270,9 @@ export const translations = {
     },
     notifier: {
       seeHistory: 'See History',
-      clearAll: 'Clear All',
-      clear: 'Clear',
+      history: 'History',
+      closeAll: 'Close All',
+      close: 'Close',
       dismiss: 'Dismiss',
       markRead: 'Mark Read',
       snooze15: 'Snooze 15m',
@@ -342,6 +345,7 @@ export const translations = {
       showAll: 'Mostrar todo',
       searchPlaceholder: 'Buscar artículos...',
       noArticles: 'Sin artículos',
+      moreBelow: 'más abajo',
       yesterday: 'Ayer',
       timeAgo: {
         justNow: 'hace un momento',
@@ -413,7 +417,7 @@ export const translations = {
         startMinimized: 'Iniciar minimizado en la bandeja',
         requiresStartWithWindows: '(requiere Iniciar con Windows)',
         minimizeToTray: 'Minimizar en la bandeja al cerrar',
-        showThumbnails: 'Mostrar miniaturas de artículos',
+        showThumbnails: 'Mostrar imagen destacada',
         linksOpenIn: 'Los enlaces externos se abren en',
         openOptions: {
           default: 'Predeterminado del sistema',
@@ -425,7 +429,8 @@ export const translations = {
       notifications: {
         title: 'Notificaciones',
         enable: 'Habilitar notificaciones',
-        showThumbnails: 'Mostrar miniaturas de artículos',
+        showThumbnails: 'Mostrar imagen destacada',
+        preloadImages: 'Mostrar solo cuando la imagen esté cargada',
         displayMonitor: 'Pantalla / Monitor',
         singleDisplay: 'Se detectó una sola pantalla ({width}×{height})',
         position: 'Posición',
@@ -561,8 +566,9 @@ export const translations = {
     },
     notifier: {
       seeHistory: 'Ver historial',
-      clearAll: 'Limpiar todo',
-      clear: 'Limpiar',
+      history: 'Historial',
+      closeAll: 'Cerrar todo',
+      close: 'Cerrar',
       dismiss: 'Descartar',
       markRead: 'Marcar como leído',
       snooze15: 'Posponer 15m',
