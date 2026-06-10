@@ -207,36 +207,43 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
       </div>
 
       {ctx && (
-        <div 
-          className="ctx-menu" 
-          style={{ 
-            left: ctx.x, 
-            top: Math.min(ctx.y, window.innerHeight - 130) 
-          }} 
+        <div
+          className="ctx-menu"
+          style={{
+            left: ctx.x,
+            top: Math.min(ctx.y, window.innerHeight - 130),
+            background: '#2d2d2d',
+            border: '1px solid rgba(21,255,255,0.08)',
+            borderRadius: '6px',
+            padding: '4px',
+            minWidth: '156px',
+            zIndex: 1000,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+          }}
           onClick={e => e.stopPropagation()}
         >
           {ctx.type === 'feed' ? (
             <>
-              <div className="ctx-item" onClick={() => {
+              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                 fetchFeed(ctx.id)
                 setCtx(null)
               }}>
                 {t.sidebar.refreshFeed}
               </div>
-              <div className="ctx-item" onClick={() => {
+              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                 openPanel('editFeed', ctx.id)
                 setCtx(null)
               }}>
                 {t.sidebar.editFeed}
               </div>
-              <div className="ctx-item" onClick={() => {
+              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                 togglePauseFeed(ctx.id)
                 setCtx(null)
               }}>
                 {feeds.find(f => f.id === ctx.id)?.disabled ? t.sidebar.resumeFeed : t.sidebar.pauseFeed}
               </div>
-              <div className="ctx-divider" />
-              <div className="ctx-item danger" onClick={async () => {
+              <div className="ctx-divider" style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '3px 0' }} />
+              <div className="ctx-item danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f85149' }} onClick={async () => {
                 const feed = feeds.find(f => f.id === ctx.id)
                 if (feed) {
                   const confirmed = await confirm({
@@ -257,26 +264,26 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
             </>
           ) : (
             <>
-              <div className="ctx-item" onClick={() => {
+              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                 fetchFolder(ctx.id)
                 setCtx(null)
               }}>
                 {t.sidebar.refreshFolder}
               </div>
-              <div className="ctx-item" onClick={() => {
+              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                 openPanel('editFolder', ctx.id)
                 setCtx(null)
               }}>
                 {t.sidebar.renameFolder}
               </div>
-              <div className="ctx-item" onClick={() => {
+              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                 togglePauseFolder(ctx.id)
                 setCtx(null)
               }}>
                 {feeds.filter(f => f.folderId === ctx.id)[0]?.disabled ? t.sidebar.resumeFolder : t.sidebar.pauseFolder}
               </div>
-              <div className="ctx-divider" />
-              <div className="ctx-item danger" onClick={async () => {
+              <div className="ctx-divider" style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '3px 0' }} />
+              <div className="ctx-item danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f85149' }} onClick={async () => {
                 const folder = folders.find(f => f.id === ctx.id)
                 if (folder) {
                   const confirmed = await confirm({

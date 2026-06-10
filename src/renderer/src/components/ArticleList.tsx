@@ -293,38 +293,38 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
       {ctx && (() => {
         const article = articles.find(a => a.id === ctx.id)
         return (
-          <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y }} onClick={e => e.stopPropagation()}>
+          <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y, background: '#2d2d2d', border: '1px solid rgba(21,255,255,0.08)', borderRadius: '6px', padding: '4px', minWidth: '156px', zIndex: 1000, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
             {article && (
               <>
-                <div className="ctx-item" onClick={() => {
+                <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                   markRead(article.id, !article.read)
                   setCtx(null)
                 }}>
                   {article.read ? t.articleList.contextMenu.markAsUnread : t.articleList.contextMenu.markAsRead}
                 </div>
-                <div className="ctx-item" onClick={() => {
+                <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                   navigator.clipboard.writeText(article.link)
                   setCtx(null)
                 }}>
                   {t.articleList.contextMenu.copyLink}
                 </div>
-                <div className="ctx-item" onClick={() => {
+                <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                   window.api.openExternal(article.link)
                   setCtx(null)
                 }}>
                   {t.articleList.contextMenu.openInBrowser}
                 </div>
-                <div className="ctx-divider" />
-                <div className="ctx-item danger" onClick={() => {
+                <div className="ctx-divider" style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '3px 0' }} />
+                <div className="ctx-item danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f85149' }} onClick={() => {
                   deleteArticle(article.id)
                   setCtx(null)
                 }}>
                   {t.articleList.contextMenu.deleteArticle}
                 </div>
-                <div className="ctx-divider" />
+                <div className="ctx-divider" style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '3px 0' }} />
               </>
             )}
-            <div className="ctx-item" onClick={() => {
+            <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
               const unreadIds = articles.filter(a => !a.read).map(a => a.id)
               if (unreadIds.length > 0) {
                 useArticlesStore.getState().markMultipleRead(unreadIds, true)
@@ -333,7 +333,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
             }}>
               {t.articleList.contextMenu.markAllAsRead}
             </div>
-            <div className="ctx-item danger" onClick={async () => {
+            <div className="ctx-item danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f85149' }} onClick={async () => {
               const confirmed = await confirm({
                 title: t.articleList.dialogs.deleteAllTitle,
                 message: t.articleList.dialogs.deleteAllMsg,
