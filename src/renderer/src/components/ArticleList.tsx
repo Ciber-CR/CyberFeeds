@@ -1,6 +1,6 @@
-import React, { memo, useRef, useCallback, useEffect } from 'react'
+import React, { memo, useRef, useCallback, useEffect, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Star, Search, Filter } from 'lucide-react'
+import { Star, Search, Filter, ChevronDown } from 'lucide-react'
 import { useArticlesStore } from '../store/articles.store'
 import { useUIStore } from '../store/ui.store'
 import { useFeedsStore } from '../store/feeds.store'
@@ -113,8 +113,25 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     overscan: 8
   })
 
+  // Count of articles below the current viewport (loaded + not yet loaded).
+  const [belowCount, setBelowCount] = useState(0)
+  const updateBelowCount = useCallback(() => {
+    const el = parentRef.current
+    if (!el) { setBelowCount(0); return }
+    const bottom = el.scrollTop + el.clientHeight
+    // Rendered items cover the viewport (plus overscan). The highest-index item
+    // that starts above the viewport's bottom edge is the last visible one.
+    let lastVisible = -1
+    for (const it of rowVirtualizer.getVirtualItems()) {
+      if (it.start < bottom) lastVisible = Math.max(lastVisible, it.index)
+    }
+    if (lastVisible < 0) { setBelowCount(0); return }
+    setBelowCount(Math.max(0, totalCount - (lastVisible + 1)))
+  }, [rowVirtualizer, totalCount])
+
   useEffect(() => {
     const items = rowVirtualizer.getVirtualItems()
+    updateBelowCount()
     if (items.length === 0) return
     const lastItem = items[items.length - 1]
     if (lastItem.index >= articles.length - 10 && !loadingMore) {
@@ -243,6 +260,35 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           </div>
         )}
       </div>
+
+      {/* Floating "more below" indicator — mirrors the notifier popup pill */}
+      {!loading && belowCount > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 10,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0, 170, 255, 0.65)',
+            border: '1px solid rgba(0, 170, 255, 0.5)',
+            borderRadius: 12,
+            padding: '3px 12px',
+            fontSize: 10,
+            fontWeight: 600,
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            zIndex: 10,
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+            pointerEvents: 'none'
+          }}
+        >
+          <ChevronDown size={10} />
+          {belowCount} {t.articleList.moreBelow}
+        </div>
+      )}
 
       {ctx && (() => {
         const article = articles.find(a => a.id === ctx.id)

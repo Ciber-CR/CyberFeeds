@@ -40,6 +40,7 @@ export default function NotificationHistoryPanel(): JSX.Element {
 
     // Mark as checked now
     localStorage.setItem('lastCheckedNotificationsTime', String(now))
+    window.api.markNotificationsChecked(now)
     useUIStore.setState({ unseenNotificationsCount: 0 })
   }, [])
 

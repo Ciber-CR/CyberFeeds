@@ -395,6 +395,13 @@ export function registerIpc(): void {
     return { ok: true }
   })
 
+  // Renderer tells main the history was just opened/seen, so the notifier badge
+  // can compute the same unseen count as the main-window badge.
+  ipcMain.handle('notifications:markChecked', (_e, ts?: number) => {
+    db.setNotificationsLastChecked(typeof ts === 'number' ? ts : Date.now())
+    return { ok: true }
+  })
+
   // ─── OPML ─────────────────────────────────────────────────────────────────
 
   ipcMain.handle('opml:import', async (event) => {

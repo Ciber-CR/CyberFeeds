@@ -41,6 +41,7 @@ const api = {
   // Notifications
   getNotificationHistory: () => ipcRenderer.invoke('notifications:getHistory'),
   clearNotificationHistory: () => ipcRenderer.invoke('notifications:clearHistory'),
+  markNotificationsChecked: (ts?: number) => ipcRenderer.invoke('notifications:markChecked', ts),
   previewNotification: (notifSettings?: object) => ipcRenderer.invoke('notifier:preview', notifSettings),
 
   // OPML
@@ -110,8 +111,8 @@ const api = {
   openHistoryInApp: () => ipcRenderer.send('notifier:openHistory'),
   setHover: (isHovering: boolean) => ipcRenderer.send('notifier:hover', isHovering),
   pickSoundFile: () => ipcRenderer.invoke('notifications:pickSoundFile'),
-  onNotifierStack: (cb: (stack: object[], settings: object, language?: string) => void) => {
-    const handler = (_: unknown, stack: object[], settings: object, language?: string) => cb(stack, settings, language)
+  onNotifierStack: (cb: (stack: object[], settings: object, language?: string, unseenCount?: number) => void) => {
+    const handler = (_: unknown, stack: object[], settings: object, language?: string, unseenCount?: number) => cb(stack, settings, language, unseenCount)
     ipcRenderer.on('notifier:stack', handler)
     return () => { ipcRenderer.removeListener('notifier:stack', handler) }
   },

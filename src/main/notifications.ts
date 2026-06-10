@@ -21,6 +21,9 @@ const CARD_GAP = 6
 const CLEAR_BAR_H = 36
 const WIN_PAD = 12
 const HARD_CAP = 50
+// Extra width reserved for the scrollbar so action buttons aren't cramped/clipped
+// when the stack overflows and the scrollbar appears.
+const SCROLLBAR_W = 16
 
 export function initNotifier(s: NotificationSettings): void {
   settings = s
@@ -124,7 +127,7 @@ function applyPositionToWindow(
   cardCount: number,
   s: NotificationSettings
 ): void {
-  const winW = s.maxWidth
+  const winW = s.maxWidth + (cardCount > s.maxStack ? SCROLLBAR_W : 0)
   const visibleCards = Math.min(Math.max(1, cardCount), s.maxStack)
   const clearBar = cardCount > 0 ? CLEAR_BAR_H : 0
   const gaps = Math.max(0, visibleCards - 1) * CARD_GAP
@@ -203,7 +206,7 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<void> {
     applyPositionToWindow(win, displayStack.length, s)
 
     // 2. Send stack to renderer
-    win.webContents.send('notifier:stack', displayStack, s, db.getSettings().language || 'en')
+    win.webContents.send('notifier:stack', displayStack, s, db.getSettings().language || 'en', db.getUnseenNotificationCount())
 
     // 3. Re-apply alwaysOnTop to ensure window stays in foreground
     //    (Windows can demote z-order after repeated hide/show cycles)
@@ -299,21 +302,65 @@ export function showNotification(item: NotificationHistoryItem): void {
     return
   }
 
+  // History + badge + sound fire immediately; only the popup card waits on the image.
   db.addNotificationHistory(item)
-  displayStack.push(item)
-  // Hard cap to prevent unbounded memory growth
-  if (displayStack.length > HARD_CAP) displayStack.splice(0, displayStack.length - HARD_CAP)
 
   if (Date.now() - lastSoundTime > 60_000) {
     playNotificationSound(settings)
     lastSoundTime = Date.now()
   }
 
-  pushToWindow()
-
   const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow)
   if (mainWin) {
     mainWin.webContents.send('notifications:new', item)
+  }
+
+  void presentInPopup(item)
+}
+
+/**
+ * Push a notification into the popup stack. When image preloading is enabled,
+ * the card is held back until its thumbnail is fully fetched (as a data URL),
+ * so the card never appears with an empty/half-loaded image container.
+ */
+async function presentInPopup(item: NotificationHistoryItem): Promise<void> {
+  const displayItem: NotificationHistoryItem = { ...item }
+
+  if (settings.showThumbnails && settings.preloadImages !== false && displayItem.thumbnail) {
+    const dataUrl = await preloadImageDataUrl(displayItem.thumbnail)
+    // On success render the painted image instantly; on failure fall back to the
+    // original URL (better a late lazy-load than suppressing the card forever).
+    if (dataUrl) displayItem.thumbnail = dataUrl
+  }
+
+  displayStack.push(displayItem)
+  // Hard cap to prevent unbounded memory growth
+  if (displayStack.length > HARD_CAP) displayStack.splice(0, displayStack.length - HARD_CAP)
+
+  pushToWindow()
+}
+
+/**
+ * Fetch a remote image and return it as a base64 data URL so the renderer can
+ * paint it with no network round-trip. Returns null on any failure/timeout or
+ * if the source isn't a remote http(s) image.
+ */
+async function preloadImageDataUrl(src: string, timeoutMs = 6000): Promise<string | null> {
+  if (!/^https?:\/\//i.test(src)) return null // already data:/relative — nothing to preload
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(src, { signal: controller.signal })
+    if (!res.ok) return null
+    const type = res.headers.get('content-type') || 'image/jpeg'
+    if (!type.startsWith('image/')) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.length === 0 || buf.length > 8 * 1024 * 1024) return null // skip empty/oversized
+    return `data:${type};base64,${buf.toString('base64')}`
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 

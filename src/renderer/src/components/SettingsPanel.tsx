@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Settings, Monitor, Bell, Zap, Sliders, Palette, Database } from 'lucide-react'
+import { X, Settings, Monitor, Bell, Zap, Sliders, Palette, Database, Stethoscope } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
 import { useConfirm } from '../hooks/useConfirm'
@@ -17,7 +17,7 @@ interface DisplayInfo {
 }
 
 export default function SettingsPanel(): JSX.Element {
-  const { closePanel } = useUIStore()
+  const { closePanel, openPanel } = useUIStore()
   const { settings, save } = useSettingsStore()
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
   const { alert, alertState, handleClose } = useAlert()
@@ -329,6 +329,16 @@ export default function SettingsPanel(): JSX.Element {
               <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.showThumbnails}</span>
             </label>
 
+            {local.notifications.showThumbnails && (
+              <label className="toggle" style={{ marginBottom: 14, marginLeft: 22 }}>
+                <div className={`toggle-track ${local.notifications.preloadImages !== false ? 'on' : ''}`}
+                  onClick={() => updateNotif({ preloadImages: local.notifications.preloadImages === false })}>
+                  <div className="toggle-thumb" />
+                </div>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.preloadImages}</span>
+              </label>
+            )}
+
             {/* Monitor selector */}
             {displays.length > 1 && (
               <div className="form-group">
@@ -512,6 +522,21 @@ export default function SettingsPanel(): JSX.Element {
               <button className="btn btn-danger" style={{ fontSize: 12, marginTop: 4 }}
                 onClick={() => window.api.cleanup(local.cleanupReadDays)}>
                 {t.settings.maintenance.runCleanBtn}
+              </button>
+            </div>
+
+            <div className="panel-section" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-muted)' }}>
+              <h3>{t.sidebar.feedsDoctor}</h3>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+                {t.doctor.explanation}
+              </p>
+              <button
+                className="btn btn-secondary"
+                style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}
+                onClick={() => openPanel('doctor')}
+              >
+                <Stethoscope size={14} />
+                {t.sidebar.feedsDoctor}
               </button>
             </div>
           </div>

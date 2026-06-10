@@ -95,6 +95,7 @@ export interface NotificationSettings {
   snoozedUntil: number | null
   openBehavior: 'browser' | 'app'
   showThumbnails: boolean
+  preloadImages: boolean
 }
 
 export interface WindowState {
@@ -150,7 +151,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     keywordFilters: [],
     snoozedUntil: null,
     openBehavior: 'app',
-    showThumbnails: true
+    showThumbnails: true,
+    preloadImages: true
   },
   pollingEnabled: true
 }
