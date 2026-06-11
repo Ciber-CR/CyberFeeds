@@ -305,9 +305,9 @@ export const translations = {
       tray: {
         showHide: 'Show / Hide',
         notifications: 'Notifications',
-        settings: 'Settings',
+        settings: 'Configuration...',
         fetchNow: 'Fetch Now',
-        quit: 'Quit'
+        quit: 'Exit'
       },
       webviewCtx: {
         openLink: 'Open Link',
@@ -621,7 +621,7 @@ export const translations = {
       tray: {
         showHide: 'Mostrar / Ocultar',
         notifications: 'Notificaciones',
-        settings: 'Configuración',
+        settings: 'Configuración...',
         fetchNow: 'Buscar ahora',
         quit: 'Salir'
       },
