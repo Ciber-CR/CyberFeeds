@@ -170,7 +170,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   pollingEnabled: true,
   shortcuts: {
-    showHide: { enabled: true, accelerator: 'CommandOrControl+Shift+`', global: false },
+    showHide: { enabled: true, accelerator: 'Control+Shift+F8', global: false },
     notifications: { enabled: true, accelerator: 'CommandOrControl+Shift+O', global: false },
     settings: { enabled: true, accelerator: 'CommandOrControl+Shift+I', global: false },
     fetch: { enabled: true, accelerator: 'CommandOrControl+Shift+F5', global: false }
