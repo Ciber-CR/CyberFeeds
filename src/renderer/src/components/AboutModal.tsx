@@ -251,6 +251,11 @@ function UpdateStatusLine({ status, t }: { status: UpdateStatus; t: any }): JSX.
   return (
     <div style={{ textAlign: 'center', fontSize: 12, color: info.color }}>
       {info.text}
+      {status.state === 'error' && status.message && (
+        <div style={{ marginTop: 4, fontSize: 10, color: 'var(--text-muted)', wordBreak: 'break-word' }}>
+          {status.message}
+        </div>
+      )}
     </div>
   )
 }
