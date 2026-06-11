@@ -38,6 +38,10 @@ const api = {
   saveSettings: (s: object) => ipcRenderer.invoke('settings:save', s),
   togglePolling: () => ipcRenderer.invoke('settings:togglePolling'),
 
+  // Keyboard Shortcuts
+  updateShortcuts: (shortcuts: object) => ipcRenderer.invoke('shortcuts:update', shortcuts),
+  resetShortcuts: () => ipcRenderer.invoke('shortcuts:reset'),
+
   // Notifications
   getNotificationHistory: () => ipcRenderer.invoke('notifications:getHistory'),
   clearNotificationHistory: () => ipcRenderer.invoke('notifications:clearHistory'),

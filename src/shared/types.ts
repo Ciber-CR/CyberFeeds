@@ -73,6 +73,7 @@ export interface AppSettings {
   listFontSize: number       // px — controls article list font size
   notifications: NotificationSettings
   pollingEnabled: boolean
+  shortcuts: KeyboardShortcuts
 }
 
 export interface NotificationSettings {
@@ -109,6 +110,19 @@ export interface WindowState {
 export interface NotifierPatch {
   add?: NotificationHistoryItem[]
   remove?: string[]
+}
+
+export interface KeyboardShortcut {
+  enabled: boolean
+  accelerator: string
+  global: boolean
+}
+
+export interface KeyboardShortcuts {
+  showHide: KeyboardShortcut
+  notifications: KeyboardShortcut
+  settings: KeyboardShortcut
+  fetch: KeyboardShortcut
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -154,5 +168,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
     showThumbnails: true,
     preloadImages: true
   },
-  pollingEnabled: true
+  pollingEnabled: true,
+  shortcuts: {
+    showHide: { enabled: true, accelerator: 'CommandOrControl+Shift+`', global: false },
+    notifications: { enabled: true, accelerator: 'CommandOrControl+Shift+O', global: false },
+    settings: { enabled: true, accelerator: 'CommandOrControl+Shift+I', global: false },
+    fetch: { enabled: true, accelerator: 'CommandOrControl+Shift+F5', global: false }
+  }
 }

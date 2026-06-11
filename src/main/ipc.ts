@@ -9,8 +9,9 @@ import * as polling from './polling'
 import { importOpml, exportOpml } from './opml'
 import { updateNotifierSettings } from './notifications'
 import { setAutoUpdate } from './updater'
-import { rebuildTrayMenu } from './tray'
+import { rebuildTrayMenu, rebuildGlobalShortcuts } from './tray'
 import { translations } from '../shared/translations'
+import { DEFAULT_SETTINGS } from '../shared/types'
 import type { Feed, Folder } from './types'
 import RssParser from 'rss-parser'
 import { XMLParser } from 'fast-xml-parser'
@@ -380,8 +381,11 @@ export function registerIpc(): void {
     // Auto-update toggle
     setAutoUpdate(settings.autoUpdate)
 
-    // Rebuild tray menu
+    // Rebuild tray menu and global shortcuts
     rebuildTrayMenu()
+    if (settings.shortcuts !== current.shortcuts) {
+      rebuildGlobalShortcuts()
+    }
 
     return { ok: true }
   })
@@ -659,5 +663,23 @@ export function registerIpc(): void {
     )
     const menu = Menu.buildFromTemplate(template)
     menu.popup()
+  })
+
+  // ─── Keyboard Shortcuts ─────────────────────────────────────────────────────
+
+  ipcMain.handle('shortcuts:update', (_, shortcuts) => {
+    const settings = db.getSettings()
+    db.saveSettings({ ...settings, shortcuts })
+    rebuildTrayMenu()
+    rebuildGlobalShortcuts()
+    return { ok: true }
+  })
+
+  ipcMain.handle('shortcuts:reset', () => {
+    const settings = db.getSettings()
+    db.saveSettings({ ...settings, shortcuts: DEFAULT_SETTINGS.shortcuts })
+    rebuildTrayMenu()
+    rebuildGlobalShortcuts()
+    return { ok: true }
   })
 }
