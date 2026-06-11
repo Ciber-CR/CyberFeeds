@@ -21,6 +21,11 @@ function migrate(): void {
   try { db.exec('ALTER TABLE articles ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
   try { db.exec('ALTER TABLE notification_history ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
   try { db.exec('ALTER TABLE feeds ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0') } catch { /* already exists */ }
+  try {
+    const { DEFAULT_SETTINGS } = require('../shared/types')
+    const shortcuts = JSON.stringify(DEFAULT_SETTINGS.shortcuts)
+    db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)').run('shortcuts', shortcuts)
+  } catch { /* already exists */ }
 }
 
 function createSchema(): void {

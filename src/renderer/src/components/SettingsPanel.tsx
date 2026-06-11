@@ -25,7 +25,7 @@ export default function SettingsPanel(): JSX.Element {
   const [importing, setImporting] = useState(false)
   const [displays, setDisplays] = useState<DisplayInfo[]>([])
   const [testing, setTesting] = useState(false)
-  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'notifications' | 'backupMaintenance'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'notifications' | 'keyboard' | 'backupMaintenance'>('general')
   const { t } = useTranslation()
 
   // Load available displays
@@ -115,6 +115,10 @@ export default function SettingsPanel(): JSX.Element {
         <button className={`settings-tab-btn ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
           <Bell size={13} />
           {t.settings.tabs.notifications}
+        </button>
+        <button className={`settings-tab-btn ${activeTab === 'keyboard' ? 'active' : ''}`} onClick={() => setActiveTab('keyboard')}>
+          <Monitor size={13} />
+          {t.settings.tabs.keyboard}
         </button>
         <button className={`settings-tab-btn ${activeTab === 'backupMaintenance' ? 'active' : ''}`} onClick={() => setActiveTab('backupMaintenance')}>
           <Database size={13} />
@@ -480,6 +484,92 @@ export default function SettingsPanel(): JSX.Element {
               {testing ? <Zap size={14} style={{ animation: 'pulse 1s infinite' }} /> : <Bell size={14} />}
               {testing ? t.settings.notifications.sendingBtn : t.settings.notifications.previewBtn}
             </button>
+          </div>
+        )}
+
+        {/* ── Keyboard Shortcuts ────────────────────────────────────── */}
+        {activeTab === 'keyboard' && (
+          <div className="panel-section">
+            <h3>{t.settings.keyboard.title}</h3>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>
+              {t.settings.keyboard.explanation}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {Object.entries(local.shortcuts).map(([key, shortcut]) => (
+                <div key={key} style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '140px 1fr 80px 80px 80px', 
+                  gap: 8, 
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  background: 'var(--bg-2)',
+                  borderRadius: 'var(--radius-sm)'
+                }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {t.settings.keyboard.actions[key as keyof typeof t.settings.keyboard.actions]}
+                  </span>
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={shortcut.accelerator}
+                    onChange={e => {
+                      const newShortcuts = { ...local.shortcuts }
+                      newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, accelerator: e.target.value }
+                      update({ shortcuts: newShortcuts })
+                    }}
+                    placeholder="Ctrl+Shift+A"
+                    style={{ fontSize: 12, padding: '4px 8px' }}
+                  />
+                  <label className="toggle" style={{ justifyContent: 'center' }}>
+                    <div className={`toggle-track ${shortcut.enabled ? 'on' : ''}`}
+                      onClick={() => {
+                        const newShortcuts = { ...local.shortcuts }
+                        newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, enabled: !shortcut.enabled }
+                        update({ shortcuts: newShortcuts })
+                      }}>
+                      <div className="toggle-thumb" />
+                    </div>
+                  </label>
+                  <label className="toggle" style={{ justifyContent: 'center' }}>
+                    <div className={`toggle-track ${shortcut.global ? 'on' : ''}`}
+                      onClick={() => {
+                        const newShortcuts = { ...local.shortcuts }
+                        newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, global: !shortcut.global }
+                        update({ shortcuts: newShortcuts })
+                      }}>
+                      <div className="toggle-thumb" />
+                    </div>
+                  </label>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
+                    {shortcut.global ? 'Global' : 'App'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button
+                className="btn btn-secondary"
+                style={{ fontSize: 12 }}
+                onClick={async () => {
+                  await window.api.resetShortcuts()
+                  const settings = await window.api.getSettings()
+                  setLocal(settings)
+                }}
+              >
+                {t.settings.keyboard.resetToDefaults}
+              </button>
+              <button
+                className="btn btn-accent"
+                style={{ fontSize: 12 }}
+                onClick={async () => {
+                  await window.api.updateShortcuts(local.shortcuts)
+                }}
+              >
+                {t.settings.keyboard.save}
+              </button>
+            </div>
           </div>
         )}
 

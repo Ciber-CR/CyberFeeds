@@ -96,6 +96,7 @@ export const translations = {
         general: 'General',
         appearance: 'Appearance',
         notifications: 'Notifications',
+        keyboard: 'Keyboard',
         backupMaintenance: 'Maintenance'
       },
       general: {
@@ -186,6 +187,25 @@ export const translations = {
         deleteOlder: 'Delete read articles older than (days)',
         autoClean: 'Auto clean on startup',
         runCleanBtn: 'Run Clean Up Now'
+      },
+      keyboard: {
+        title: 'Keyboard Shortcuts',
+        explanation: 'Customize keyboard shortcuts for tray menu actions. Global shortcuts work even when the app is minimized.',
+        actions: {
+          showHide: 'Show / Hide',
+          notifications: 'Notifications',
+          settings: 'Settings',
+          fetch: 'Fetch Now'
+        },
+        enabled: 'Enabled',
+        global: 'Global Hotkey',
+        accelerator: 'Shortcut',
+        resetToDefaults: 'Reset to Defaults',
+        save: 'Save',
+        validation: {
+          invalidFormat: 'Invalid format. Use format like Ctrl+Shift+A',
+          conflict: 'This shortcut conflicts with another action'
+        }
       }
     },
     inbox: {
@@ -392,6 +412,7 @@ export const translations = {
         general: 'General',
         appearance: 'Apariencia',
         notifications: 'Notificaciones',
+        keyboard: 'Teclado',
         backupMaintenance: 'Mantenimiento'
       },
       general: {
@@ -482,6 +503,25 @@ export const translations = {
         deleteOlder: 'Eliminar artículos leídos anteriores a (días)',
         autoClean: 'Limpieza automática al iniciar',
         runCleanBtn: 'Ejecutar limpieza ahora'
+      },
+      keyboard: {
+        title: 'Atajos de teclado',
+        explanation: 'Personaliza los atajos de teclado para las acciones del menú de la bandeja. Los atajos globales funcionan incluso cuando la aplicación está minimizada.',
+        actions: {
+          showHide: 'Mostrar / Ocultar',
+          notifications: 'Notificaciones',
+          settings: 'Configuración',
+          fetch: 'Obtener ahora'
+        },
+        enabled: 'Habilitado',
+        global: 'Atajo global',
+        accelerator: 'Atajo',
+        resetToDefaults: 'Restablecer valores predeterminados',
+        save: 'Guardar',
+        validation: {
+          invalidFormat: 'Formato inválido. Usa formato como Ctrl+Shift+A',
+          conflict: 'Este atajo entra en conflicto con otra acción'
+        }
       }
     },
     inbox: {
