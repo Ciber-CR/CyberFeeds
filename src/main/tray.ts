@@ -31,6 +31,14 @@ export function createTray(mainWindow: BrowserWindow): Tray {
     restoreMainWindow()
   })
 
+  // Rebuild menu automatically when window is shown or hidden to update label
+  mainWindow.on('show', () => {
+    buildMenu()
+  })
+  mainWindow.on('hide', () => {
+    buildMenu()
+  })
+
   return tray
 }
 
@@ -43,6 +51,19 @@ function buildMenu(): void {
   const lang = db.getSettings().language || 'en'
   const t = translations[lang].mainProcess.tray
 
+  const iconsDir = path.join(__dirname, '../../resources/menu-icons')
+  const iconShowHide = nativeImage.createFromPath(path.join(iconsDir, 'show-hide.png'))
+  const iconNotifications = nativeImage.createFromPath(path.join(iconsDir, 'notifications.png'))
+  const iconSettings = nativeImage.createFromPath(path.join(iconsDir, 'settings.png'))
+  const iconFetch = nativeImage.createFromPath(path.join(iconsDir, 'fetch.png'))
+  const iconQuit = nativeImage.createFromPath(path.join(iconsDir, 'quit.png'))
+
+  const isVisible = _mainWindow && !_mainWindow.isDestroyed() && _mainWindow.isVisible()
+  const parts = t.showHide.split(' / ')
+  const dynamicLabel = isVisible 
+    ? (parts[1] || 'Hide') 
+    : (parts[0] || 'Show')
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: `CyberFeeds v${version}`,
@@ -51,7 +72,9 @@ function buildMenu(): void {
     },
     { type: 'separator' },
     {
-      label: t.showHide,
+      label: dynamicLabel,
+      icon: iconShowHide,
+      accelerator: 'Ctrl+Shift+`',
       click: () => {
         const win = _mainWindow
         if (!win || win.isDestroyed()) return
@@ -64,6 +87,8 @@ function buildMenu(): void {
     },
     {
       label: t.notifications,
+      icon: iconNotifications,
+      accelerator: 'Ctrl+Shift+O',
       click: () => {
         const win = _mainWindow
         if (!win || win.isDestroyed()) return
@@ -73,6 +98,8 @@ function buildMenu(): void {
     },
     {
       label: t.settings,
+      icon: iconSettings,
+      accelerator: 'Ctrl+Shift+I',
       click: () => {
         const win = _mainWindow
         if (!win || win.isDestroyed()) return
@@ -82,11 +109,14 @@ function buildMenu(): void {
     },
     {
       label: t.fetchNow,
+      icon: iconFetch,
+      accelerator: 'Ctrl+Shift+F5',
       click: () => { pollFeeds() }
     },
     { type: 'separator' },
     {
       label: t.quit,
+      icon: iconQuit,
       click: () => { app.quit() }
     }
   ])
