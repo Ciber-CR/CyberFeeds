@@ -16,6 +16,198 @@ interface DisplayInfo {
   isPrimary?: boolean
 }
 
+function normalizeKey(key: string, code: string): string {
+  if (key.length === 1 && key >= 'a' && key <= 'z') return key.toUpperCase()
+  if (key.length === 1 && key >= 'A' && key <= 'Z') return key
+  if (key.length === 1 && key >= '0' && key <= '9') return key
+
+  switch (key) {
+    case ' ': return 'Space'
+    case 'ArrowUp': return 'Up'
+    case 'ArrowDown': return 'Down'
+    case 'ArrowLeft': return 'Left'
+    case 'ArrowRight': return 'Right'
+    case 'Escape': return 'Esc'
+    case 'Enter': return 'Enter'
+    case 'Tab': return 'Tab'
+    case 'Backspace': return 'Backspace'
+    case 'Delete': return 'Delete'
+    case 'Insert': return 'Insert'
+    case 'Home': return 'Home'
+    case 'End': return 'End'
+    case 'PageUp': return 'PageUp'
+    case 'PageDown': return 'PageDown'
+    case 'PrintScreen': return 'PrintScreen'
+    case '`': case '~': return '`'
+    case '-': case '_': return '-'
+    case '=': case '+': return '='
+    case '[': case '{': return '['
+    case ']': case '}': return ']'
+    case ';': case ':': return ';'
+    case "'": case '"': return "'"
+    case ',': case '<': return ','
+    case '.': case '>': return '.'
+    case '/': case '?': return '/'
+    case '\\': case '|': return '\\'
+  }
+
+  if (/^F[1-9][0-9]?$/.test(key)) return key
+  if (code.startsWith('Key')) return code.substring(3)
+  if (code.startsWith('Digit')) return code.substring(5)
+  if (code.startsWith('Numpad')) return code
+
+  return key
+}
+
+function findShortcutConflict(
+  currentKey: string,
+  accelerator: string,
+  shortcuts: any
+): string | null {
+  if (!accelerator) return null
+  const cleanAcc = accelerator.trim().toLowerCase()
+  for (const [key, val] of Object.entries(shortcuts)) {
+    const s = val as any
+    if (key !== currentKey && s.enabled && s.accelerator.trim().toLowerCase() === cleanAcc) {
+      return key
+    }
+  }
+  return null
+}
+
+interface HotkeyRecorderProps {
+  actionKey: string
+  value: string
+  onChange: (newValue: string) => void
+  shortcuts: any
+  t: any
+}
+
+function HotkeyRecorder({ actionKey, value, onChange, shortcuts, t }: HotkeyRecorderProps): JSX.Element {
+  const [recording, setRecording] = useState(false)
+  const [tempValue, setTempValue] = useState('')
+
+  const lang = t.settings.general.language === 'es' ? 'es' : 'en'
+  const isEs = lang === 'es'
+
+  const formatDisplay = (val: string) => {
+    if (!val) return isEs ? 'Ninguno' : 'None'
+    return val
+      .replace(/CommandOrControl/g, 'Ctrl')
+      .replace(/CmdOrCtrl/g, 'Ctrl')
+      .replace(/Control/g, 'Ctrl')
+      .replace(/Meta/g, 'Win')
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const key = e.key
+    if (key === 'Escape') {
+      setRecording(false)
+      e.currentTarget.blur()
+      return
+    }
+
+    if ((key === 'Backspace' || key === 'Delete') && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+      onChange('')
+      setRecording(false)
+      e.currentTarget.blur()
+      return
+    }
+
+    const isModifier = ['Control', 'Shift', 'Alt', 'Meta'].includes(key)
+    const parts: string[] = []
+    if (e.ctrlKey) parts.push('Ctrl')
+    if (e.shiftKey) parts.push('Shift')
+    if (e.altKey) parts.push('Alt')
+    if (e.metaKey) parts.push('Cmd')
+
+    if (!isModifier) {
+      const normalized = normalizeKey(key, e.code)
+      if (normalized) {
+        parts.push(normalized)
+      }
+      const finalVal = parts.join('+')
+      onChange(finalVal)
+      setRecording(false)
+      e.currentTarget.blur()
+    } else {
+      setTempValue(parts.join('+') + ' + ...')
+    }
+  }
+
+  const handleFocus = () => {
+    setRecording(true)
+    setTempValue(isEs ? 'Presiona teclas...' : 'Press keys...')
+  }
+
+  const handleBlur = () => {
+    setRecording(false)
+    setTempValue('')
+  }
+
+  const conflictKey = findShortcutConflict(actionKey, value, shortcuts)
+  const hasConflict = !!conflictKey
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      <input
+        type="text"
+        className="form-input"
+        readOnly
+        value={recording ? tempValue : formatDisplay(value)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder={t.settings.keyboard.accelerator}
+        style={{
+          fontSize: 11,
+          fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+          padding: '4px 6px',
+          textAlign: 'center',
+          cursor: 'pointer',
+          borderWidth: 1,
+          borderStyle: 'solid',
+          borderRadius: 4,
+          background: recording 
+            ? 'var(--accent-subtle)' 
+            : hasConflict 
+              ? 'rgba(210, 153, 34, 0.15)' 
+              : 'var(--bg-1)',
+          borderColor: recording 
+            ? 'var(--accent)' 
+            : hasConflict 
+              ? 'var(--orange)' 
+              : 'var(--border)',
+          color: recording 
+            ? 'var(--accent)' 
+            : hasConflict 
+              ? 'var(--orange)' 
+              : value 
+                ? 'var(--text-primary)' 
+                : 'var(--text-muted)',
+          fontWeight: recording || value ? '600' : '400',
+          transition: 'all 0.15s ease',
+          boxShadow: recording ? '0 0 8px var(--accent-subtle)' : 'none'
+        }}
+      />
+      {hasConflict && (
+        <span style={{ 
+          fontSize: 9, 
+          color: 'var(--orange)', 
+          marginTop: 2, 
+          textAlign: 'left',
+          display: 'block' 
+        }}>
+          {t.settings.keyboard.validation.conflict}
+        </span>
+      )}
+    </div>
+  )
+}
+
 export default function SettingsPanel(): JSX.Element {
   const { closePanel, openPanel } = useUIStore()
   const { settings, save } = useSettingsStore()
@@ -240,55 +432,62 @@ export default function SettingsPanel(): JSX.Element {
                 {t.settings.keyboard.explanation}
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {Object.entries(local.shortcuts).map(([key, shortcut]) => (
                   <div key={key} style={{
                     display: 'grid',
-                    gridTemplateColumns: '130px 1fr 70px 70px 70px',
-                    gap: 8,
+                    gridTemplateColumns: '120px 140px 1fr',
+                    gap: 12,
                     alignItems: 'center',
-                    padding: '6px 10px',
-                    background: 'var(--bg-2)',
-                    borderRadius: 'var(--radius-sm)'
+                    padding: '8px 12px',
+                    background: 'var(--bg-1)',
+                    border: '1px solid var(--border-muted)',
+                    borderRadius: 'var(--radius)'
                   }}>
-                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
                       {t.settings.keyboard.actions[key as keyof typeof t.settings.keyboard.actions]}
                     </span>
-                    <input
-                      className="form-input"
-                      type="text"
+                    <HotkeyRecorder
+                      actionKey={key}
                       value={shortcut.accelerator}
-                      onChange={e => {
+                      onChange={newVal => {
                         const newShortcuts = { ...local.shortcuts }
-                        newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, accelerator: e.target.value }
+                        newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, accelerator: newVal }
                         update({ shortcuts: newShortcuts })
                       }}
-                      placeholder="Ctrl+Shift+A"
-                      style={{ fontSize: 11, padding: '3px 6px' }}
+                      shortcuts={local.shortcuts}
+                      t={t}
                     />
-                    <label className="toggle" style={{ justifyContent: 'center' }}>
-                      <div className={`toggle-track ${shortcut.enabled ? 'on' : ''}`}
-                        onClick={() => {
-                          const newShortcuts = { ...local.shortcuts }
-                          newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, enabled: !shortcut.enabled }
-                          update({ shortcuts: newShortcuts })
-                        }}>
-                        <div className="toggle-thumb" />
-                      </div>
-                    </label>
-                    <label className="toggle" style={{ justifyContent: 'center' }}>
-                      <div className={`toggle-track ${shortcut.global ? 'on' : ''}`}
-                        onClick={() => {
-                          const newShortcuts = { ...local.shortcuts }
-                          newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, global: !shortcut.global }
-                          update({ shortcuts: newShortcuts })
-                        }}>
-                        <div className="toggle-thumb" />
-                      </div>
-                    </label>
-                    <span style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>
-                      {shortcut.global ? 'Global' : 'App'}
-                    </span>
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'flex-end' }}>
+                      <label className="toggle" style={{ margin: 0 }}>
+                        <div className={`toggle-track ${shortcut.enabled ? 'on' : ''}`}
+                          onClick={() => {
+                            const newShortcuts = { ...local.shortcuts }
+                            newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, enabled: !shortcut.enabled }
+                            update({ shortcuts: newShortcuts })
+                          }}>
+                          <div className="toggle-thumb" />
+                        </div>
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                          {t.settings.keyboard.enabled || 'Enabled'}
+                        </span>
+                      </label>
+                      <label className={`toggle ${!shortcut.enabled ? 'disabled' : ''}`} style={{ margin: 0 }}>
+                        <div className={`toggle-track ${shortcut.global && shortcut.enabled ? 'on' : ''}`}
+                          onClick={() => {
+                            if (shortcut.enabled) {
+                              const newShortcuts = { ...local.shortcuts }
+                              newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, global: !shortcut.global }
+                              update({ shortcuts: newShortcuts })
+                            }
+                          }}>
+                          <div className="toggle-thumb" />
+                        </div>
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                          {shortcut.global ? 'Global' : 'App'}
+                        </span>
+                      </label>
+                    </div>
                   </div>
                 ))}
               </div>
