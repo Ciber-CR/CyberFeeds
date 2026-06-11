@@ -50,6 +50,7 @@ export const translations = {
       searchPlaceholder: 'Search articles...',
       noArticles: 'No articles',
       moreBelow: 'more below',
+      backToTop: 'Back to top',
       yesterday: 'Yesterday',
       timeAgo: {
         justNow: 'just now',
@@ -366,6 +367,7 @@ export const translations = {
       searchPlaceholder: 'Buscar artículos...',
       noArticles: 'Sin artículos',
       moreBelow: 'más abajo',
+      backToTop: 'Volver al inicio',
       yesterday: 'Ayer',
       timeAgo: {
         justNow: 'hace un momento',

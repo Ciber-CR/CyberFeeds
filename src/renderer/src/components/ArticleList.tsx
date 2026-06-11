@@ -1,6 +1,6 @@
 import React, { memo, useRef, useCallback, useEffect, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Star, Search, Filter, ChevronDown } from 'lucide-react'
+import { Star, Search, Filter, ChevronDown, ArrowUp } from 'lucide-react'
 import { useArticlesStore } from '../store/articles.store'
 import { useUIStore } from '../store/ui.store'
 import { useFeedsStore } from '../store/feeds.store'
@@ -113,25 +113,44 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     overscan: 8
   })
 
-  // Count of articles below the current viewport (loaded + not yet loaded).
+  // Count of articles below the current viewport, and whether to offer "back to top".
   const [belowCount, setBelowCount] = useState(0)
-  const updateBelowCount = useCallback(() => {
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const rafRef = useRef<number | undefined>(undefined)
+
+  // NOTE: this must NOT run inside the getVirtualItems() effect — doing so creates
+  // a render→measure→setState→render feedback loop that visibly jitters the list.
+  // It is driven by real scroll events (rAF-throttled) and by data changes only.
+  const computeScrollState = useCallback(() => {
     const el = parentRef.current
-    if (!el) { setBelowCount(0); return }
+    if (!el) return
     const bottom = el.scrollTop + el.clientHeight
-    // Rendered items cover the viewport (plus overscan). The highest-index item
-    // that starts above the viewport's bottom edge is the last visible one.
     let lastVisible = -1
     for (const it of rowVirtualizer.getVirtualItems()) {
       if (it.start < bottom) lastVisible = Math.max(lastVisible, it.index)
     }
-    if (lastVisible < 0) { setBelowCount(0); return }
-    setBelowCount(Math.max(0, totalCount - (lastVisible + 1)))
+    setBelowCount(lastVisible < 0 ? 0 : Math.max(0, totalCount - (lastVisible + 1)))
+    setShowScrollTop(el.scrollTop > 400)
   }, [rowVirtualizer, totalCount])
+
+  const handleListScroll = useCallback(() => {
+    if (rafRef.current != null) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = undefined
+      computeScrollState()
+    })
+  }, [computeScrollState])
+
+  const scrollToTop = useCallback(() => {
+    parentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  // Recompute when the dataset changes (feed switch, load-more, filter) — not per render.
+  useEffect(() => { computeScrollState() }, [totalCount, articles.length, loading, computeScrollState])
+  useEffect(() => () => { if (rafRef.current != null) cancelAnimationFrame(rafRef.current) }, [])
 
   useEffect(() => {
     const items = rowVirtualizer.getVirtualItems()
-    updateBelowCount()
     if (items.length === 0) return
     const lastItem = items[items.length - 1]
     if (lastItem.index >= articles.length - 10 && !loadingMore) {
@@ -223,7 +242,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
       </div>
 
       {/* Virtual list */}
-      <div className="article-list-scroll" ref={parentRef}>
+      <div className="article-list-scroll" ref={parentRef} onScroll={handleListScroll}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
             <div className="spinner" />
@@ -263,31 +282,22 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
 
       {/* Floating "more below" indicator — mirrors the notifier popup pill */}
       {!loading && belowCount > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 10,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'rgba(0, 170, 255, 0.65)',
-            border: '1px solid rgba(0, 170, 255, 0.5)',
-            borderRadius: 12,
-            padding: '3px 12px',
-            fontSize: 10,
-            fontWeight: 600,
-            color: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            zIndex: 10,
-            backdropFilter: 'blur(8px)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-            pointerEvents: 'none'
-          }}
-        >
+        <div className="list-more-pill">
           <ChevronDown size={10} />
           {belowCount} {t.articleList.moreBelow}
         </div>
+      )}
+
+      {/* Back-to-top button — appears once scrolled down */}
+      {!loading && showScrollTop && (
+        <button
+          className="scroll-top-fab"
+          onClick={scrollToTop}
+          title={t.articleList.backToTop}
+          aria-label={t.articleList.backToTop}
+        >
+          <ArrowUp size={16} />
+        </button>
       )}
 
       {ctx && (() => {
