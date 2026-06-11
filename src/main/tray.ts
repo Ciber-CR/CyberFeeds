@@ -150,6 +150,12 @@ function buildMenu(): void {
       }
     },
     {
+      label: t.fetchNow,
+      icon: iconFetch,
+      accelerator: shortcuts.fetch.enabled ? shortcuts.fetch.accelerator : undefined,
+      click: () => { pollFeeds() }
+    },
+    {
       label: t.notifications,
       icon: iconNotifications,
       accelerator: shortcuts.notifications.enabled ? shortcuts.notifications.accelerator : undefined,
@@ -170,12 +176,6 @@ function buildMenu(): void {
         restoreMainWindow()
         win.webContents.send('app:openSettings')
       }
-    },
-    {
-      label: t.fetchNow,
-      icon: iconFetch,
-      accelerator: shortcuts.fetch.enabled ? shortcuts.fetch.accelerator : undefined,
-      click: () => { pollFeeds() }
     },
     { type: 'separator' },
     {
