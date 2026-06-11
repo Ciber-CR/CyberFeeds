@@ -29,9 +29,6 @@ const TopBar = memo(function TopBar(): JSX.Element {
       </div>
       <div className="topbar-drag" />
 
-      <button className="btn btn-ghost btn-icon no-drag" onClick={() => openPanel('inbox')} title={t.topBar.inboxToday}>
-        <Inbox size={15} />
-      </button>
       <button
         className="btn btn-ghost btn-icon no-drag"
         onClick={() => {
@@ -63,6 +60,9 @@ const TopBar = memo(function TopBar(): JSX.Element {
             {unseenNotificationsCount}
           </span>
         )}
+      </button>
+      <button className="btn btn-ghost btn-icon no-drag" onClick={() => openPanel('inbox')} title={t.topBar.inboxToday}>
+        <Inbox size={15} />
       </button>
       <button className="btn btn-ghost btn-icon no-drag" onClick={cycleLayout} title={t.topBar.toggleLayout}>
         <LayoutTemplate size={15} />
