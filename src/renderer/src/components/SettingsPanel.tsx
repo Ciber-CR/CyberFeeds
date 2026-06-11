@@ -48,6 +48,7 @@ export default function SettingsPanel(): JSX.Element {
 
   const handleSave = async (): Promise<void> => {
     await save(local)
+    await window.api.updateShortcuts(local.shortcuts)
     closePanel()
   }
 
@@ -548,28 +549,17 @@ export default function SettingsPanel(): JSX.Element {
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              <button
-                className="btn btn-secondary"
-                style={{ fontSize: 12 }}
-                onClick={async () => {
-                  await window.api.resetShortcuts()
-                  const settings = await window.api.getSettings()
-                  setLocal(settings)
-                }}
-              >
-                {t.settings.keyboard.resetToDefaults}
-              </button>
-              <button
-                className="btn btn-accent"
-                style={{ fontSize: 12 }}
-                onClick={async () => {
-                  await window.api.updateShortcuts(local.shortcuts)
-                }}
-              >
-                {t.settings.keyboard.save}
-              </button>
-            </div>
+            <button
+              className="btn btn-secondary"
+              style={{ fontSize: 12, marginTop: 16 }}
+              onClick={async () => {
+                await window.api.resetShortcuts()
+                const settings = await window.api.getSettings()
+                setLocal(settings)
+              }}
+            >
+              {t.settings.keyboard.resetToDefaults}
+            </button>
           </div>
         )}
 
