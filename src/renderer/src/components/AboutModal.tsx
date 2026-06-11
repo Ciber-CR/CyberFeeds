@@ -28,8 +28,24 @@ export default function AboutModal(): JSX.Element {
 
   const handleCheck = async (): Promise<void> => {
     setStatus({ state: 'checking' })
-    const res = await window.api.checkForUpdates()
-    if (!res?.ok) setStatus({ state: 'error', message: res?.error || 'Update check failed' })
+    try {
+      const res = await window.api.checkForUpdates()
+      if (!res?.ok) {
+        setStatus({ state: 'error', message: res?.error || 'Update check failed' })
+        return
+      }
+      // Safety net: if no update-available / update-not-available event settled the
+      // UI, don't leave it spinning on "Checking…" forever. Events (which fire first)
+      // take precedence, so we only settle when still in the 'checking' state.
+      setStatus(prev =>
+        prev.state === 'checking'
+          ? { state: 'not-available', version: res.version || appVersion }
+          : prev
+      )
+    } catch (e) {
+      // A rejected IPC invoke (e.g. handler missing) used to freeze the UI silently.
+      setStatus({ state: 'error', message: String((e as Error)?.message || e) })
+    }
   }
 
   const handleDownload = async (): Promise<void> => {
