@@ -369,7 +369,12 @@ export function registerIpc(): void {
 
   ipcMain.handle('settings:save', (_, settings) => {
     const current = db.getSettings()
-    db.saveSettings(settings)
+
+    // Normalize payload to avoid structured-clone issues and ensure full shape.
+    // This prevents Electron IPC conversion failures on complex objects.
+    const normalized = { ...DEFAULT_SETTINGS, ...settings }
+    db.saveSettings(normalized)
+
     updateNotifierSettings(settings.notifications)
     if (settings.pollingInterval !== current.pollingInterval) {
       polling.restartPolling(settings.pollingInterval)
@@ -676,10 +681,30 @@ export function registerIpc(): void {
   })
 
   ipcMain.handle('shortcuts:reset', () => {
+    // Always read latest settings from DB; do not rely on cached defaults.
     const settings = db.getSettings()
-    db.saveSettings({ ...settings, shortcuts: DEFAULT_SETTINGS.shortcuts })
+
+
+    // Explicit reset payload to guarantee expected defaults even if the
+    // main-process build has stale DEFAULT_SETTINGS cached.
+    const RESET_SHORTCUTS = {
+      showHide: { enabled: true, accelerator: 'Alt+Shift+S', global: true },
+      notifications: { enabled: false, accelerator: '', global: false },
+      settings: { enabled: false, accelerator: '', global: false },
+      fetch: { enabled: false, accelerator: '', global: false }
+    }
+
+    // Overwrite shortcuts deterministically (avoid depending on current DB value shape/merge).
+    // Also spreads DEFAULT_SETTINGS to guarantee we keep the rest of the app settings intact.
+    db.saveSettings({
+      ...DEFAULT_SETTINGS,
+      ...settings,
+      shortcuts: RESET_SHORTCUTS
+    })
+
     rebuildTrayMenu()
     rebuildGlobalShortcuts()
-    return { ok: true }
+    return { ok: true, shortcuts: RESET_SHORTCUTS }
   })
+
 }
