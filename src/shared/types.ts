@@ -170,9 +170,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   pollingEnabled: true,
   shortcuts: {
-    showHide: { enabled: true, accelerator: 'Control+Shift+F8', global: false },
-    notifications: { enabled: true, accelerator: 'CommandOrControl+Shift+O', global: false },
-    settings: { enabled: true, accelerator: 'CommandOrControl+Shift+I', global: false },
-    fetch: { enabled: true, accelerator: 'CommandOrControl+Shift+F5', global: false }
+    // Default: only one hotkey enabled by default.
+    // Show/Hide (tray + global shortcut): Alt+Shift+S
+    showHide: { enabled: true, accelerator: 'Alt+Shift+S', global: true },
+
+    // Disabled by default — no accelerators so they don't appear unless the user sets them.
+    notifications: { enabled: false, accelerator: '', global: false },
+    settings: { enabled: false, accelerator: '', global: false },
+    fetch: { enabled: false, accelerator: '', global: false }
   }
 }

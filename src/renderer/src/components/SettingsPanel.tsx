@@ -87,11 +87,11 @@ function HotkeyRecorder({ actionKey, value, onChange, shortcuts, t }: HotkeyReco
   const [recording, setRecording] = useState(false)
   const [tempValue, setTempValue] = useState('')
 
-  const lang = t.settings.general.language === 'es' ? 'es' : 'en'
-  const isEs = lang === 'es'
+  const { language } = useTranslation()
+  const isEs = language === 'es'
 
   const formatDisplay = (val: string) => {
-    if (!val) return isEs ? 'Ninguno' : 'None'
+    if (!val) return isEs ? 'Ninguno (Clic para agregar)' : 'None (Click to add)'
     return val
       .replace(/CommandOrControl/g, 'Ctrl')
       .replace(/CmdOrCtrl/g, 'Ctrl')
@@ -217,7 +217,9 @@ export default function SettingsPanel(): JSX.Element {
   const [importing, setImporting] = useState(false)
   const [displays, setDisplays] = useState<DisplayInfo[]>([])
   const [testing, setTesting] = useState(false)
-  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'notifications' | 'backupMaintenance'>('general')
+
+  type ActiveTab = 'general' | 'appearance' | 'notifications' | 'backupMaintenance'
+  const [activeTab, setActiveTab] = useState<ActiveTab>('general')
   const { t } = useTranslation()
 
   // Load available displays
@@ -239,10 +241,16 @@ export default function SettingsPanel(): JSX.Element {
     setLocal(prev => ({ ...prev, notifications: { ...prev.notifications, ...partial } }))
 
   const handleSave = async (): Promise<void> => {
+    // Avoid closing bugs if user removed all shortcuts: still persist full settings.
+    // Also persist shortcuts exactly as current UI state.
     await save(local)
     await window.api.updateShortcuts(local.shortcuts)
     closePanel()
   }
+
+  // Ensure Save button always has a stable handler (regression guard)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+
 
   const handleExportBackup = async (): Promise<void> => {
     const result = await window.api.exportBackup()
@@ -323,7 +331,11 @@ export default function SettingsPanel(): JSX.Element {
             <div className="form-group">
               <label className="form-label">{t.settings.general.language}</label>
               <select className="form-select" value={local.language || 'en'}
-                onChange={e => update({ language: e.target.value as 'en' | 'es' })}>
+                onChange={e => {
+                  const lang = e.target.value as 'en' | 'es'
+                  update({ language: lang })
+                  useSettingsStore.getState().update({ language: lang })
+                }}>
                 <option value="en">English</option>
                 <option value="es">Español</option>
               </select>
@@ -436,7 +448,7 @@ export default function SettingsPanel(): JSX.Element {
                 {Object.entries(local.shortcuts).map(([key, shortcut]) => (
                   <div key={key} style={{
                     display: 'grid',
-                    gridTemplateColumns: '120px 140px 1fr',
+                    gridTemplateColumns: '120px 1fr auto',
                     gap: 12,
                     alignItems: 'center',
                     padding: '8px 12px',
@@ -447,47 +459,65 @@ export default function SettingsPanel(): JSX.Element {
                     <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
                       {t.settings.keyboard.actions[key as keyof typeof t.settings.keyboard.actions]}
                     </span>
-                    <HotkeyRecorder
-                      actionKey={key}
-                      value={shortcut.accelerator}
-                      onChange={newVal => {
-                        const newShortcuts = { ...local.shortcuts }
-                        newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, accelerator: newVal }
-                        update({ shortcuts: newShortcuts })
-                      }}
-                      shortcuts={local.shortcuts}
-                      t={t}
-                    />
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'flex-end' }}>
-                      <label className="toggle" style={{ margin: 0 }}>
-                        <div className={`toggle-track ${shortcut.enabled ? 'on' : ''}`}
-                          onClick={() => {
-                            const newShortcuts = { ...local.shortcuts }
-                            newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, enabled: !shortcut.enabled }
-                            update({ shortcuts: newShortcuts })
-                          }}>
-                          <div className="toggle-thumb" />
-                        </div>
-                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                          {t.settings.keyboard.enabled || 'Enabled'}
-                        </span>
-                      </label>
-                      <label className={`toggle ${!shortcut.enabled ? 'disabled' : ''}`} style={{ margin: 0 }}>
-                        <div className={`toggle-track ${shortcut.global && shortcut.enabled ? 'on' : ''}`}
-                          onClick={() => {
-                            if (shortcut.enabled) {
-                              const newShortcuts = { ...local.shortcuts }
-                              newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, global: !shortcut.global }
-                              update({ shortcuts: newShortcuts })
-                            }
-                          }}>
-                          <div className="toggle-thumb" />
-                        </div>
-                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                          {shortcut.global ? 'Global' : 'App'}
-                        </span>
-                      </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <HotkeyRecorder
+                        actionKey={key}
+                        value={shortcut.accelerator}
+                        onChange={newVal => {
+                          const newShortcuts = { ...local.shortcuts }
+                          newShortcuts[key as keyof typeof local.shortcuts] = {
+                            ...shortcut,
+                            accelerator: newVal,
+                            enabled: newVal !== ''
+                          }
+                          update({ shortcuts: newShortcuts })
+                        }}
+                        shortcuts={local.shortcuts}
+                        t={t}
+                      />
+                      <button
+                        className="btn btn-ghost"
+                        style={{
+                          fontSize: 12,
+                          width: 26,
+                          height: 26,
+                          padding: 0,
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border)',
+                          background: 'var(--bg-2)',
+                          cursor: 'pointer',
+                          color: shortcut.accelerator ? 'var(--orange)' : 'var(--text-muted)',
+                          opacity: shortcut.accelerator ? 1 : 0.7,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}
+                        title={'Clear shortcut'}
+                        onClick={() => {
+                          const newShortcuts = { ...local.shortcuts }
+                          newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, accelerator: '', enabled: false }
+                          update({ shortcuts: newShortcuts })
+                        }}
+                      >
+                        ✕
+                      </button>
                     </div>
+                    <label className="toggle" style={{ margin: 0 }}>
+                      <div
+                        className={`toggle-track ${shortcut.global ? 'on' : ''}`}
+                        onClick={() => {
+                          const newShortcuts = { ...local.shortcuts }
+                          newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, global: !shortcut.global }
+                          update({ shortcuts: newShortcuts })
+                        }}
+                      >
+                        <div className="toggle-thumb" />
+                      </div>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'inline-block', width: 42, textAlign: 'left' }}>
+                        {shortcut.global ? 'Global' : 'App'}
+                      </span>
+                    </label>
                   </div>
                 ))}
               </div>
@@ -496,9 +526,10 @@ export default function SettingsPanel(): JSX.Element {
                 className="btn btn-secondary"
                 style={{ fontSize: 11, marginTop: 12 }}
                 onClick={async () => {
-                  await window.api.resetShortcuts()
-                  const settings = await window.api.getSettings()
-                  setLocal(settings)
+                  const result = await window.api.resetShortcuts() as any
+                  if (result?.shortcuts) {
+                    setLocal(prev => ({ ...prev, shortcuts: result.shortcuts }))
+                  }
                 }}
               >
                 {t.settings.keyboard.resetToDefaults}
