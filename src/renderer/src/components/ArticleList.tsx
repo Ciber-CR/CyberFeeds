@@ -31,7 +31,36 @@ const FeedFavicon = memo(function FeedFavicon({
   title?: string
   size?: number
 }) {
+  // Retry medicine: if the network is temporarily down, don't permanently fall back.
+  const [attempt, setAttempt] = React.useState(0)
   const [failed, setFailed] = React.useState(false)
+  const [retryToken, setRetryToken] = React.useState(0)
+
+  const retryTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const MAX_ATTEMPTS = 5
+  const BACKOFF_MS = [10_000, 30_000, 90_000, 180_000, 300_000] // 10s/30s/1.5m/3m/5m
+
+  React.useEffect(() => {
+    // Reset when icon changes
+    setAttempt(0)
+    setFailed(false)
+    setRetryToken(0)
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current)
+      retryTimeoutRef.current = null
+    }
+  }, [icon])
+
+  React.useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+        retryTimeoutRef.current = null
+      }
+    }
+  }, [])
+
   const letter = (title || '?').charAt(0).toUpperCase()
   const colors = ['#58a6ff', '#3fb950', '#d29922', '#f0883e', '#bc8cff', '#39d353', '#e3b341', '#ff7b72']
   const color = colors[letter.charCodeAt(0) % colors.length]
@@ -45,18 +74,59 @@ const FeedFavicon = memo(function FeedFavicon({
     userSelect: 'none'
   }
 
+  const resolvedSrc = React.useMemo(() => {
+    if (!icon) return undefined
+    // Ensure retries don't get stuck on a cached failure: add a busting query using retryToken and timestamp.
+    const sep = icon.includes('?') ? '&' : '?'
+    const ts = Date.now()
+    return `${icon}${sep}bb_retry=${retryToken}&t=${ts}`
+  }, [icon, retryToken])
+
+  const scheduleRetry = React.useCallback((nextAttempt: number) => {
+    if (!icon) return
+    if (nextAttempt >= MAX_ATTEMPTS) return
+
+    const delay = BACKOFF_MS[Math.min(nextAttempt - 1, BACKOFF_MS.length - 1)] ?? BACKOFF_MS[BACKOFF_MS.length - 1]
+
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current)
+    }
+
+    retryTimeoutRef.current = setTimeout(() => {
+      setFailed(false)
+      setRetryToken(t => t + 1)
+    }, delay)
+  }, [icon])
+
   if (!icon || failed) {
+    // While retrying we show the letter avatar, but we will flip back to img on a successful later load.
     return <span style={avatarStyle}>{letter}</span>
   }
 
   return (
     <img
-      src={icon}
+      src={resolvedSrc}
       alt=""
       width={size}
       height={size}
       style={{ borderRadius: 3, objectFit: 'contain', flexShrink: 0, display: 'block' }}
-      onError={() => setFailed(true)}
+      onError={() => {
+        setAttempt(a => {
+          const next = a + 1
+          setFailed(true)
+          scheduleRetry(next)
+          return next
+        })
+      }}
+      onLoad={() => {
+        // If it finally loads, stop falling back.
+        setFailed(false)
+        setAttempt(0)
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current)
+          retryTimeoutRef.current = null
+        }
+      }}
     />
   )
 })
