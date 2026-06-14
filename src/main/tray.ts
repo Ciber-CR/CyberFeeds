@@ -102,11 +102,32 @@ function registerGlobalShortcuts(): void {
 }
 
 function unregisterGlobalShortcuts(): void {
+  // Unregister anything we believe we registered during this runtime.
   for (const accelerator of registeredGlobalShortcuts) {
     globalShortcut.unregister(accelerator)
   }
+
+  // Extra safety: also try to unregister the current DB shortcuts.
+  // This prevents stale registrations surviving across hot-reloads/resets.
+  try {
+    const shortcuts = db.getSettings().shortcuts as KeyboardShortcuts
+    const candidates = [
+      shortcuts.showHide.accelerator,
+      shortcuts.notifications.accelerator,
+      shortcuts.settings.accelerator,
+      shortcuts.fetch.accelerator
+    ]
+
+    for (const acc of candidates) {
+      if (acc) globalShortcut.unregister(acc)
+    }
+  } catch {
+    // ignore
+  }
+
   registeredGlobalShortcuts = []
 }
+
 
 function buildMenu(): void {
   const version = app.getVersion()
