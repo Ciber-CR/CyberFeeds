@@ -77,7 +77,9 @@ function createMainWindow(): BrowserWindow {
   // Show window or hide to tray depending on the Windows-startup launch
   win.on('ready-to-show', () => {
     if (startHidden) {
-      // Don't show window, it will stay in tray
+      // Force brief show/hide to initialize renderer context (prevents black/grey screen and notification failures when hidden)
+      win.show()
+      win.hide()
     } else {
       win.show()
     }
