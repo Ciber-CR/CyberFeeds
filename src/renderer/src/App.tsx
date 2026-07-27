@@ -57,6 +57,7 @@ export default function App(): JSX.Element {
       document.documentElement.style.setProperty('--list-font-size', `${settings.listFontSize}px`)
     }
     document.documentElement.setAttribute('data-theme', settings.theme || 'dark')
+    try { localStorage.setItem('cyberfeeds-theme', settings.theme || 'dark') } catch { /* ignore */ }
   }, [settings.layout, settings.unreadOnly, settings.sidebarFontSize, settings.listFontSize, settings.theme])
 
   // React to feed/filter changes

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, screen } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
 import { initDb, getSettings, getWindowState, saveWindowState, backfillFavicons, cleanupOldArticles } from './db'
@@ -7,7 +7,7 @@ import { registerIpc, setAutoStart } from './ipc'
 import { initUpdater } from './updater'
 import { initNotifier, registerNotifierIpc, showNotification } from './notifications'
 import { createTray } from './tray'
-import type { NotificationHistoryItem } from './types'
+import type { NotificationHistoryItem, WindowState } from './types'
 import crypto from 'crypto'
 
 // Single instance lock
@@ -27,6 +27,42 @@ app.on('second-instance', () => {
 
 let mainWindow: BrowserWindow | null = null
 
+const MIN_WINDOW_WIDTH = 800
+const MIN_WINDOW_HEIGHT = 600
+
+const THEME_BACKGROUND: Record<string, string> = {
+  dark: '#0d1117',
+  light: '#f6f8fa',
+  dracula: '#282a36',
+  nord: '#2e3440',
+  hacker: '#0d0d0d',
+  monokai: '#272822'
+}
+
+/**
+ * Fit saved window bounds into a single display work area.
+ * Prevents oversized windows (esp. with mixed DPI / scale factors) from
+ * spilling onto a neighboring monitor.
+ */
+function clampWindowStateToWorkArea(state: WindowState): WindowState {
+  const point = {
+    x: Math.round((state.x ?? 0) + state.width / 2),
+    y: Math.round((state.y ?? 0) + state.height / 2)
+  }
+  const display = screen.getDisplayNearestPoint(point)
+  const wa = display.workArea
+
+  const width = Math.min(Math.max(state.width || MIN_WINDOW_WIDTH, MIN_WINDOW_WIDTH), wa.width)
+  const height = Math.min(Math.max(state.height || MIN_WINDOW_HEIGHT, MIN_WINDOW_HEIGHT), wa.height)
+
+  let x = state.x ?? wa.x
+  let y = state.y ?? wa.y
+  x = Math.min(Math.max(x, wa.x), wa.x + wa.width - width)
+  y = Math.min(Math.max(y, wa.y), wa.y + wa.height - height)
+
+  return { ...state, x, y, width, height }
+}
+
 /** Restore the main window preserving maximized state. */
 export function restoreMainWindow(): void {
   const win = mainWindow
@@ -40,7 +76,8 @@ export function restoreMainWindow(): void {
 }
 
 function createMainWindow(): BrowserWindow {
-  const windowState = getWindowState()
+  const windowState = clampWindowStateToWorkArea(getWindowState())
+  const theme = getSettings().theme || 'dark'
 
   // Start hidden only when launched by Windows startup with "start minimized"
   // enabled. The login item is registered with a `--hidden` arg in that case
@@ -53,12 +90,12 @@ function createMainWindow(): BrowserWindow {
     height: windowState.height,
     x: windowState.x,
     y: windowState.y,
-    minWidth: 800,
-    minHeight: 600,
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     show: false,
     frame: false,
     titleBarStyle: 'hidden',
-    backgroundColor: '#0d1117',
+    backgroundColor: THEME_BACKGROUND[theme] ?? THEME_BACKGROUND.dark,
     icon: path.join(__dirname, '../../resources/icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -99,11 +136,20 @@ function createMainWindow(): BrowserWindow {
     }
   })
 
-  // Save window state
+  // Save window state (clamp so a bad drag across monitors never persists overflow)
   const saveState = (): void => {
     if (win.isDestroyed()) return
-    const bounds = win.getBounds()
-    saveWindowState({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, maximized: win.isMaximized() })
+    const maximized = win.isMaximized()
+    // Prefer normal (restore) bounds while maximized so unmaximize stays correct
+    const bounds = maximized ? win.getNormalBounds() : win.getBounds()
+    const next = clampWindowStateToWorkArea({
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      maximized
+    })
+    saveWindowState({ ...next, maximized })
   }
 
   win.on('resize', saveState)
