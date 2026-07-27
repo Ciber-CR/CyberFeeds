@@ -610,6 +610,29 @@ export default function SettingsPanel(): JSX.Element {
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.showThumbnails}</span>
               </label>
 
+              <div className="form-group">
+                <label className="form-label">{t.settings.notifications.openBehavior}</label>
+                <div className="open-behavior-picker">
+                  <button
+                    type="button"
+                    className={`open-behavior-option${(local.notifications.openBehavior || 'app') === 'app' ? ' is-active' : ''}`}
+                    onClick={() => updateNotif({ openBehavior: 'app' })}
+                  >
+                    {t.settings.notifications.openInApp}
+                  </button>
+                  <button
+                    type="button"
+                    className={`open-behavior-option${local.notifications.openBehavior === 'browser' ? ' is-active' : ''}`}
+                    onClick={() => updateNotif({ openBehavior: 'browser' })}
+                  >
+                    {t.settings.notifications.openInBrowser}
+                  </button>
+                </div>
+                <p className="settings-card-hint" style={{ margin: '8px 0 0' }}>
+                  {t.settings.notifications.openBehaviorHint}
+                </p>
+              </div>
+
               {displays.length > 1 && (
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

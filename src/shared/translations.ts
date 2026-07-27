@@ -171,7 +171,11 @@ export const translations = {
         previewBtn: 'Preview Notification',
         sendingBtn: 'Sending...',
         previewTitle: 'CyberFeeds — Notification Preview',
-        previewBody: 'Your notifications will appear like this.'
+        previewBody: 'Your notifications will appear like this.',
+        openBehavior: 'On notification click',
+        openInApp: 'Open in CyberFeeds',
+        openInBrowser: 'Open in browser',
+        openBehaviorHint: 'Browser uses the one configured under General.'
       },
       fontSizes: {
         title: 'Column Font Sizes',
@@ -530,7 +534,11 @@ export const translations = {
         previewBtn: 'Vista previa de notificación',
         sendingBtn: 'Enviando...',
         previewTitle: 'CyberFeeds — Vista previa de notificación',
-        previewBody: 'Así se verán tus notificaciones.'
+        previewBody: 'Así se verán tus notificaciones.',
+        openBehavior: 'Al hacer clic en la notificación',
+        openInApp: 'Abrir en CyberFeeds',
+        openInBrowser: 'Abrir en el navegador',
+        openBehaviorHint: 'El navegador es el configurado en General.'
       },
       fontSizes: {
         title: 'Tamaños de letra de las columnas',

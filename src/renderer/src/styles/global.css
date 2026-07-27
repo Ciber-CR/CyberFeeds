@@ -667,6 +667,34 @@ body {
   filter: brightness(1.05);
 }
 
+.open-behavior-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.open-behavior-option {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.open-behavior-option:hover {
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+.open-behavior-option.is-active {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
 /* ─── Form Controls ─────────────────────────────────────────────────────── */
 .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
 .form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
