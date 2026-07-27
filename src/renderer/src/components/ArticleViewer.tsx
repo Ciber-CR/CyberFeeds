@@ -1,6 +1,6 @@
 import { memo, useState, useEffect, useCallback, useRef } from 'react'
 import DOMPurify from 'dompurify'
-import { ExternalLink, Star, BookOpen, FileText, Rss, Share2, Check } from 'lucide-react'
+import { ExternalLink, Star, BookOpen, FileText, Rss, Share2, Check, ArrowUp } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useArticlesStore } from '../store/articles.store'
 import { useSettingsStore } from '../store/settings.store'
@@ -37,11 +37,15 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
   const [summary, setSummary] = useState('')
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [showScrollTop, setShowScrollTop] = useState(false)
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const scrollRaf = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     return () => {
       if (copiedTimer.current) clearTimeout(copiedTimer.current)
+      if (scrollRaf.current != null) cancelAnimationFrame(scrollRaf.current)
     }
   }, [])
 
@@ -50,6 +54,8 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
     if (!selectedArticleId) { setArticle(null); return }
     if (copiedTimer.current) clearTimeout(copiedTimer.current)
     setLinkCopied(false)
+    setShowScrollTop(false)
+    if (contentRef.current) contentRef.current.scrollTop = 0
     const found = articles.find(a => a.id === selectedArticleId)
     if (found) {
       setArticle(found)
@@ -71,6 +77,20 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
       setArticle(prev => prev ? { ...prev, starred: found.starred } : found)
     }
   }, [articles])
+
+  const handleContentScroll = useCallback(() => {
+    if (scrollRaf.current != null) return
+    scrollRaf.current = requestAnimationFrame(() => {
+      scrollRaf.current = undefined
+      const el = contentRef.current
+      if (!el) return
+      setShowScrollTop(el.scrollTop > 400)
+    })
+  }, [])
+
+  const scrollToTop = useCallback(() => {
+    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   const fetchFullContent = useCallback(async () => {
     if (!article) return
@@ -179,6 +199,8 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
 
       <div
         className="viewer-content"
+        ref={contentRef}
+        onScroll={handleContentScroll}
         onContextMenu={(e) => {
           e.preventDefault()
           window.dispatchEvent(new CustomEvent('cyberfeeds:close-context-menus', { detail: 'viewer' }))
@@ -198,9 +220,9 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
       >
         <div className="reader-wrap" style={{ maxWidth: settings.readingMaxWidth || 720 }}>
           <h1 className="reader-title">
-            <a 
-              href="#" 
-              onClick={(e) => { e.preventDefault(); window.api.openExternal(article.link) }} 
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); window.api.openExternal(article.link) }}
               style={{ color: 'inherit', textDecoration: 'none' }}
               title={t.articleViewer.openDefaultBrowser}
             >
@@ -255,7 +277,19 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
           />
         </div>
       </div>
-      
+
+      {showScrollTop && (
+        <button
+          type="button"
+          className="scroll-top-fab"
+          onClick={scrollToTop}
+          title={t.articleViewer.backToTop}
+          aria-label={t.articleViewer.backToTop}
+        >
+          <ArrowUp size={16} />
+        </button>
+      )}
+
       {hoveredLink && (
         <div style={{
           position: 'fixed',
