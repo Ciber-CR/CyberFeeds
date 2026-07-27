@@ -1,6 +1,6 @@
-import { memo, useState, useEffect, useCallback } from 'react'
+import { memo, useState, useEffect, useCallback, useRef } from 'react'
 import DOMPurify from 'dompurify'
-import { ExternalLink, RefreshCw, Star, BookOpen, FileText, Rss } from 'lucide-react'
+import { ExternalLink, Star, BookOpen, FileText, Rss, Share2, Check } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useArticlesStore } from '../store/articles.store'
 import { useSettingsStore } from '../store/settings.store'
@@ -36,10 +36,20 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
   const [showSummary, setShowSummary] = useState(false)
   const [summary, setSummary] = useState('')
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
+  const [linkCopied, setLinkCopied] = useState(false)
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current)
+    }
+  }, [])
 
   // Load article when selection changes
   useEffect(() => {
     if (!selectedArticleId) { setArticle(null); return }
+    if (copiedTimer.current) clearTimeout(copiedTimer.current)
+    setLinkCopied(false)
     const found = articles.find(a => a.id === selectedArticleId)
     if (found) {
       setArticle(found)
@@ -77,6 +87,18 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
     setShowSummary(true)
   }, [article, fullHtml])
 
+  const handleShare = useCallback(async () => {
+    if (!article?.link) return
+    try {
+      await navigator.clipboard.writeText(article.link)
+      setLinkCopied(true)
+      if (copiedTimer.current) clearTimeout(copiedTimer.current)
+      copiedTimer.current = setTimeout(() => setLinkCopied(false), 1800)
+    } catch {
+      /* ignore clipboard errors */
+    }
+  }, [article])
+
   if (!article) {
     return (
       <div className="article-viewer">
@@ -95,19 +117,42 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
     FORCE_BODY: true
   })
 
-  const needsFullFetch = !fullHtml && (article.content?.length || 0) < 1500
-
   return (
     <div className="article-viewer">
       <div className="viewer-toolbar">
-        <button
-          className="btn btn-ghost btn-icon"
-          onClick={() => starArticle(article.id, !article.starred)}
-          title={article.starred ? t.articleViewer.unstar : t.articleViewer.star}
-        >
-          <Star size={15} fill={article.starred ? 'var(--star)' : 'none'} color={article.starred ? 'var(--star)' : undefined} />
+        <button className="btn btn-ghost has-label" style={{ fontSize: 12 }} onClick={handleSummary} title={t.articleViewer.quickSummary}>
+          <FileText size={13} />
+          <span className="viewer-toolbar-label">{t.articleViewer.summary}</span>
         </button>
-        <div style={{ width: 1, height: 16, background: 'var(--border-muted)', margin: '0 4px' }} />
+        <button
+          className={`btn btn-ghost has-label${fullHtml ? ' is-active' : ''}`}
+          style={{ fontSize: 12 }}
+          onClick={fetchFullContent}
+          disabled={loading}
+          title={fullHtml ? t.articleViewer.reloadTooltip : t.articleViewer.loadFull}
+        >
+          {loading ? <div className="spinner" style={{ width: 13, height: 13 }} /> : <BookOpen size={13} />}
+          <span className="viewer-toolbar-label">{fullHtml ? t.articleViewer.reload : t.articleViewer.fullArticle}</span>
+        </button>
+        <button
+          className="btn btn-ghost has-label"
+          style={{ fontSize: 12 }}
+          onClick={() => window.api.openExternal(article.link)}
+          title={t.articleViewer.openInBrowserTooltip}
+        >
+          <ExternalLink size={13} />
+          <span className="viewer-toolbar-label">{t.articleViewer.openInBrowser}</span>
+        </button>
+        <button
+          className={`btn btn-ghost has-label${linkCopied ? ' is-copied' : ''}`}
+          style={{ fontSize: 12 }}
+          onClick={handleShare}
+          title={linkCopied ? t.articleViewer.linkCopied : t.articleViewer.shareTooltip}
+        >
+          {linkCopied ? <Check size={13} /> : <Share2 size={13} />}
+          <span className="viewer-toolbar-label">{linkCopied ? t.articleViewer.copied : t.articleViewer.share}</span>
+        </button>
+        <div className="viewer-toolbar-sep" />
         <button
           className="btn btn-ghost btn-icon"
           onClick={() => update({ readingFontSize: Math.max(12, (settings.readingFontSize || 15) - 1) })}
@@ -122,36 +167,21 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
         >
           <span style={{ fontSize: 13, fontWeight: 700 }}>A+</span>
         </button>
-        <div style={{ width: 1, height: 16, background: 'var(--border-muted)', margin: '0 4px' }} />
-        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={handleSummary} title={t.articleViewer.quickSummary}>
-          <FileText size={13} />
-          {t.articleViewer.summary}
-        </button>
+        <div className="viewer-toolbar-sep" />
         <button
-          className="btn btn-secondary"
-          style={{ fontSize: 12 }}
-          onClick={fetchFullContent}
-          disabled={loading}
-          title={t.articleViewer.loadFull}
+          className="btn btn-ghost btn-icon"
+          onClick={() => starArticle(article.id, !article.starred)}
+          title={article.starred ? t.articleViewer.unstar : t.articleViewer.star}
         >
-          {loading ? <div className="spinner" style={{ width: 13, height: 13 }} /> : <BookOpen size={13} />}
-          {fullHtml ? t.articleViewer.reload : t.articleViewer.fullArticle}
+          <Star size={15} fill={article.starred ? 'var(--star)' : 'none'} color={article.starred ? 'var(--star)' : undefined} />
         </button>
-        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => window.api.openExternal(article.link)} title={t.articleViewer.openInBrowser}>
-          <ExternalLink size={13} />
-          {t.articleViewer.openInBrowser}
-        </button>
-        {needsFullFetch && !loading && (
-          <button className="btn btn-ghost btn-icon" onClick={fetchFullContent} title={t.articleViewer.autoFetch}>
-            <RefreshCw size={13} />
-          </button>
-        )}
       </div>
 
       <div
         className="viewer-content"
         onContextMenu={(e) => {
           e.preventDefault()
+          window.dispatchEvent(new CustomEvent('cyberfeeds:close-context-menus', { detail: 'viewer' }))
           const target = e.target as HTMLElement
           const a = target.closest('a')
           let linkUrl = ''
