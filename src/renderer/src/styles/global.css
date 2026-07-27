@@ -283,6 +283,7 @@ body {
   overflow: hidden;
   background: var(--bg-0);
   min-width: 250px;
+  position: relative;
 }
 .viewer-toolbar {
   display: flex;
@@ -474,6 +475,13 @@ body {
   text-align: center;
   min-height: 38px;
 }
+.about-diag-btn {
+  grid-column: 1 / -1;
+}
+.about-diag-btn.is-copied {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
+}
 .about-auto-update {
   grid-column: 1 / -1;
   margin: 0;
@@ -495,6 +503,11 @@ body {
   color: var(--text-muted);
   border-top: 1px solid var(--border-muted);
   background: rgba(0, 0, 0, 0.12);
+}
+.about-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 /* ─── Resize Handles ────────────────────────────────────────────────────── */

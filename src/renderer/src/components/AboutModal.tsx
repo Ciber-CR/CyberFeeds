@@ -1,8 +1,24 @@
-import { useState, useEffect, type MouseEvent } from 'react'
-import { X, Rss, Github, Folder, RefreshCw, Download, CheckCircle2 } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react'
+import {
+  X, Rss, Github, Folder, RefreshCw, Download, CheckCircle2,
+  CircleDot, Tag, ClipboardCopy, Check
+} from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
 import { useTranslation } from '../hooks/useTranslation'
+
+const REPO_URL = 'https://github.com/CyberGems/CyberFeeds'
+
+type AppVersions = {
+  app: string
+  electron: string
+  chrome: string
+  node: string
+  platform: string
+  arch: string
+  osRelease: string
+  osType: string
+}
 
 type UpdateStatus =
   | { state: 'idle' }
@@ -13,18 +29,32 @@ type UpdateStatus =
   | { state: 'downloaded'; version: string }
   | { state: 'error'; message: string }
 
+function platformLabel(platform: string): string {
+  if (platform === 'win32') return 'Windows'
+  if (platform === 'darwin') return 'macOS'
+  if (platform === 'linux') return 'Linux'
+  return platform
+}
+
 export default function AboutModal(): JSX.Element {
   const { closePanel } = useUIStore()
   const { settings, update } = useSettingsStore()
-  const [appVersion, setAppVersion] = useState('')
+  const [versions, setVersions] = useState<AppVersions | null>(null)
   const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
-  const { t } = useTranslation()
+  const [diagCopied, setDiagCopied] = useState(false)
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { t, language } = useTranslation()
 
   useEffect(() => {
-    window.api.getVersions().then((v: { app: string }) => setAppVersion(v.app))
+    window.api.getVersions().then((v) => setVersions(v as AppVersions))
     const off = window.api.onUpdateStatus((s) => setStatus(s as UpdateStatus))
-    return off
+    return () => {
+      off()
+      if (copiedTimer.current) clearTimeout(copiedTimer.current)
+    }
   }, [])
+
+  const appVersion = versions?.app || ''
 
   const handleCheck = async (): Promise<void> => {
     setStatus({ state: 'checking' })
@@ -58,6 +88,26 @@ export default function AboutModal(): JSX.Element {
     e?.stopPropagation()
     closePanel()
   }
+
+  const handleCopyDiagnostics = useCallback(async () => {
+    if (!versions) return
+    const lines = [
+      `CyberFeeds ${versions.app}`,
+      `Electron: ${versions.electron}`,
+      `Chrome: ${versions.chrome}`,
+      `Node: ${versions.node}`,
+      `OS: ${platformLabel(versions.platform)} ${versions.osRelease} (${versions.arch})`,
+      `Locale: ${language}`
+    ]
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'))
+      setDiagCopied(true)
+      if (copiedTimer.current) clearTimeout(copiedTimer.current)
+      copiedTimer.current = setTimeout(() => setDiagCopied(false), 1800)
+    } catch {
+      /* ignore clipboard errors */
+    }
+  }, [versions, language])
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && handleClose()}>
@@ -161,6 +211,17 @@ export default function AboutModal(): JSX.Element {
                 <span>{t.about.openFolder}</span>
               </button>
 
+              <button
+                type="button"
+                className={`btn btn-secondary about-action-btn about-diag-btn${diagCopied ? ' is-copied' : ''}`}
+                onClick={handleCopyDiagnostics}
+                disabled={!versions}
+                title={diagCopied ? t.about.diagnosticsCopied : t.about.copyDiagnostics}
+              >
+                {diagCopied ? <Check size={14} /> : <ClipboardCopy size={14} />}
+                <span>{diagCopied ? t.about.diagnosticsCopied : t.about.copyDiagnostics}</span>
+              </button>
+
               <label className="toggle about-auto-update">
                 <div
                   className={`toggle-track ${settings.autoUpdate ? 'on' : ''}`}
@@ -178,16 +239,38 @@ export default function AboutModal(): JSX.Element {
           <div style={{ fontWeight: 600, letterSpacing: '0.04em' }}>
             © CyberGems • 2026
           </div>
-          <button
-            type="button"
-            className="btn btn-ghost btn-icon"
-            style={{ width: 28, height: 28, color: 'inherit' }}
-            onClick={() => window.api.openExternal('https://github.com/Cybergems/CyberFeeds')}
-            title={t.about.githubTooltip}
-            aria-label={t.about.githubTooltip}
-          >
-            <Github size={14} />
-          </button>
+          <div className="about-footer-links">
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon"
+              style={{ width: 28, height: 28, color: 'inherit' }}
+              onClick={() => window.api.openExternal(REPO_URL)}
+              title={t.about.githubTooltip}
+              aria-label={t.about.githubTooltip}
+            >
+              <Github size={14} />
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon"
+              style={{ width: 28, height: 28, color: 'inherit' }}
+              onClick={() => window.api.openExternal(`${REPO_URL}/issues`)}
+              title={t.about.issuesTooltip}
+              aria-label={t.about.issuesTooltip}
+            >
+              <CircleDot size={14} />
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon"
+              style={{ width: 28, height: 28, color: 'inherit' }}
+              onClick={() => window.api.openExternal(`${REPO_URL}/releases`)}
+              title={t.about.releasesTooltip}
+              aria-label={t.about.releasesTooltip}
+            >
+              <Tag size={14} />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -94,7 +94,8 @@ export const translations = {
       linkCopied: 'Link copied',
       autoFetch: 'Fetch full content',
       openDefaultBrowser: 'Open in default browser',
-      dismiss: 'Dismiss'
+      dismiss: 'Dismiss',
+      backToTop: 'Back to top'
     },
     settings: {
       title: 'Settings',
@@ -232,6 +233,10 @@ export const translations = {
       checkUpdates: 'Check for updates',
       close: 'Close',
       githubTooltip: 'View project on GitHub',
+      issuesTooltip: 'Report a bug or open an issue',
+      releasesTooltip: 'View releases and changelogs',
+      copyDiagnostics: 'Copy diagnostic info',
+      diagnosticsCopied: 'Diagnostic info copied',
       statuses: {
         checking: 'Checking for updates…',
         latest: 'You’re on the latest version.',
@@ -434,7 +439,8 @@ export const translations = {
       linkCopied: 'Enlace copiado',
       autoFetch: 'Obtener contenido completo',
       openDefaultBrowser: 'Abrir en el navegador predeterminado',
-      dismiss: 'Cerrar'
+      dismiss: 'Cerrar',
+      backToTop: 'Volver arriba'
     },
     settings: {
       title: 'Configuración',
@@ -572,6 +578,10 @@ export const translations = {
       checkUpdates: 'Buscar actualizaciones',
       close: 'Cerrar',
       githubTooltip: 'Ver el proyecto en GitHub',
+      issuesTooltip: 'Reportar un error o abrir un issue',
+      releasesTooltip: 'Ver versiones y notas de cambios',
+      copyDiagnostics: 'Copiar info de diagnóstico',
+      diagnosticsCopied: 'Info de diagnóstico copiada',
       statuses: {
         checking: 'Buscando actualizaciones…',
         latest: 'Estás en la última versión.',

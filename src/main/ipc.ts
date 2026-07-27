@@ -2,6 +2,7 @@ import { ipcMain, shell, dialog, screen, Menu, MenuItemConstructorOptions, Brows
 import crypto from 'crypto'
 import path from 'path'
 import fs from 'fs'
+import os from 'os'
 import { Worker } from 'worker_threads'
 import { app } from 'electron'
 import * as db from './db'
@@ -532,7 +533,11 @@ export function registerIpc(): void {
     app: app.getVersion(),
     electron: process.versions.electron,
     chrome: process.versions.chrome,
-    node: process.versions.node
+    node: process.versions.node,
+    platform: process.platform,
+    arch: process.arch,
+    osRelease: os.release(),
+    osType: os.type()
   }))
 
   ipcMain.handle('app:openDataFolder', () => {
