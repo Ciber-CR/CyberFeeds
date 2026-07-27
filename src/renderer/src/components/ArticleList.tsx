@@ -32,7 +32,7 @@ const FeedFavicon = memo(function FeedFavicon({
   size?: number
 }) {
   // Retry medicine: if the network is temporarily down, don't permanently fall back.
-  const [attempt, setAttempt] = React.useState(0)
+  const [, setAttempt] = React.useState(0)
   const [failed, setFailed] = React.useState(false)
   const [retryToken, setRetryToken] = React.useState(0)
 
