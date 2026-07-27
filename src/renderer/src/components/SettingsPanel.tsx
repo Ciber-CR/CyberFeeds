@@ -548,6 +548,7 @@ export default function SettingsPanel(): JSX.Element {
                   const newTheme = e.target.value as AppSettings['theme']
                   update({ theme: newTheme })
                   document.documentElement.setAttribute('data-theme', newTheme)
+                  try { localStorage.setItem('cyberfeeds-theme', newTheme) } catch { /* ignore */ }
                 }}>
                 <option value="dark">{t.settings.general.themes.dark}</option>
                 <option value="light">{t.settings.general.themes.light}</option>
@@ -718,6 +719,23 @@ export default function SettingsPanel(): JSX.Element {
               <input className="form-input" type="number" min={1} max={10}
                 value={local.notifications.maxStack}
                 onChange={e => updateNotif({ maxStack: Number(e.target.value) })} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">{t.settings.notifications.snoozeDuration}</label>
+              <select
+                className="form-select"
+                value={local.notifications.snoozeMinutes ?? 30}
+                onChange={e => updateNotif({ snoozeMinutes: Number(e.target.value) })}
+              >
+                <option value={15}>15m</option>
+                <option value={30}>30m</option>
+                <option value={60}>1h</option>
+                <option value={120}>2h</option>
+                <option value={240}>4h</option>
+                <option value={480}>8h</option>
+                <option value={1440}>24h</option>
+              </select>
             </div>
 
             <label className="toggle" style={{ marginBottom: 14 }}>

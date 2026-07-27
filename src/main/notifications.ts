@@ -24,6 +24,13 @@ const HARD_CAP = 50
 // Extra width reserved for the scrollbar so action buttons aren't cramped/clipped
 // when the stack overflows and the scrollbar appears.
 const SCROLLBAR_W = 16
+/** Floor width so action buttons + date stay on one row (ES labels are longer). */
+const MIN_WIDTH_BY_LANG: Record<string, number> = { en: 380, es: 430 }
+
+function contentWidth(s: NotificationSettings): number {
+  const lang = db.getSettings().language || 'en'
+  return Math.max(s.maxWidth, MIN_WIDTH_BY_LANG[lang] ?? 380)
+}
 
 export function initNotifier(s: NotificationSettings): void {
   settings = s
@@ -127,7 +134,9 @@ function applyPositionToWindow(
   cardCount: number,
   s: NotificationSettings
 ): void {
-  const winW = s.maxWidth + (cardCount > s.maxStack ? SCROLLBAR_W : 0)
+  // Always reserve scrollbar gutter width so cards aren't clipped on the right
+  // when there is no overflow (Windows frameless windows + action-button row).
+  const winW = contentWidth(s) + SCROLLBAR_W
   const visibleCards = Math.min(Math.max(1, cardCount), s.maxStack)
   const clearBar = cardCount > 0 ? CLEAR_BAR_H : 0
   const gaps = Math.max(0, visibleCards - 1) * CARD_GAP
@@ -142,7 +151,7 @@ function applyPositionToWindow(
 
 function createNotifierWindow(s: NotificationSettings): BrowserWindow {
   const win = new BrowserWindow({
-    width: s.maxWidth,
+    width: contentWidth(s) + SCROLLBAR_W,
     height: CARD_H + CLEAR_BAR_H + WIN_PAD, // 1 card + clear bar
     frame: false,
     transparent: true,

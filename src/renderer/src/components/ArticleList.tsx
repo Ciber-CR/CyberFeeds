@@ -388,6 +388,15 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                 }}>
                   {t.articleList.contextMenu.copyLink}
                 </div>
+                {getArticleImage(article) && (
+                  <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={async () => {
+                    const img = getArticleImage(article)
+                    if (img) await window.api.copyImageToClipboard(img)
+                    setCtx(null)
+                  }}>
+                    {t.articleList.contextMenu.copyImage}
+                  </div>
+                )}
                 <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
                   window.api.openExternal(article.link)
                   setCtx(null)
@@ -542,3 +551,13 @@ const ArticleItem = memo(function ArticleItem({ article, selected, onSelect, onC
 
 export { FeedFavicon }
 export default ArticleList
+
+// Resolve the best copyable image for an article: prefer the feed thumbnail,
+// otherwise fall back to the first <img> found inside the article content.
+function getArticleImage(article: Article): string | null {
+  if (article.thumbnail && typeof article.thumbnail === 'string') {
+    return article.thumbnail
+  }
+  const match = /<img[^>]+src=["']([^"']+)["']/i.exec(article.content || '')
+  return match ? match[1] : null
+}

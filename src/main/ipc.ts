@@ -1,4 +1,4 @@
-import { ipcMain, shell, dialog, screen, Menu, MenuItemConstructorOptions, BrowserWindow } from 'electron'
+import { ipcMain, shell, dialog, screen, Menu, MenuItemConstructorOptions, BrowserWindow, clipboard, nativeImage } from 'electron'
 import crypto from 'crypto'
 import path from 'path'
 import fs from 'fs'
@@ -605,18 +605,41 @@ export function registerIpc(): void {
     return result.filePaths[0]
   })
 
+  // ─── Clipboard: copy remote image to clipboard ──────────────────────────
+  ipcMain.handle('clipboard:copyImage', async (_, imageUrl?: string | null) => {
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      return { ok: false, error: 'no-image' }
+    }
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+      const res = await fetch(imageUrl, { signal: controller.signal })
+      clearTimeout(timeout)
+      if (!res.ok) return { ok: false, error: `http-${res.status}` }
+      const buf = Buffer.from(await res.arrayBuffer())
+      const image = nativeImage.createFromBuffer(buf)
+      if (image.isEmpty()) return { ok: false, error: 'empty-image' }
+      clipboard.writeImage(image)
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: String(err) }
+    }
+  })
+
   // ─── Native Context Menu ─────────────────────────────────────────────────
   ipcMain.handle('showInputContextMenu', () => {
+    const lang = db.getSettings().language || 'en'
+    const t = translations[lang].mainProcess.webviewCtx
     const template: MenuItemConstructorOptions[] = [
-      { role: 'undo' },
-      { role: 'redo' },
+      { role: 'undo', label: t.undo },
+      { role: 'redo', label: t.redo },
       { type: 'separator' },
-      { role: 'cut' },
-      { role: 'copy' },
-      { role: 'paste' },
-      { role: 'delete' },
+      { role: 'cut', label: t.cut },
+      { role: 'copy', label: t.copy },
+      { role: 'paste', label: t.paste },
+      { role: 'delete', label: t.delete },
       { type: 'separator' },
-      { role: 'selectAll' }
+      { role: 'selectAll', label: t.selectAll }
     ]
     const menu = Menu.buildFromTemplate(template)
     menu.popup()
@@ -652,19 +675,17 @@ export function registerIpc(): void {
         }
       )
 
-      if (hasSelection) {
-        template.push(
-          { type: 'separator' },
-          { role: 'copy' }
-        )
-      }
+      template.push(
+        { type: 'separator' },
+        { role: 'copy', label: t.copy, enabled: !!hasSelection }
+      )
     } else {
-      template.push({ role: 'copy' })
+      template.push({ role: 'copy', label: t.copy, enabled: !!hasSelection })
     }
 
     template.push(
       { type: 'separator' },
-      { role: 'selectAll' }
+      { role: 'selectAll', label: t.selectAll }
     )
     const menu = Menu.buildFromTemplate(template)
     menu.popup()
