@@ -25,18 +25,19 @@ jobs:
         run: npm ci
 
       - name: Build & Package
-        run: npm run build:win
+        # --publish never: packaging only. Artifact upload is handled below.
+        # electron-builder otherwise auto-publishes on tags and fails without GH_TOKEN.
+        run: npm run build && npx electron-builder --win --publish never
         env:
           # Disable code signing on CI (no certificate available)
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Create Release
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
-          # Use tag annotation as release notes, or empty
-          body: |
-            Release ${{ github.ref_name }}
+          fail_on_unmatched_files: true
           files: |
             dist/*.exe
             dist/*.blockmap
