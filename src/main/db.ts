@@ -100,6 +100,9 @@ function createSchema(): void {
     INSERT OR IGNORE INTO window_state (id, width, height, maximized) VALUES (1, 1280, 800, 0);
   `)
 
+  // Mixed-DPI restore: remember which monitor the window was on
+  try { db.exec('ALTER TABLE window_state ADD COLUMN displayId INTEGER') } catch { /* already exists */ }
+
   // Seed default settings if empty
   const count = (db.prepare('SELECT COUNT(*) as c FROM settings').get() as { c: number }).c
   if (count === 0) {
@@ -400,13 +403,27 @@ export function saveSettings(settings: AppSettings): void {
 export function getWindowState(): WindowState {
   const row = db.prepare('SELECT * FROM window_state WHERE id = 1').get() as any
   if (!row) return { width: 1280, height: 800, maximized: true }
-  return { ...row, maximized: row.maximized === 1 }
+  return {
+    x: row.x ?? undefined,
+    y: row.y ?? undefined,
+    width: row.width,
+    height: row.height,
+    maximized: row.maximized === 1,
+    displayId: row.displayId ?? null
+  }
 }
 
 export function saveWindowState(state: WindowState): void {
   db.prepare(`
-    UPDATE window_state SET x=?, y=?, width=?, height=?, maximized=? WHERE id=1
-  `).run(state.x ?? null, state.y ?? null, state.width, state.height, state.maximized ? 1 : 0)
+    UPDATE window_state SET x=?, y=?, width=?, height=?, maximized=?, displayId=? WHERE id=1
+  `).run(
+    state.x ?? null,
+    state.y ?? null,
+    state.width,
+    state.height,
+    state.maximized ? 1 : 0,
+    state.displayId ?? null
+  )
 }
 
 export function getDb(): Database.Database {

@@ -107,6 +107,8 @@ export interface WindowState {
   width: number
   height: number
   maximized: boolean
+  /** Last display the window lived on (mixed-DPI restore). */
+  displayId?: number | null
 }
 
 export interface NotifierPatch {

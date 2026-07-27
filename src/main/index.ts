@@ -7,6 +7,7 @@ import { registerIpc, setAutoStart } from './ipc'
 import { initUpdater } from './updater'
 import { initNotifier, registerNotifierIpc, showNotification } from './notifications'
 import { createTray } from './tray'
+import { clampWindowBounds, MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from './window-bounds'
 import type { NotificationHistoryItem, WindowState } from './types'
 import crypto from 'crypto'
 
@@ -27,9 +28,6 @@ app.on('second-instance', () => {
 
 let mainWindow: BrowserWindow | null = null
 
-const MIN_WINDOW_WIDTH = 800
-const MIN_WINDOW_HEIGHT = 600
-
 const THEME_BACKGROUND: Record<string, string> = {
   dark: '#0d1117',
   light: '#f6f8fa',
@@ -39,28 +37,62 @@ const THEME_BACKGROUND: Record<string, string> = {
   monokai: '#272822'
 }
 
-/**
- * Fit saved window bounds into a single display work area.
- * Prevents oversized windows (esp. with mixed DPI / scale factors) from
- * spilling onto a neighboring monitor.
- */
-function clampWindowStateToWorkArea(state: WindowState): WindowState {
-  const point = {
-    x: Math.round((state.x ?? 0) + state.width / 2),
-    y: Math.round((state.y ?? 0) + state.height / 2)
+function resolveStartupBounds(raw: WindowState): ReturnType<typeof clampWindowBounds> & {
+  inflated: boolean
+  maximized: boolean
+} {
+  const clamped = clampWindowBounds(raw, {
+    displays: screen.getAllDisplays(),
+    primary: screen.getPrimaryDisplay(),
+    savedDisplayId: raw.displayId
+  })
+  const inflated = !!(
+    Number.isFinite(raw.width) &&
+    Number.isFinite(raw.height) &&
+    (raw.width > clamped.width + 32 || raw.height > clamped.height + 32)
+  )
+  return {
+    ...clamped,
+    inflated,
+    // Prefer maximized when previously maximized, first-run, or saved size was DPI-inflated
+    maximized: raw.maximized === true || inflated
   }
-  const display = screen.getDisplayNearestPoint(point)
-  const wa = display.workArea
+}
 
-  const width = Math.min(Math.max(state.width || MIN_WINDOW_WIDTH, MIN_WINDOW_WIDTH), wa.width)
-  const height = Math.min(Math.max(state.height || MIN_WINDOW_HEIGHT, MIN_WINDOW_HEIGHT), wa.height)
+function persistMainWindowState(win: BrowserWindow): void {
+  if (win.isDestroyed()) return
+  try {
+    if (typeof win.isFullScreen === 'function' && win.isFullScreen()) return
 
-  let x = state.x ?? wa.x
-  let y = state.y ?? wa.y
-  x = Math.min(Math.max(x, wa.x), wa.x + wa.width - width)
-  y = Math.min(Math.max(y, wa.y), wa.y + wa.height - height)
+    const maximized = win.isMaximized()
+    // Live bounds identify the monitor even while maximized
+    const live = win.getBounds()
+    const liveDisplay =
+      (typeof screen.getDisplayMatching === 'function' && screen.getDisplayMatching(live)) ||
+      screen.getDisplayNearestPoint({
+        x: Math.round(live.x + live.width / 2),
+        y: Math.round(live.y + live.height / 2)
+      })
 
-  return { ...state, x, y, width, height }
+    // getNormalBounds avoids DPI-inflated maximized metrics on Windows
+    const raw = typeof win.getNormalBounds === 'function' ? win.getNormalBounds() : live
+    const clamped = clampWindowBounds(raw, {
+      displays: screen.getAllDisplays(),
+      primary: screen.getPrimaryDisplay(),
+      savedDisplayId: liveDisplay?.id
+    })
+
+    saveWindowState({
+      x: clamped.x,
+      y: clamped.y,
+      width: clamped.width,
+      height: clamped.height,
+      maximized,
+      displayId: liveDisplay?.id ?? clamped.displayId
+    })
+  } catch (err) {
+    console.error('[Main] Failed to persist window state:', err)
+  }
 }
 
 /** Restore the main window preserving maximized state. */
@@ -76,7 +108,8 @@ export function restoreMainWindow(): void {
 }
 
 function createMainWindow(): BrowserWindow {
-  const windowState = clampWindowStateToWorkArea(getWindowState())
+  const saved = getWindowState()
+  const startup = resolveStartupBounds(saved)
   const theme = getSettings().theme || 'dark'
 
   // Start hidden only when launched by Windows startup with "start minimized"
@@ -86,10 +119,10 @@ function createMainWindow(): BrowserWindow {
   const startHidden = process.argv.includes('--hidden')
 
   const win = new BrowserWindow({
-    width: windowState.width,
-    height: windowState.height,
-    x: windowState.x,
-    y: windowState.y,
+    width: startup.width,
+    height: startup.height,
+    x: startup.x,
+    y: startup.y,
     minWidth: MIN_WINDOW_WIDTH,
     minHeight: MIN_WINDOW_HEIGHT,
     show: false,
@@ -112,6 +145,18 @@ function createMainWindow(): BrowserWindow {
     /* ignore */
   }
 
+  // Debounce persistence — move/resize fire often and mixed-DPI getBounds is noisy
+  let persistTimer: ReturnType<typeof setTimeout> | null = null
+  const schedulePersist = (): void => {
+    if (persistTimer) clearTimeout(persistTimer)
+    persistTimer = setTimeout(() => {
+      persistTimer = null
+      if (!win || win.isDestroyed()) return
+      if (win.isMaximized()) return
+      persistMainWindowState(win)
+    }, 400)
+  }
+
   // Reveal only after the renderer paints (CyberViewer pattern) to avoid white flash.
   let shown = false
   const revealWindow = (): void => {
@@ -128,10 +173,44 @@ function createMainWindow(): BrowserWindow {
     }
 
     try { win.setOpacity(0) } catch { /* ignore */ }
+
+    // Place on the resolved startup display (keeps last-used monitor)
+    try {
+      win.setBounds({
+        x: startup.x,
+        y: startup.y,
+        width: startup.width,
+        height: startup.height
+      })
+    } catch {
+      /* ignore */
+    }
+
     win.show()
 
-    if (windowState.maximized) {
+    if (startup.maximized) {
       try {
+        // Nudge onto the target display before maximize if Electron placed us elsewhere
+        const target = screen.getDisplayNearestPoint({
+          x: startup.x + Math.floor(startup.width / 2),
+          y: startup.y + Math.floor(startup.height / 2)
+        })
+        const cur = win.getBounds()
+        const curDisp =
+          (typeof screen.getDisplayMatching === 'function' && screen.getDisplayMatching(cur)) ||
+          screen.getDisplayNearestPoint({
+            x: Math.round(cur.x + cur.width / 2),
+            y: Math.round(cur.y + cur.height / 2)
+          })
+        if (target && curDisp && target.id !== curDisp.id) {
+          const wa = target.workArea || target.bounds
+          win.setBounds({
+            x: wa.x + 48,
+            y: wa.y + 48,
+            width: Math.min(startup.width, Math.max(MIN_WINDOW_WIDTH, wa.width - 96)),
+            height: Math.min(startup.height, Math.max(MIN_WINDOW_HEIGHT, wa.height - 96))
+          })
+        }
         if (!win.isMaximized()) win.maximize()
       } catch {
         /* ignore */
@@ -170,29 +249,39 @@ function createMainWindow(): BrowserWindow {
     if (!(app as any).isQuitting && getSettings().minimizeToTray) {
       e.preventDefault()
       win.hide()
+      return
     }
+    persistMainWindowState(win)
   })
 
-  // Save window state (clamp so a bad drag across monitors never persists overflow)
-  const saveState = (): void => {
-    if (win.isDestroyed()) return
-    const maximized = win.isMaximized()
-    // Prefer normal (restore) bounds while maximized so unmaximize stays correct
-    const bounds = maximized ? win.getNormalBounds() : win.getBounds()
-    const next = clampWindowStateToWorkArea({
-      x: bounds.x,
-      y: bounds.y,
-      width: bounds.width,
-      height: bounds.height,
-      maximized
-    })
-    saveWindowState({ ...next, maximized })
-  }
-
-  win.on('resize', saveState)
-  win.on('move', saveState)
-  win.on('maximize', saveState)
-  win.on('unmaximize', saveState)
+  win.on('move', schedulePersist)
+  win.on('resize', schedulePersist)
+  win.on('maximize', () => persistMainWindowState(win))
+  win.on('unmaximize', () => {
+    // Re-clamp after unmaximize — Windows/DPI often restores oversized bounds
+    setTimeout(() => {
+      if (!win || win.isDestroyed() || win.isMaximized()) return
+      try {
+        const raw = win.getBounds()
+        const clamped = clampWindowBounds(raw, {
+          displays: screen.getAllDisplays(),
+          primary: screen.getPrimaryDisplay(),
+          savedDisplayId: getWindowState().displayId
+        })
+        if (raw.width > clamped.width + 8 || raw.height > clamped.height + 8) {
+          win.setBounds({
+            x: clamped.x,
+            y: clamped.y,
+            width: clamped.width,
+            height: clamped.height
+          })
+        }
+      } catch {
+        /* ignore */
+      }
+      persistMainWindowState(win)
+    }, 50)
+  })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
