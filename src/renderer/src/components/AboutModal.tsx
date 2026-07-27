@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { X, Cpu, Code2, Database, Zap, Rss, Github, Folder, RefreshCw, Download, CheckCircle2 } from 'lucide-react'
+import { useState, useEffect, type MouseEvent } from 'react'
+import { X, Rss, Github, Folder, RefreshCw, Download, CheckCircle2 } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
 import { useTranslation } from '../hooks/useTranslation'
@@ -35,15 +35,13 @@ export default function AboutModal(): JSX.Element {
         return
       }
       // Safety net: if no update-available / update-not-available event settled the
-      // UI, don't leave it spinning on "Checking…" forever. Events (which fire first)
-      // take precedence, so we only settle when still in the 'checking' state.
+      // UI, don't leave it spinning on "Checking…" forever.
       setStatus(prev =>
         prev.state === 'checking'
           ? { state: 'not-available', version: res.version || appVersion }
           : prev
       )
     } catch (e) {
-      // A rejected IPC invoke (e.g. handler missing) used to freeze the UI silently.
       setStatus({ state: 'error', message: String((e as Error)?.message || e) })
     }
   }
@@ -56,89 +54,78 @@ export default function AboutModal(): JSX.Element {
     window.api.installUpdate()
   }
 
-  const techStack = [
-    { name: 'Electron', version: '34.3.0', icon: <Cpu size={14} />, desc: t.about.techStack.electron },
-    { name: 'React', version: '19.2.1', icon: <Code2 size={14} />, desc: t.about.techStack.react },
-    { name: 'Vite', version: '6.3.5', icon: <Zap size={14} />, desc: t.about.techStack.vite },
-    { name: 'SQLite', version: '11.9.1', icon: <Database size={14} />, desc: t.about.techStack.sqlite },
-    { name: 'Zustand', version: '5.0.4', icon: <Zap size={14} />, desc: t.about.techStack.zustand },
-    { name: 'Lucide', version: '0.511.0', icon: <Zap size={14} />, desc: t.about.techStack.lucide },
-  ]
+  const handleClose = (e?: MouseEvent): void => {
+    e?.stopPropagation()
+    closePanel()
+  }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
-      <div className="modal" style={{ width: 500, background: 'linear-gradient(135deg, var(--bg-1), var(--bg-0))', border: '1px solid var(--accent-subtle)' }}>
-        <div className="modal-header" style={{ border: 'none', padding: '20px 20px 0' }}>
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && handleClose()}>
+      <div
+        className="modal about-modal"
+        style={{
+          width: 440,
+          maxHeight: 'min(90vh, 640px)',
+          background: 'linear-gradient(160deg, var(--bg-1), var(--bg-0))',
+          border: '1px solid var(--accent-subtle)',
+          overflow: 'hidden'
+        }}
+      >
+        <div className="modal-header" style={{ border: 'none', padding: '16px 16px 0', flexShrink: 0 }}>
           <div style={{ flex: 1 }} />
-          <button className="btn btn-ghost btn-icon" onClick={closePanel}><X size={16} /></button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-icon"
+            onClick={handleClose}
+            title={t.about.close}
+            aria-label={t.about.close}
+          >
+            <X size={16} />
+          </button>
         </div>
 
-        <div className="modal-body" style={{ textAlign: 'center', padding: '0 32px 32px' }}>
-          {/* Animated Logo Container */}
-          <div style={{ position: 'relative', width: 80, height: 80, margin: '0 auto 20px' }}>
+        <div className="modal-body about-modal-body" style={{ textAlign: 'center', padding: '0 28px 20px', overflowY: 'auto' }}>
+          <div style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 16px' }}>
             <div style={{
-              position: 'absolute', inset: 0, 
-              background: 'var(--accent-subtle)', 
-              borderRadius: '50%', 
-              animation: 'pulse 3s infinite',
-              filter: 'blur(10px)'
+              position: 'absolute', inset: -4,
+              background: 'var(--accent-subtle)',
+              borderRadius: '50%',
+              filter: 'blur(12px)'
             }} />
             <div style={{
               position: 'relative',
-              width: 80, height: 80,
+              width: 72, height: 72,
               background: 'var(--bg-2)',
-              borderRadius: '20px',
+              borderRadius: 18,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               border: '1px solid var(--accent)',
-              boxShadow: '0 0 20px rgba(88,166,255,0.2)'
+              boxShadow: '0 0 18px color-mix(in srgb, var(--accent) 25%, transparent)'
             }}>
-              <Rss size={42} color="var(--accent)" style={{ animation: 'float 4s ease-in-out infinite' }} />
+              <Rss size={36} color="var(--accent)" />
             </div>
           </div>
 
-          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 4 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 4 }}>
             Cyber<span style={{ color: 'var(--accent)' }}>Feeds</span>
           </h1>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
+            textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14
+          }}>
             {t.about.version.replace('{version}', appVersion || '…')}
           </div>
 
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 32 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: 24 }}>
             {t.about.desc}
           </p>
 
           <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
-              {t.about.engineCore}
-              <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {techStack.map(tech => (
-                <div key={tech.name} style={{ 
-                  background: 'rgba(255,255,255,0.03)', 
-                  padding: '10px 12px', 
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--border-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10
-                }}>
-                  <div style={{ color: 'var(--accent)' }}>{tech.icon}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{tech.name}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>v{tech.version}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginTop: 28 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)',
+              marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8
+            }}>
               <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
               {t.about.maintenance}
               <div style={{ height: 1, flex: 1, background: 'var(--accent-subtle)' }} />
@@ -146,73 +133,58 @@ export default function AboutModal(): JSX.Element {
 
             <UpdateStatusLine status={status} t={t} />
 
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              gap: 16, 
-              marginTop: 16,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid var(--border-muted)',
-              borderRadius: 'var(--radius)',
-              padding: '12px'
-            }}>
+            <div className="about-maintenance">
               {status.state === 'available' ? (
-                <button className="btn btn-primary" style={{ fontSize: 12, gap: 6, padding: '8px 12px' }} onClick={handleDownload}>
-                  <Download size={13} /> {t.about.downloadBtn}
+                <button type="button" className="btn btn-primary about-action-btn" onClick={handleDownload}>
+                  <Download size={14} />
+                  <span>{t.about.downloadBtn}</span>
                 </button>
               ) : status.state === 'downloaded' ? (
-                <button className="btn btn-primary" style={{ fontSize: 12, gap: 6, padding: '8px 12px' }} onClick={handleInstall}>
-                  <CheckCircle2 size={13} /> {t.about.installBtn}
+                <button type="button" className="btn btn-primary about-action-btn" onClick={handleInstall}>
+                  <CheckCircle2 size={14} />
+                  <span>{t.about.installBtn}</span>
                 </button>
               ) : (
                 <button
-                  className="btn btn-secondary"
-                  style={{ fontSize: 12, gap: 6, padding: '8px 12px' }}
+                  type="button"
+                  className="btn btn-secondary about-action-btn"
                   onClick={handleCheck}
                   disabled={status.state === 'checking' || status.state === 'downloading'}
                 >
-                  <RefreshCw size={13} className={status.state === 'checking' ? 'spin' : ''} /> {t.about.checkUpdates}
+                  <RefreshCw size={14} className={status.state === 'checking' ? 'spin' : ''} />
+                  <span>{t.about.checkUpdates}</span>
                 </button>
               )}
 
-              <label className="toggle" style={{ margin: 0, gap: 6 }}>
-                <div className={`toggle-track ${settings.autoUpdate ? 'on' : ''}`}
+              <button type="button" className="btn btn-secondary about-action-btn" onClick={() => window.api.openDataFolder()}>
+                <Folder size={14} />
+                <span>{t.about.openFolder}</span>
+              </button>
+
+              <label className="toggle about-auto-update">
+                <div
+                  className={`toggle-track ${settings.autoUpdate ? 'on' : ''}`}
                   onClick={() => update({ autoUpdate: !settings.autoUpdate })}
-                  style={{ flexShrink: 0 }}
                 >
                   <div className="toggle-thumb" />
                 </div>
-                <span style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                  {t.about.autoUpdates}
-                </span>
+                <span>{t.about.autoUpdates}</span>
               </label>
-
-              <button className="btn btn-secondary" style={{ fontSize: 12, gap: 6, padding: '8px 12px' }} onClick={() => window.api.openDataFolder()}>
-                <Folder size={13} /> {t.about.openFolder}
-              </button>
             </div>
           </div>
         </div>
 
-        <div style={{ 
-          padding: '12px 20px', 
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: 10, 
-          color: 'var(--text-muted)', 
-          borderTop: '1px solid var(--border-muted)',
-          background: 'rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ fontWeight: 600, letterSpacing: '0.05em' }}>
+        <div className="about-modal-footer">
+          <div style={{ fontWeight: 600, letterSpacing: '0.04em' }}>
             © CyberGems • 2026
           </div>
-          <button 
-            className="btn btn-ghost btn-icon" 
-            style={{ width: 24, height: 24, color: 'inherit' }}
+          <button
+            type="button"
+            className="btn btn-ghost btn-icon"
+            style={{ width: 28, height: 28, color: 'inherit' }}
             onClick={() => window.api.openExternal('https://github.com/Cybergems/CyberFeeds')}
-            title="GitHub Repository"
+            title={t.about.githubTooltip}
+            aria-label={t.about.githubTooltip}
           >
             <Github size={14} />
           </button>
@@ -220,10 +192,6 @@ export default function AboutModal(): JSX.Element {
       </div>
 
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
-        }
         .spin { animation: spin 0.8s linear infinite; }
       `}</style>
     </div>
@@ -242,14 +210,14 @@ function UpdateStatusLine({ status, t }: { status: UpdateStatus; t: any }): JSX.
   if (status.state === 'idle') return null
   if (status.state === 'downloading') {
     return (
-      <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)' }}>
+      <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
         {t.about.statuses.downloading.replace('{percent}', String(status.percent))}
       </div>
     )
   }
   const info = map[status.state]
   return (
-    <div style={{ textAlign: 'center', fontSize: 12, color: info.color }}>
+    <div style={{ textAlign: 'center', fontSize: 12, color: info.color, marginBottom: 10 }}>
       {info.text}
       {status.state === 'error' && status.message && (
         <div style={{ marginTop: 4, fontSize: 10, color: 'var(--text-muted)', wordBreak: 'break-word' }}>

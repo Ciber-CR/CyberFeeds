@@ -226,19 +226,12 @@ export const translations = {
       title: 'About CyberFeeds',
       version: 'Version {version}',
       desc: 'A high-performance, minimalist RSS reader designed for power users who value speed, privacy, and a clean reading experience.',
-      engineCore: 'Engine Core',
-      techStack: {
-        electron: 'Native Desktop Shell',
-        react: 'UI Library',
-        vite: 'Build System',
-        sqlite: 'Local Database',
-        zustand: 'State Management',
-        lucide: 'Iconography'
-      },
       maintenance: 'Maintenance',
       autoUpdates: 'Auto updates',
-      openFolder: 'Open Folder',
-      checkUpdates: 'Check updates',
+      openFolder: 'Open data folder',
+      checkUpdates: 'Check for updates',
+      close: 'Close',
+      githubTooltip: 'View project on GitHub',
       statuses: {
         checking: 'Checking for updates…',
         latest: 'You’re on the latest version.',
@@ -247,8 +240,8 @@ export const translations = {
         error: 'Could not check for updates.',
         downloading: 'Downloading… {percent}%'
       },
-      downloadBtn: 'Download',
-      installBtn: 'Install'
+      downloadBtn: 'Download update',
+      installBtn: 'Install and restart'
     },
     doctor: {
       title: 'Feeds Doctor',
@@ -573,19 +566,12 @@ export const translations = {
       title: 'Acerca de CyberFeeds',
       version: 'Versión {version}',
       desc: 'Un lector de RSS minimalista y de alto rendimiento diseñado para usuarios avanzados que valoran la velocidad, la privacidad y una experiencia de lectura limpia.',
-      engineCore: 'Núcleo del motor',
-      techStack: {
-        electron: 'Contenedor de escritorio nativo',
-        react: 'Biblioteca de interfaz',
-        vite: 'Sistema de construcción',
-        sqlite: 'Base de datos local',
-        zustand: 'Gestión de estado',
-        lucide: 'Iconografía'
-      },
       maintenance: 'Mantenimiento',
       autoUpdates: 'Actualizaciones automáticas',
-      openFolder: 'Abrir carpeta',
+      openFolder: 'Abrir carpeta de datos',
       checkUpdates: 'Buscar actualizaciones',
+      close: 'Cerrar',
+      githubTooltip: 'Ver el proyecto en GitHub',
       statuses: {
         checking: 'Buscando actualizaciones…',
         latest: 'Estás en la última versión.',
@@ -594,8 +580,8 @@ export const translations = {
         error: 'No se pudo buscar actualizaciones.',
         downloading: 'Descargando… {percent}%'
       },
-      downloadBtn: 'Descargar',
-      installBtn: 'Instalar'
+      downloadBtn: 'Descargar actualización',
+      installBtn: 'Instalar y reiniciar'
     },
     doctor: {
       title: 'Doctor de feeds',
