@@ -621,13 +621,31 @@ body {
 .notif-card:hover { border-color: var(--accent); }
 .notif-header { display: flex; align-items: center; gap: 8px; }
 .notif-feed { font-size: 11px; font-weight: 600; color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.notif-close { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; display: flex; }
-.notif-close:hover { color: var(--text-primary); }
+.notif-close {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 3px;
+  margin: -3px -3px -3px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.notif-close:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
 .notif-title { font-size: 12px; font-weight: 500; color: var(--text-primary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .notif-body { font-size: 11px; color: var(--text-secondary); }
-.notif-actions { display: flex; gap: 6px; margin-top: 4px; }
-.notif-btn { font-size: 11px; padding: 3px 8px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg-2); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+.notif-actions { display: flex; flex-wrap: nowrap; align-items: center; gap: 7px; margin-top: 4px; min-width: 0; }
+.notif-btn { font-size: 11px; padding: 3px 10px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg-2); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
 .notif-btn:hover { border-color: var(--accent); color: var(--accent); }
+.notif-time { font-size: 10px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; margin-left: auto; padding-left: 8px; }
 .notif-thumbnail { width: 100%; height: 100px; border-radius: 4px; overflow: hidden; flex-shrink: 0; background: var(--bg-2); margin-bottom: 2px; }
 .notif-thumbnail img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .clear-all-btn { font-size: 10px; padding: 6px 10px; border-radius: 4px; background: rgba(30,30,46,0.92); border: 1px solid rgba(255,255,255,0.18); color: #ccc; font-weight: 500; letter-spacing: 0.3px; cursor: pointer; transition: all 0.15s; }

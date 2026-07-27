@@ -94,6 +94,8 @@ export interface NotificationSettings {
   feedFilters: string[]
   keywordFilters: string[]
   snoozedUntil: number | null
+  /** Minutes applied by the single snooze button on notification cards. */
+  snoozeMinutes: number
   openBehavior: 'browser' | 'app'
   showThumbnails: boolean
   preloadImages: boolean
@@ -164,6 +166,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     feedFilters: [],
     keywordFilters: [],
     snoozedUntil: null,
+    snoozeMinutes: 30,
     openBehavior: 'app',
     showThumbnails: true,
     preloadImages: true

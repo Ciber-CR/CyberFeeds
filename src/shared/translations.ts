@@ -62,6 +62,7 @@ export const translations = {
         markAsRead: 'Mark as read',
         markAsUnread: 'Mark as unread',
         copyLink: 'Copy link',
+        copyImage: 'Copy image',
         openInBrowser: 'Open in browser',
         deleteArticle: 'Delete article',
         markAllAsRead: 'Mark all as read',
@@ -150,6 +151,7 @@ export const translations = {
         },
         duration: 'Duration (ms)',
         maxStack: 'Max Stack',
+        snoozeDuration: 'Snooze duration',
         soundEnabled: 'Enable sound',
         alertSound: 'Alert Sound',
         browseBtn: 'Browse…',
@@ -292,15 +294,30 @@ export const translations = {
     notifier: {
       seeHistory: 'See History',
       history: 'History',
+      historyTooltip: 'Open notification history',
       closeAll: 'Close All',
       close: 'Close',
+      closeTooltip: 'Dismiss this notification',
+      closeAllTooltip: 'Dismiss all notifications',
       dismiss: 'Dismiss',
+      dismissTooltip: 'Dismiss this notification',
       markRead: 'Mark Read',
-      snooze15: 'Snooze 15m',
-      snooze1h: 'Snooze 1h',
+      markReadTooltip: 'Mark as read and dismiss',
+      snooze: 'Snooze {time}',
+      snoozeTooltip: 'Pause notifications for {time}',
       view: 'View',
+      viewTooltip: 'Open in CyberFeeds',
       open: 'Open',
-      more: 'more'
+      openTooltip: 'Open in browser',
+      receivedAt: 'Received at {time}',
+      more: 'more',
+      moreTooltip: 'Show remaining notifications'
+    },
+    notificationHistory: {
+      newCount: 'new',
+      clearAll: 'Clear all',
+      empty: 'No notifications',
+      alreadySeen: 'Already Seen'
     },
     mainProcess: {
       tray: {
@@ -312,7 +329,14 @@ export const translations = {
       },
       webviewCtx: {
         openLink: 'Open Link',
-        copyLinkAddress: 'Copy Link Address'
+        copyLinkAddress: 'Copy Link Address',
+        copy: 'Copy',
+        selectAll: 'Select All',
+        undo: 'Undo',
+        redo: 'Redo',
+        cut: 'Cut',
+        paste: 'Paste',
+        delete: 'Delete'
       }
     }
   },
@@ -379,6 +403,7 @@ export const translations = {
         markAsRead: 'Marcar como leído',
         markAsUnread: 'Marcar como no leído',
         copyLink: 'Copiar enlace',
+        copyImage: 'Copiar imagen',
         openInBrowser: 'Abrir en el navegador',
         deleteArticle: 'Eliminar artículo',
         markAllAsRead: 'Marcar todos como leídos',
@@ -467,6 +492,7 @@ export const translations = {
         },
         duration: 'Duración (ms)',
         maxStack: 'Pila máxima',
+        snoozeDuration: 'Duración de posponer',
         soundEnabled: 'Habilitar sonido',
         alertSound: 'Sonido de alerta',
         browseBtn: 'Buscar…',
@@ -609,15 +635,30 @@ export const translations = {
     notifier: {
       seeHistory: 'Ver historial',
       history: 'Historial',
+      historyTooltip: 'Abrir historial de notificaciones',
       closeAll: 'Cerrar todo',
       close: 'Cerrar',
+      closeTooltip: 'Descartar esta notificación',
+      closeAllTooltip: 'Descartar todas las notificaciones',
       dismiss: 'Descartar',
+      dismissTooltip: 'Descartar esta notificación',
       markRead: 'Marcar como leído',
-      snooze15: 'Posponer 15m',
-      snooze1h: 'Posponer 1h',
+      markReadTooltip: 'Marcar como leído y descartar',
+      snooze: 'Posponer {time}',
+      snoozeTooltip: 'Pausar notificaciones durante {time}',
       view: 'Ver',
+      viewTooltip: 'Abrir en CyberFeeds',
       open: 'Abrir',
-      more: 'más'
+      openTooltip: 'Abrir en el navegador',
+      receivedAt: 'Recibido a las {time}',
+      more: 'más',
+      moreTooltip: 'Ver notificaciones restantes'
+    },
+    notificationHistory: {
+      newCount: 'nuevas',
+      clearAll: 'Limpiar todo',
+      empty: 'Sin notificaciones',
+      alreadySeen: 'Ya vistas'
     },
     mainProcess: {
       tray: {
@@ -629,7 +670,14 @@ export const translations = {
       },
       webviewCtx: {
         openLink: 'Abrir enlace',
-        copyLinkAddress: 'Copiar dirección del enlace'
+        copyLinkAddress: 'Copiar dirección del enlace',
+        copy: 'Copiar',
+        selectAll: 'Seleccionar todo',
+        undo: 'Deshacer',
+        redo: 'Rehacer',
+        cut: 'Cortar',
+        paste: 'Pegar',
+        delete: 'Eliminar'
       }
     }
   }

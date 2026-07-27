@@ -379,7 +379,13 @@ export function getSettings(): AppSettings {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('app') as { value: string } | undefined
   if (!row) return DEFAULT_SETTINGS
   try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(row.value) }
+    const parsed = JSON.parse(row.value) as Partial<AppSettings>
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+      notifications: { ...DEFAULT_SETTINGS.notifications, ...parsed.notifications },
+      shortcuts: { ...DEFAULT_SETTINGS.shortcuts, ...parsed.shortcuts }
+    }
   } catch {
     return DEFAULT_SETTINGS
   }

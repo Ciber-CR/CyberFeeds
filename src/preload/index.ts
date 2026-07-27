@@ -54,6 +54,7 @@ const api = {
 
   // Shell
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
+  copyImageToClipboard: (imageUrl: string) => ipcRenderer.invoke('clipboard:copyImage', imageUrl),
   pickBrowser: () => ipcRenderer.invoke('app:pickBrowser'),
 
   // Displays

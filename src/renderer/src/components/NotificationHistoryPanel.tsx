@@ -20,7 +20,7 @@ export default function NotificationHistoryPanel(): JSX.Element {
   const { settings } = useSettingsStore()
   const [history, setHistory] = useState<NotificationHistoryItem[]>([])
   const [lastCheckedTime, setLastCheckedTime] = useState(0)
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
 
   useEffect(() => {
     window.api.getNotificationHistory().then(setHistory)
@@ -120,17 +120,17 @@ export default function NotificationHistoryPanel(): JSX.Element {
           {t.topBar.notificationHistory}
           {newNotifications.length > 0 && (
             <span className="cyber-badge" style={{ fontSize: 10, padding: '2px 6px' }}>
-              {newNotifications.length} {language === 'es' ? 'nuevas' : 'new'}
+              {newNotifications.length} {t.notificationHistory.newCount}
             </span>
           )}
         </h2>
-        <button className="btn btn-ghost btn-icon" onClick={handleClear} title={language === 'es' ? 'Limpiar todo' : 'Clear all'}><Trash2 size={14} /></button>
+        <button className="btn btn-ghost btn-icon" onClick={handleClear} title={t.notificationHistory.clearAll}><Trash2 size={14} /></button>
         <button className="btn btn-ghost btn-icon" onClick={closePanel}><X size={15} /></button>
       </div>
       <div className="panel-body">
         {history.length === 0 ? (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 32 }}>
-            {language === 'es' ? 'Sin notificaciones' : 'No notifications'}
+            {t.notificationHistory.empty}
           </div>
         ) : (
           <>
@@ -148,7 +148,7 @@ export default function NotificationHistoryPanel(): JSX.Element {
                 letterSpacing: '0.05em'
               }}>
                 <div style={{ height: 1, flex: 1, background: 'var(--border-muted)' }} />
-                {language === 'es' ? 'Ya vistas' : 'Already Seen'}
+                {t.notificationHistory.alreadySeen}
                 <div style={{ height: 1, flex: 1, background: 'var(--border-muted)' }} />
               </div>
             )}
