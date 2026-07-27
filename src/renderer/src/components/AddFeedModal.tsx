@@ -3,6 +3,7 @@ import { X, Globe } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
 import { useTranslation } from '../hooks/useTranslation'
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss'
 
 export default function AddFeedModal(): JSX.Element {
   const [url, setUrl] = useState('')
@@ -18,6 +19,7 @@ export default function AddFeedModal(): JSX.Element {
   useEffect(() => { urlRef.current?.focus() }, [])
   const { folders, addFeed } = useFeedsStore()
   const { closePanel } = useUIStore()
+  const overlayDismiss = useOverlayDismiss(closePanel)
 
   const handlePreview = async (): Promise<void> => {
     if (!url.trim()) return
@@ -49,7 +51,7 @@ export default function AddFeedModal(): JSX.Element {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
+    <div className="modal-overlay" {...overlayDismiss}>
       <div className="modal">
         <div className="modal-header">
           <Globe size={16} style={{ color: 'var(--accent)' }} />

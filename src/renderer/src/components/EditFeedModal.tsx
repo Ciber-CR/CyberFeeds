@@ -3,11 +3,13 @@ import { X, Edit2 } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
 import { useTranslation } from '../hooks/useTranslation'
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss'
 
 export default function EditFeedModal(): JSX.Element | null {
   const { feeds, folders, updateFeed } = useFeedsStore()
   const { closePanel, editFeedId } = useUIStore()
   const { t } = useTranslation()
+  const overlayDismiss = useOverlayDismiss(closePanel)
   
   const feed = feeds.find(f => f.id === editFeedId)
   
@@ -36,7 +38,7 @@ export default function EditFeedModal(): JSX.Element | null {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
+    <div className="modal-overlay" {...overlayDismiss}>
       <div className="modal">
         <div className="modal-header">
           <Edit2 size={16} style={{ color: 'var(--accent)' }} />

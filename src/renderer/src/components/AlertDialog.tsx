@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { CheckCircle2, Info, AlertTriangle, XCircle, X } from 'lucide-react'
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss'
 
 interface AlertDialogProps {
   isOpen: boolean
@@ -18,6 +19,8 @@ export default function AlertDialog({
   variant = 'info',
   onClose
 }: AlertDialogProps): JSX.Element | null {
+  const overlayDismiss = useOverlayDismiss(onClose)
+
   useEffect(() => {
     if (!isOpen) return
 
@@ -68,7 +71,7 @@ export default function AlertDialog({
   }
 
   return (
-    <div className="confirm-dialog-overlay" onClick={onClose}>
+    <div className="confirm-dialog-overlay" {...overlayDismiss}>
       <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
         <div className="confirm-dialog-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

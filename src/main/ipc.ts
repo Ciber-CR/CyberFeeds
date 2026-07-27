@@ -13,11 +13,9 @@ import { setAutoUpdate } from './updater'
 import { rebuildTrayMenu, rebuildGlobalShortcuts } from './tray'
 import { translations } from '../shared/translations'
 import { DEFAULT_SETTINGS } from '../shared/types'
+import { normalizeFeedUrl } from '../shared/reddit'
+import { robustParse } from './feed-parse'
 import type { Feed, Folder } from './types'
-import RssParser from 'rss-parser'
-import { XMLParser } from 'fast-xml-parser'
-
-const rssParser = new RssParser({ timeout: 10000 })
 
 /**
  * Sync the Windows login item with the current settings. When the app is set
@@ -75,106 +73,6 @@ function extractContent(url: string): Promise<{ html?: string; error?: string }>
   })
 }
 
-async function robustParse(url: string): Promise<any> {
-  const headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'application/rss+xml, application/xml, text/xml, text/html, */*'
-  }
-
-  try {
-    return await rssParser.parseURL(url)
-  } catch (err) {
-    console.error(`Standard RSS parsing failed for ${url}, trying robust fallback...`, err)
-    
-    // Manual fetch
-    const resp = await fetch(url, { headers })
-    if (!resp.ok) throw err 
-    let text = await resp.text()
-
-    // ─── Auto-Discovery ───────────────────────────────────────────────────
-    // If it's HTML, try to find a real RSS link
-    if (text.trim().toLowerCase().startsWith('<!doctype html') || text.trim().toLowerCase().startsWith('<html')) {
-      console.log(`[Discovery] HTML detected at ${url}, searching for RSS links...`)
-      const rssLinkMatch = text.match(/<link[^>]+rel=["']alternate["'][^>]+type=["']application\/(rss\+xml|atom\+xml)["'][^>]+href=["']([^"']+)["']/i) ||
-                           text.match(/<link[^>]+type=["']application\/(rss\+xml|atom\+xml)["'][^>]+rel=["']alternate["'][^>]+href=["']([^"']+)["']/i) ||
-                           text.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']alternate["'][^>]+type=["']application\/(rss\+xml|atom\+xml)["']/i)
-      
-      if (rssLinkMatch && rssLinkMatch[2]) {
-        let discoveredUrl = rssLinkMatch[2]
-        if (!discoveredUrl.startsWith('http')) {
-          const baseUrl = new URL(url)
-          discoveredUrl = new URL(discoveredUrl, baseUrl.origin).href
-        }
-        console.log(`[Discovery] Found RSS link: ${discoveredUrl}, fetching...`)
-        const subResp = await fetch(discoveredUrl, { headers })
-        if (subResp.ok) {
-          text = await subResp.text()
-        }
-      } else {
-        // Heuristic fallback for common CMS patterns (like Teletica)
-        const lowerUrl = url.toLowerCase()
-        if (lowerUrl.endsWith('/rss') || lowerUrl.endsWith('/rss/')) {
-          const guessUrl = lowerUrl.endsWith('/') ? `${url}feed` : `${url}/feed`
-          console.log(`[Discovery] Guessing feed URL: ${guessUrl}`)
-          const guessResp = await fetch(guessUrl, { headers })
-          if (guessResp.ok) {
-            text = await guessResp.text()
-          }
-        }
-      }
-    }
-
-    const xmlParser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' })
-    const parsed = xmlParser.parse(text)
-    
-    // Check if it's RSS (channel) or Atom (feed)
-    const channel = parsed.rss?.channel || parsed.feed || parsed
-    const channelTitle = channel.title?.['#text'] || channel.title || url
-    const channelDesc = channel.description || channel.subtitle || ''
-    
-    const extractLinkString = (linkObj: any): string => {
-      if (!linkObj) return ''
-      if (typeof linkObj === 'string') return linkObj
-      if (Array.isArray(linkObj)) {
-        const alt = linkObj.find(l => l['@_rel'] === 'alternate') || linkObj[0]
-        return extractLinkString(alt)
-      }
-      return linkObj['@_href'] || linkObj['#text'] || ''
-    }
-
-    const channelLink = extractLinkString(channel.link)
-
-    const rawItems = Array.isArray(channel.item) ? channel.item : 
-                     Array.isArray(channel.entry) ? channel.entry : 
-                     channel.item ? [channel.item] : 
-                     channel.entry ? [channel.entry] : []
-    
-    const items = rawItems.map((item: any) => {
-      const title = item.title?.['#text'] || item.title || 'Untitled'
-      const link = extractLinkString(item.link)
-      const content = item['content:encoded'] || item.content?.['#text'] || item.content || item.description || ''
-      const pubDate = item.pubDate || item.published || item.updated || ''
-      const guid = item.guid?.['#text'] || item.guid || item.id || link
-
-      return { title, link, content, pubDate, guid, isoDate: pubDate }
-    })
-
-    if (items.length === 0) {
-      if (text.trim().toLowerCase().startsWith('<!doctype html') || text.trim().toLowerCase().startsWith('<html')) {
-        throw new Error('The URL provided is a webpage, not an RSS feed. Please provide the exact RSS feed URL.')
-      }
-      throw err
-    }
-
-    return {
-      title: channelTitle,
-      description: channelDesc,
-      link: channelLink,
-      items
-    }
-  }
-}
-
 export function registerIpc(): void {
   // ─── Feeds ───────────────────────────────────────────────────────────────
 
@@ -182,12 +80,10 @@ export function registerIpc(): void {
 
   ipcMain.handle('feeds:add', async (_, url: string, folderId: string, customTitle?: string) => {
     try {
-      // Normalize URL
-      let normalizedUrl = url.trim()
-      if (!normalizedUrl.startsWith('http')) normalizedUrl = 'https://' + normalizedUrl
+      const normalizedUrl = normalizeFeedUrl(url)
 
-      // Check for duplicate
-      const existing = db.getFeeds().find(f => f.url === normalizedUrl)
+      // Check for duplicate (including alternate Reddit URL forms)
+      const existing = db.getFeeds().find(f => normalizeFeedUrl(f.url) === normalizedUrl)
       if (existing) return { error: 'Feed already exists' }
 
       // Parse to get title (using robust fallback)
@@ -210,14 +106,13 @@ export function registerIpc(): void {
 
       return { feed }
     } catch (err) {
-      return { error: String(err) }
+      return { error: err instanceof Error ? err.message : String(err) }
     }
   })
 
   ipcMain.handle('feeds:preview', async (_, url: string) => {
     try {
-      let normalizedUrl = url.trim()
-      if (!normalizedUrl.startsWith('http')) normalizedUrl = 'https://' + normalizedUrl
+      const normalizedUrl = normalizeFeedUrl(url)
       const parsed = await robustParse(normalizedUrl)
       return {
         title: parsed.title,
@@ -226,7 +121,7 @@ export function registerIpc(): void {
         items: (parsed.items || []).slice(0, 5).map(i => ({ title: i.title, pubDate: i.pubDate, link: i.link }))
       }
     } catch (err) {
-      return { error: String(err) }
+      return { error: err instanceof Error ? err.message : String(err) }
     }
   })
 
@@ -591,7 +486,7 @@ export function registerIpc(): void {
       db.restoreBackupData(data)
       return { ok: true }
     } catch (err) {
-      return { error: String(err) }
+      return { error: err instanceof Error ? err.message : String(err) }
     }
   })
 
