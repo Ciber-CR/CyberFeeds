@@ -51,7 +51,6 @@ export default function EditFeedModal(): JSX.Element | null {
               value={title}
               onChange={e => setTitle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()}
-              onContextMenu={() => window.api.showInputContextMenu()}
               autoFocus
             />
           </div>
@@ -62,7 +61,6 @@ export default function EditFeedModal(): JSX.Element | null {
               value={url}
               onChange={e => setUrl(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()}
-              onContextMenu={() => window.api.showInputContextMenu()}
             />
           </div>
           <div className="form-group">

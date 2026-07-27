@@ -117,6 +117,28 @@ export default function App(): JSX.Element {
     return unsub
   }, [])
 
+  // Native text context menu for editable fields (modals, settings, search, etc.)
+  useEffect(() => {
+    const isEditableTextField = (target: EventTarget | null): boolean => {
+      if (!(target instanceof Element)) return false
+      const el = target.closest('input, textarea') as HTMLInputElement | HTMLTextAreaElement | null
+      if (!el || el.disabled || el.readOnly) return false
+      if (el instanceof HTMLTextAreaElement) return true
+      const type = (el.type || 'text').toLowerCase()
+      return ['text', 'search', 'url', 'email', 'password', 'tel', 'number'].includes(type)
+    }
+
+    const onContextMenu = (e: MouseEvent): void => {
+      if (!isEditableTextField(e.target)) return
+      e.preventDefault()
+      e.stopPropagation()
+      window.api.showInputContextMenu()
+    }
+
+    document.addEventListener('contextmenu', onContextMenu, true)
+    return () => document.removeEventListener('contextmenu', onContextMenu, true)
+  }, [])
+
   // Keyboard shortcuts
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape' && activePanel) closePanel()
