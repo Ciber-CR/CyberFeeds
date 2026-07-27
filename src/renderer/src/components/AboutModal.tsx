@@ -6,6 +6,7 @@ import {
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
 import { useTranslation } from '../hooks/useTranslation'
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss'
 
 const REPO_URL = 'https://github.com/CyberGems/CyberFeeds'
 
@@ -88,6 +89,7 @@ export default function AboutModal(): JSX.Element {
     e?.stopPropagation()
     closePanel()
   }
+  const overlayDismiss = useOverlayDismiss(() => handleClose())
 
   const handleCopyDiagnostics = useCallback(async () => {
     if (!versions) return
@@ -110,7 +112,7 @@ export default function AboutModal(): JSX.Element {
   }, [versions, language])
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && handleClose()}>
+    <div className="modal-overlay" {...overlayDismiss}>
       <div
         className="modal about-modal"
         style={{

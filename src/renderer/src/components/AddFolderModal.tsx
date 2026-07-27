@@ -3,6 +3,7 @@ import { X, FolderPlus } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
 import { useTranslation } from '../hooks/useTranslation'
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss'
 
 export default function AddFolderModal(): JSX.Element {
   const [name, setName] = useState('')
@@ -11,6 +12,7 @@ export default function AddFolderModal(): JSX.Element {
   const { addFolder } = useFeedsStore()
   const { closePanel } = useUIStore()
   const { t } = useTranslation()
+  const overlayDismiss = useOverlayDismiss(closePanel)
 
   const handleAdd = async (): Promise<void> => {
     if (!name.trim()) return
@@ -27,7 +29,7 @@ export default function AddFolderModal(): JSX.Element {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
+    <div className="modal-overlay" {...overlayDismiss}>
       <div className="modal" style={{ maxWidth: 400 }}>
         <div className="modal-header">
           <FolderPlus size={16} style={{ color: 'var(--accent)' }} />

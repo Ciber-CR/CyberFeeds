@@ -5,6 +5,7 @@ import { useFeedsStore } from '../store/feeds.store'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { useTranslation } from '../hooks/useTranslation'
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss'
 
 interface ScanResult {
   id: string
@@ -18,6 +19,7 @@ export default function DoctorPanel(): JSX.Element {
   const { deleteFeed } = useFeedsStore()
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
   const { t } = useTranslation()
+  const overlayDismiss = useOverlayDismiss(closePanel)
   
   const [results, setResults] = useState<ScanResult[]>(() => {
     const saved = localStorage.getItem('doctor_results')
@@ -62,7 +64,7 @@ export default function DoctorPanel(): JSX.Element {
   const errorCount = results.filter(r => r.status === 'error').length
 
   return (
-    <div className="panel-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
+    <div className="panel-overlay" {...overlayDismiss}>
       <div className="panel cyber-panel" style={{ width: 520 }}>
         <div className="panel-header">
           <Stethoscope size={18} color="var(--accent)" />

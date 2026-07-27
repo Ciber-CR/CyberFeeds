@@ -6,20 +6,18 @@ import { parentPort, workerData } from 'worker_threads'
 import RssParser from 'rss-parser'
 import crypto from 'crypto'
 import { XMLParser } from 'fast-xml-parser'
+import {
+  FEED_USER_AGENT,
+  fetchWithRetry,
+  parseRedditFeedUrl,
+  redditJsonApiUrl,
+  redditRssFallbackUrls
+} from '../../shared/reddit'
 
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 CyberFeeds/1.6'
+const USER_AGENT = FEED_USER_AGENT
 
 async function fetchWithTimeout(url: string, timeoutMs = 30000): Promise<Response> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    return await fetch(url, { 
-      signal: controller.signal,
-      headers: { 'User-Agent': USER_AGENT }
-    })
-  } finally {
-    clearTimeout(timer)
-  }
+  return fetchWithRetry(url, { headers: { 'User-Agent': USER_AGENT } }, { timeoutMs, retries: 2 })
 }
 
 interface WorkerMessage {
@@ -164,23 +162,11 @@ function extractThumbnail(item: any): string | undefined {
   return undefined
 }
 
-/** Detect if a URL is a Reddit feed and return the JSON API URL */
-function toRedditJsonUrl(url: string): string | null {
-  const lower = url.toLowerCase()
-  // Match: /r/subreddit/.rss, /r/subreddit/rss/, /r/subreddit/.rss/, etc.
-  const match = lower.match(/reddit\.com\/r\/([^/]+)\.rss/)
-  if (match) return `https://www.reddit.com/r/${match[1]}/.json?limit=100`
-  // Match: old.reddit.com, new.reddit.com
-  const match2 = lower.match(/(?:old|new)\.reddit\.com\/r\/([^/]+)\.rss/)
-  if (match2) return `https://www.reddit.com/r/${match2[1]}/.json?limit=100`
-  return null
-}
-
 /** Fetch from Reddit's JSON API and convert to feed items */
 async function fetchRedditJson(feedId: string, jsonUrl: string): Promise<FeedResult> {
   const lastFetched = Date.now()
-  const resp = await fetch(jsonUrl, {
-    headers: { 'User-Agent': USER_AGENT }
+  const resp = await fetchWithRetry(jsonUrl, {
+    headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' }
   })
   if (!resp.ok) throw new Error(`Reddit JSON API returned ${resp.status}`)
 
@@ -222,18 +208,61 @@ async function fetchRedditJson(feedId: string, jsonUrl: string): Promise<FeedRes
   return { feedId, articles, lastFetched }
 }
 
+async function fetchRedditWithFallbacks(feedId: string, url: string): Promise<FeedResult | null> {
+  const target = parseRedditFeedUrl(url)
+  if (!target) return null
+
+  // Prefer Atom/RSS first — public JSON is frequently blocked (403) for desktop UAs.
+  for (const rssUrl of redditRssFallbackUrls(target)) {
+    try {
+      const resp = await fetchWithTimeout(rssUrl)
+      if (!resp.ok) continue
+      const text = await resp.text()
+      if (!text || text.trim().toLowerCase().startsWith('<!doctype html')) continue
+      const feed = await parser.parseString(text)
+      const lastFetched = Date.now()
+      const articles: ParsedArticle[] = (feed.items || []).slice(0, 100).map(item => {
+        const guid = item.guid || item.link || item.title || String(Math.random())
+        const id = makeId(feedId, guid)
+        const rawContent = item['content:encoded'] || item.content || item.contentSnippet || ''
+        const rawSnippet = item.contentSnippet || cleanHtml(rawContent)
+        const pubDate = item.pubDate ? new Date(item.pubDate).getTime() : lastFetched
+        const thumbnail = extractThumbnail(item)
+        return {
+          id,
+          feedId,
+          title: item.title?.trim() || '(No title)',
+          link: item.link || '',
+          pubDate: isNaN(pubDate) ? lastFetched : pubDate,
+          content: rawContent,
+          snippet: truncate(cleanHtml(rawSnippet), 300),
+          author: item.creator || item.author || undefined,
+          guid,
+          thumbnail
+        }
+      })
+      if (articles.length > 0) return { feedId, articles, lastFetched }
+    } catch (err) {
+      console.warn(`[Worker] Reddit RSS fallback failed for ${rssUrl}:`, err)
+    }
+  }
+
+  const jsonUrl = redditJsonApiUrl(target)
+  try {
+    return await fetchRedditJson(feedId, jsonUrl)
+  } catch (err) {
+    console.warn(`[Worker] Reddit JSON failed for ${url}:`, err)
+  }
+
+  return null
+}
+
 async function fetchFeed(feedId: string, url: string): Promise<FeedResult> {
   const lastFetched = Date.now()
   try {
-    // Reddit special handling — use JSON API for thumbnails
-    const redditJsonUrl = toRedditJsonUrl(url)
-    if (redditJsonUrl) {
-      try {
-        return await fetchRedditJson(feedId, redditJsonUrl)
-      } catch (err) {
-        console.warn(`[Worker] Reddit JSON failed for ${url}, falling back to RSS...`, err)
-      }
-    }
+    // Reddit special handling — JSON API first, then RSS host fallbacks
+    const redditResult = await fetchRedditWithFallbacks(feedId, url)
+    if (redditResult) return redditResult
 
     let feed: any
     try {

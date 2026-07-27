@@ -4,6 +4,7 @@ import { useArticlesStore } from './store/articles.store'
 import { useUIStore } from './store/ui.store'
 import { useSettingsStore } from './store/settings.store'
 import { useColumnResize } from './hooks/useColumnResize'
+import { useOverlayDismiss } from './hooks/useOverlayDismiss'
 import TopBar from './components/TopBar'
 import Sidebar from './components/Sidebar'
 import ArticleList from './components/ArticleList'
@@ -23,6 +24,8 @@ export default function App(): JSX.Element {
   const { load, refresh } = useArticlesStore()
   const { selectedFeedId, selectedArticleId, activePanel, layout, unreadOnly, search, closePanel } = useUIStore()
   const { load: loadSettings, settings } = useSettingsStore()
+  const dismissInbox = useOverlayDismiss(closePanel)
+  const dismissHistory = useOverlayDismiss(closePanel)
 
   // ── Resize hooks — MUST be at top level, before any conditionals ──────────
   const [sidebarDragging, setSidebarDragging] = useState(false)
@@ -205,12 +208,12 @@ export default function App(): JSX.Element {
         </div>
       )}
       {activePanel === 'inbox' && (
-        <div className="panel-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
+        <div className="panel-overlay" {...dismissInbox}>
           <InboxPanel />
         </div>
       )}
       {activePanel === 'history' && (
-        <div className="panel-overlay" onClick={e => e.target === e.currentTarget && closePanel()}>
+        <div className="panel-overlay" {...dismissHistory}>
           <NotificationHistoryPanel />
         </div>
       )}
