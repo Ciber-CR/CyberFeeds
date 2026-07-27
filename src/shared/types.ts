@@ -153,7 +153,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   listFontSize: 13,
   notifications: {
     enabled: true,
-    position: 'bottom-right',
+    position: 'bottom-left',
     displayId: 0,
     marginX: 16,
     marginY: 16,
@@ -164,7 +164,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     opacity: 0.97,
     soundEnabled: true,
     soundFile: null,
-    maxStack: 5,
+    maxStack: 2,
     feedFilters: [],
     keywordFilters: [],
     snoozedUntil: null,

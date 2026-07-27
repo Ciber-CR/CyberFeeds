@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react'
-import { X, Settings, Monitor, Bell, Zap, Sliders, Palette, Database, Stethoscope } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback, type KeyboardEvent } from 'react'
+import {
+  Settings, Monitor, Bell, Zap, Sliders, Palette, Database,
+  Stethoscope, Keyboard, X
+} from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
 import { useConfirm } from '../hooks/useConfirm'
 import { useAlert } from '../hooks/useAlert'
 import ConfirmDialog from './ConfirmDialog'
 import AlertDialog from './AlertDialog'
-import type { AppSettings } from '../types'
+import type { AppSettings, KeyboardShortcuts } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 
 interface DisplayInfo {
@@ -15,6 +18,9 @@ interface DisplayInfo {
   bounds: { x: number; y: number; width: number; height: number }
   isPrimary?: boolean
 }
+
+type ActiveTab = 'general' | 'appearance' | 'notifications' | 'keyboard' | 'backupMaintenance'
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 function normalizeKey(key: string, code: string): string {
   if (key.length === 1 && key >= 'a' && key <= 'z') return key.toUpperCase()
@@ -62,12 +68,12 @@ function normalizeKey(key: string, code: string): string {
 function findShortcutConflict(
   currentKey: string,
   accelerator: string,
-  shortcuts: any
+  shortcuts: KeyboardShortcuts
 ): string | null {
   if (!accelerator) return null
   const cleanAcc = accelerator.trim().toLowerCase()
   for (const [key, val] of Object.entries(shortcuts)) {
-    const s = val as any
+    const s = val as KeyboardShortcuts[keyof KeyboardShortcuts]
     if (key !== currentKey && s.enabled && s.accelerator.trim().toLowerCase() === cleanAcc) {
       return key
     }
@@ -79,19 +85,16 @@ interface HotkeyRecorderProps {
   actionKey: string
   value: string
   onChange: (newValue: string) => void
-  shortcuts: any
-  t: any
+  shortcuts: KeyboardShortcuts
+  t: ReturnType<typeof useTranslation>['t']
 }
 
 function HotkeyRecorder({ actionKey, value, onChange, shortcuts, t }: HotkeyRecorderProps): JSX.Element {
   const [recording, setRecording] = useState(false)
   const [tempValue, setTempValue] = useState('')
 
-  const { language } = useTranslation()
-  const isEs = language === 'es'
-
-  const formatDisplay = (val: string) => {
-    if (!val) return isEs ? 'Ninguno (Clic para agregar)' : 'None (Click to add)'
+  const formatDisplay = (val: string): string => {
+    if (!val) return t.settings.keyboard.empty
     return val
       .replace(/CommandOrControl/g, 'Ctrl')
       .replace(/CmdOrCtrl/g, 'Ctrl')
@@ -99,7 +102,7 @@ function HotkeyRecorder({ actionKey, value, onChange, shortcuts, t }: HotkeyReco
       .replace(/Meta/g, 'Win')
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     e.preventDefault()
     e.stopPropagation()
 
@@ -126,80 +129,50 @@ function HotkeyRecorder({ actionKey, value, onChange, shortcuts, t }: HotkeyReco
 
     if (!isModifier) {
       const normalized = normalizeKey(key, e.code)
-      if (normalized) {
-        parts.push(normalized)
-      }
-      const finalVal = parts.join('+')
-      onChange(finalVal)
+      if (normalized) parts.push(normalized)
+      onChange(parts.join('+'))
       setRecording(false)
       e.currentTarget.blur()
     } else {
-      setTempValue(parts.join('+') + ' + ...')
+      setTempValue(parts.join('+') + ' + …')
     }
-  }
-
-  const handleFocus = () => {
-    setRecording(true)
-    setTempValue(isEs ? 'Presiona teclas...' : 'Press keys...')
-  }
-
-  const handleBlur = () => {
-    setRecording(false)
-    setTempValue('')
   }
 
   const conflictKey = findShortcutConflict(actionKey, value, shortcuts)
   const hasConflict = !!conflictKey
 
+  let inputClass = 'form-input hotkey-input'
+  if (recording) inputClass += ' is-recording'
+  else if (hasConflict) inputClass += ' has-conflict'
+  else if (value) inputClass += ' has-value'
+  else inputClass += ' is-empty'
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
       <input
         type="text"
-        className="form-input"
+        className={inputClass}
         readOnly
         value={recording ? tempValue : formatDisplay(value)}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
+        onFocus={() => {
+          setRecording(true)
+          setTempValue(t.settings.keyboard.recording)
+        }}
+        onBlur={() => {
+          setRecording(false)
+          setTempValue('')
+        }}
         onKeyDown={handleKeyDown}
         placeholder={t.settings.keyboard.accelerator}
-        style={{
-          fontSize: 11,
-          fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-          padding: '4px 6px',
-          textAlign: 'center',
-          cursor: 'pointer',
-          borderWidth: 1,
-          borderStyle: 'solid',
-          borderRadius: 4,
-          background: recording 
-            ? 'var(--accent-subtle)' 
-            : hasConflict 
-              ? 'rgba(210, 153, 34, 0.15)' 
-              : 'var(--bg-1)',
-          borderColor: recording 
-            ? 'var(--accent)' 
-            : hasConflict 
-              ? 'var(--orange)' 
-              : 'var(--border)',
-          color: recording 
-            ? 'var(--accent)' 
-            : hasConflict 
-              ? 'var(--orange)' 
-              : value 
-                ? 'var(--text-primary)' 
-                : 'var(--text-muted)',
-          fontWeight: recording || value ? '600' : '400',
-          transition: 'all 0.15s ease',
-          boxShadow: recording ? '0 0 8px var(--accent-subtle)' : 'none'
-        }}
+        title={value ? formatDisplay(value) : t.settings.keyboard.emptyHint}
       />
       {hasConflict && (
-        <span style={{ 
-          fontSize: 9, 
-          color: 'var(--orange)', 
-          marginTop: 2, 
+        <span style={{
+          fontSize: 9,
+          color: 'var(--orange)',
+          marginTop: 2,
           textAlign: 'left',
-          display: 'block' 
+          display: 'block'
         }}>
           {t.settings.keyboard.validation.conflict}
         </span>
@@ -217,12 +190,19 @@ export default function SettingsPanel(): JSX.Element {
   const [importing, setImporting] = useState(false)
   const [displays, setDisplays] = useState<DisplayInfo[]>([])
   const [testing, setTesting] = useState(false)
-
-  type ActiveTab = 'general' | 'appearance' | 'notifications' | 'backupMaintenance'
   const [activeTab, setActiveTab] = useState<ActiveTab>('general')
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const { t } = useTranslation()
 
-  // Load available displays
+  const localRef = useRef(local)
+  const saveGen = useRef(0)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    localRef.current = local
+  }, [local])
+
   useEffect(() => {
     window.api.getDisplays().then((raw: any[]) => {
       setDisplays(raw.map(d => ({
@@ -232,25 +212,68 @@ export default function SettingsPanel(): JSX.Element {
         isPrimary: d.isPrimary
       })))
     })
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+      if (feedbackTimer.current) clearTimeout(feedbackTimer.current)
+    }
   }, [])
 
-  const update = (partial: Partial<AppSettings>): void =>
-    setLocal(prev => ({ ...prev, ...partial }))
+  const persist = useCallback((next: AppSettings, debounceMs = 0) => {
+    setLocal(next)
+    localRef.current = next
 
-  const updateNotif = (partial: Partial<AppSettings['notifications']>): void =>
-    setLocal(prev => ({ ...prev, notifications: { ...prev.notifications, ...partial } }))
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
 
-  const handleSave = async (): Promise<void> => {
-    // Avoid closing bugs if user removed all shortcuts: still persist full settings.
-    // Also persist shortcuts exactly as current UI state.
-    await save(local)
-    await window.api.updateShortcuts(local.shortcuts)
-    closePanel()
+    const run = async (): Promise<void> => {
+      const toSave = localRef.current
+      const gen = ++saveGen.current
+
+      // Only show "Saving…" if the write actually takes a moment — fast IPC
+      // saves would otherwise flash and look like a glitch before "Saved".
+      const slowTimer = setTimeout(() => {
+        if (gen === saveGen.current) setSaveStatus('saving')
+      }, 450)
+
+      try {
+        await save(toSave)
+        clearTimeout(slowTimer)
+        if (gen !== saveGen.current) return
+        setSaveStatus('saved')
+        if (feedbackTimer.current) clearTimeout(feedbackTimer.current)
+        feedbackTimer.current = setTimeout(() => {
+          if (gen === saveGen.current) setSaveStatus('idle')
+        }, 2200)
+      } catch {
+        clearTimeout(slowTimer)
+        if (gen !== saveGen.current) return
+        setSaveStatus('error')
+        if (feedbackTimer.current) clearTimeout(feedbackTimer.current)
+        feedbackTimer.current = setTimeout(() => {
+          if (gen === saveGen.current) setSaveStatus('idle')
+        }, 2500)
+      }
+    }
+
+    if (debounceMs > 0) {
+      // Keep current feedback stable while coalescing slider/number edits.
+      debounceTimer.current = setTimeout(() => { void run() }, debounceMs)
+    } else {
+      void run()
+    }
+  }, [save])
+
+  const update = (partial: Partial<AppSettings>, debounceMs = 0): void => {
+    persist({ ...localRef.current, ...partial }, debounceMs)
   }
 
-  // Ensure Save button always has a stable handler (regression guard)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const updateNotif = (partial: Partial<AppSettings['notifications']>, debounceMs = 0): void => {
+    const cur = localRef.current
+    persist({ ...cur, notifications: { ...cur.notifications, ...partial } }, debounceMs)
+  }
 
+  const updateShortcuts = (shortcuts: KeyboardShortcuts): void => {
+    persist({ ...localRef.current, shortcuts })
+  }
 
   const handleExportBackup = async (): Promise<void> => {
     const result = await window.api.exportBackup()
@@ -294,188 +317,494 @@ export default function SettingsPanel(): JSX.Element {
   const positions = [
     'top-left', 'top-center', 'top-right',
     'bottom-left', 'bottom-center', 'bottom-right'
+  ] as const
+
+  const navItems: Array<{ id: ActiveTab; label: string; icon: JSX.Element }> = [
+    { id: 'general', label: t.settings.tabs.general, icon: <Sliders size={13} /> },
+    { id: 'appearance', label: t.settings.tabs.appearance, icon: <Palette size={13} /> },
+    { id: 'notifications', label: t.settings.tabs.notifications, icon: <Bell size={13} /> },
+    { id: 'keyboard', label: t.settings.tabs.keyboard, icon: <Keyboard size={13} /> },
+    { id: 'backupMaintenance', label: t.settings.tabs.backupMaintenance, icon: <Database size={13} /> }
   ]
 
+  const themes: Array<{ id: AppSettings['theme']; label: string }> = [
+    { id: 'dark', label: t.settings.general.themes.dark },
+    { id: 'light', label: t.settings.general.themes.light },
+    { id: 'dracula', label: t.settings.general.themes.dracula },
+    { id: 'nord', label: t.settings.general.themes.nord },
+    { id: 'hacker', label: t.settings.general.themes.hacker },
+    { id: 'monokai', label: t.settings.general.themes.monokai }
+  ]
+
+  const statusVisible = saveStatus !== 'idle'
+  const statusClass =
+    saveStatus === 'saved' ? 'is-saved' :
+    saveStatus === 'error' ? 'is-error' : ''
+  const statusText =
+    saveStatus === 'saving' ? t.settings.saving :
+    saveStatus === 'saved' ? t.settings.saved :
+    saveStatus === 'error' ? t.settings.saveError : ''
+
   return (
-    <div className="panel" style={{ width: 520 }}>
-      <div className="panel-header">
-        <Settings size={16} style={{ color: 'var(--accent)' }} />
-        <h2>{t.settings.title}</h2>
-        <button className="btn btn-ghost btn-icon" onClick={closePanel}><X size={15} /></button>
-      </div>
-
-      <div className="settings-tabs">
-        <button className={`settings-tab-btn ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>
-          <Sliders size={13} />
-          {t.settings.tabs.general}
-        </button>
-        <button className={`settings-tab-btn ${activeTab === 'appearance' ? 'active' : ''}`} onClick={() => setActiveTab('appearance')}>
-          <Palette size={13} />
-          {t.settings.tabs.appearance}
-        </button>
-        <button className={`settings-tab-btn ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
-          <Bell size={13} />
-          {t.settings.tabs.notifications}
-        </button>
-        <button className={`settings-tab-btn ${activeTab === 'backupMaintenance' ? 'active' : ''}`} onClick={() => setActiveTab('backupMaintenance')}>
-          <Database size={13} />
-          {t.settings.tabs.backupMaintenance}
-        </button>
-      </div>
-
-      <div className="panel-body">
-
-        {/* ── General ──────────────────────────────────────────── */}
-        {activeTab === 'general' && (
-          <div className="panel-section">
-            <div className="form-group">
-              <label className="form-label">{t.settings.general.language}</label>
-              <select className="form-select" value={local.language || 'en'}
-                onChange={e => {
-                  const lang = e.target.value as 'en' | 'es'
-                  update({ language: lang })
-                  useSettingsStore.getState().update({ language: lang })
-                }}>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-              </select>
+    <div className="panel settings-panel">
+      <div className="settings-layout">
+        <aside className="settings-nav">
+          <div className="settings-nav-title">
+            <Settings size={14} />
+            {t.settings.title}
+          </div>
+          <div className="settings-nav-items">
+            {navItems.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                className={`settings-nav-btn${activeTab === item.id ? ' active' : ''}`}
+                onClick={() => setActiveTab(item.id)}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="settings-nav-footer">
+            <div className={`settings-save-status${statusVisible ? ' is-visible' : ''} ${statusClass}`.trim()}>
+              {statusVisible && <span className="settings-save-dot" />}
+              {statusText}
             </div>
+            <button type="button" className="btn btn-secondary settings-nav-close" onClick={closePanel}>
+              {t.settings.close}
+            </button>
+          </div>
+        </aside>
 
-            <div className="form-group">
-              <label className="form-label">{t.settings.general.pollingInterval}</label>
-              <input className="form-input" type="number" min={1} max={1440}
-                value={local.pollingInterval}
-                onChange={e => update({ pollingInterval: Number(e.target.value) })} />
-            </div>
+        <div className="settings-content">
+          {activeTab === 'general' && (
+            <>
+              <div className="settings-card">
+                <h3>{t.settings.general.language}</h3>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <select
+                    className="form-select"
+                    value={local.language || 'en'}
+                    onChange={e => update({ language: e.target.value as 'en' | 'es' })}
+                  >
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                  </select>
+                </div>
+              </div>
 
-            {/* Browser selection */}
-            <div className="form-group" style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border-muted)' }}>
-              <label className="form-label">{t.settings.general.linksOpenIn}</label>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className="settings-card">
+                <h3>{t.settings.general.pollingInterval}</h3>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={1}
+                    max={1440}
+                    value={local.pollingInterval}
+                    onChange={e => update({ pollingInterval: Number(e.target.value) }, 300)}
+                  />
+                </div>
+              </div>
+
+              <div className="settings-card">
+                <h3>{t.settings.general.linksOpenIn}</h3>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    className="form-select"
+                    value={local.customBrowserPath ? 'custom' : 'default'}
+                    onChange={async e => {
+                      if (e.target.value === 'default') {
+                        update({ customBrowserPath: '' })
+                        return
+                      }
+                      const path = await window.api.pickBrowser()
+                      if (path) update({ customBrowserPath: path })
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    <option value="default">{t.settings.general.openOptions.default}</option>
+                    <option value="custom">{t.settings.general.openOptions.custom}</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={async () => {
+                      const path = await window.api.pickBrowser()
+                      if (path) update({ customBrowserPath: path })
+                    }}
+                    style={{
+                      fontSize: 12,
+                      padding: '4px 10px',
+                      color: 'var(--accent)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--bg-2)',
+                      cursor: 'pointer'
+                    }}
+                    title={t.settings.general.pickTooltip}
+                  >
+                    {t.settings.general.pickBtn}
+                  </button>
+                </div>
+                {local.customBrowserPath && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, wordBreak: 'break-all' }}>
+                    {local.customBrowserPath}
+                  </div>
+                )}
+              </div>
+
+              <div className="settings-card">
+                <h3>{t.settings.tabs.general}</h3>
+                <label className="toggle">
+                  <div
+                    className={`toggle-track ${local.autoStart ? 'on' : ''}`}
+                    onClick={() => update({ autoStart: !local.autoStart })}
+                  >
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.general.startWithWindows}</span>
+                </label>
+                <label className={`toggle ${!local.autoStart ? 'disabled' : ''}`}>
+                  <div
+                    className={`toggle-track ${local.startMinimized && local.autoStart ? 'on' : ''}`}
+                    onClick={() => { if (local.autoStart) update({ startMinimized: !local.startMinimized }) }}
+                  >
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {t.settings.general.startMinimized}
+                    {!local.autoStart && (
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>
+                        {t.settings.general.requiresStartWithWindows}
+                      </span>
+                    )}
+                  </span>
+                </label>
+                <label className="toggle" style={{ marginBottom: 0 }}>
+                  <div
+                    className={`toggle-track ${local.minimizeToTray ? 'on' : ''}`}
+                    onClick={() => update({ minimizeToTray: !local.minimizeToTray })}
+                  >
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.general.minimizeToTray}</span>
+                </label>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'appearance' && (
+            <>
+              <div className="settings-card">
+                <h3>{t.settings.general.theme}</h3>
+                <div className="theme-picker" role="radiogroup" aria-label={t.settings.general.theme}>
+                  {themes.map(theme => (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={local.theme === theme.id}
+                      className={`theme-option${local.theme === theme.id ? ' is-active' : ''}`}
+                      onClick={() => {
+                        document.documentElement.setAttribute('data-theme', theme.id)
+                        try { localStorage.setItem('cyberfeeds-theme', theme.id) } catch { /* ignore */ }
+                        update({ theme: theme.id })
+                      }}
+                    >
+                      <span className={`theme-swatch theme-swatch--${theme.id}`} aria-hidden="true">
+                        <span className="theme-swatch-accent" />
+                      </span>
+                      <span className="theme-option-label">{theme.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="settings-card">
+                <h3>{t.settings.general.layout}</h3>
                 <select
                   className="form-select"
-                  value={local.customBrowserPath ? 'custom' : 'default'}
-                  onChange={async e => {
-                    if (e.target.value === 'default') {
-                      update({ customBrowserPath: '' })
-                    } else if (e.target.value === 'custom') {
-                      const path = await window.api.pickBrowser()
-                      if (path) {
-                        update({ customBrowserPath: path })
-                      } else {
-                        // Revert select
-                        setTimeout(() => {
-                          const sel = document.querySelector('select[value="custom"]') as HTMLSelectElement | null
-                          if (sel) sel.value = 'default'
-                        }, 0)
-                      }
-                    }
-                  }}
-                  style={{ flex: 1 }}
+                  value={local.layout}
+                  onChange={e => update({ layout: e.target.value as AppSettings['layout'] })}
                 >
-                  <option value="default">{t.settings.general.openOptions.default}</option>
-                  <option value="custom">{t.settings.general.openOptions.custom}</option>
+                  <option value="three-panel">{t.settings.general.layouts.threePanel}</option>
+                  <option value="two-panel">{t.settings.general.layouts.twoPanel}</option>
+                  <option value="one-panel">{t.settings.general.layouts.onePanel}</option>
                 </select>
-                <button
-                  className="btn btn-ghost"
-                  onClick={async () => {
-                    const path = await window.api.pickBrowser()
-                    if (path) {
-                      update({ customBrowserPath: path })
-                    }
-                  }}
-                  style={{
-                    fontSize: 12,
-                    padding: '4px 10px',
-                    color: 'var(--accent)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--bg-2)',
-                    cursor: 'pointer'
-                  }}
-                  title={t.settings.general.pickTooltip}
-                >
-                  {t.settings.general.pickBtn}
-                </button>
+                <label className="toggle" style={{ marginTop: 12, marginBottom: 0 }}>
+                  <div
+                    className={`toggle-track ${local.showArticleThumbnails ? 'on' : ''}`}
+                    onClick={() => update({ showArticleThumbnails: !local.showArticleThumbnails })}
+                  >
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.general.showThumbnails}</span>
+                </label>
               </div>
-              {local.customBrowserPath && (
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                  {local.customBrowserPath}
+
+              <div className="settings-card">
+                <h3>{t.settings.fontSizes.title}</h3>
+                <p className="settings-card-hint">{t.settings.fontSizes.explanation}</p>
+                <div className="form-group">
+                  <label className="form-label">
+                    {t.settings.fontSizes.sidebar.replace('{size}', String(local.sidebarFontSize ?? 13))}
+                  </label>
+                  <input
+                    type="range"
+                    min={10}
+                    max={16}
+                    step={1}
+                    value={local.sidebarFontSize ?? 13}
+                    onChange={e => {
+                      const v = Number(e.target.value)
+                      document.documentElement.style.setProperty('--sidebar-font-size', `${v}px`)
+                      update({ sidebarFontSize: v }, 400)
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">
+                    {t.settings.fontSizes.articleList.replace('{size}', String(local.listFontSize ?? 13))}
+                  </label>
+                  <input
+                    type="range"
+                    min={10}
+                    max={16}
+                    step={1}
+                    value={local.listFontSize ?? 13}
+                    onChange={e => {
+                      const v = Number(e.target.value)
+                      document.documentElement.style.setProperty('--list-font-size', `${v}px`)
+                      update({ listFontSize: v }, 400)
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'notifications' && (
+            <div className="settings-card">
+              <h3>{t.settings.notifications.title}</h3>
+              <label className="toggle" style={{ marginBottom: 14 }}>
+                <div
+                  className={`toggle-track ${local.notifications.enabled ? 'on' : ''}`}
+                  onClick={() => updateNotif({ enabled: !local.notifications.enabled })}
+                >
+                  <div className="toggle-thumb" />
+                </div>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.enable}</span>
+              </label>
+
+              <label className="toggle" style={{ marginBottom: 14 }}>
+                <div
+                  className={`toggle-track ${local.notifications.showThumbnails ? 'on' : ''}`}
+                  onClick={() => updateNotif({ showThumbnails: !local.notifications.showThumbnails })}
+                >
+                  <div className="toggle-thumb" />
+                </div>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.showThumbnails}</span>
+              </label>
+
+              {displays.length > 1 && (
+                <div className="form-group">
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Monitor size={12} />
+                    {t.settings.notifications.displayMonitor}
+                  </label>
+                  <select
+                    className="form-select"
+                    value={local.notifications.displayId}
+                    onChange={e => {
+                      const selectedId = Number(e.target.value)
+                      const selectedDisplay = displays.find(d => d.id === selectedId)
+                      updateNotif({
+                        displayId: selectedId,
+                        displayBounds: selectedDisplay?.bounds
+                      })
+                    }}
+                  >
+                    {displays.map(d => (
+                      <option key={d.id} value={d.id}>{d.label}</option>
+                    ))}
+                  </select>
                 </div>
               )}
-            </div>
+              {displays.length === 1 && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Monitor size={12} />
+                  {t.settings.notifications.singleDisplay
+                    .replace('{width}', String(displays[0]?.bounds.width))
+                    .replace('{height}', String(displays[0]?.bounds.height))}
+                </div>
+              )}
 
-            {/* System / Integration */}
-            <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border-muted)' }}>
-              <label className="toggle">
-                <div className={`toggle-track ${local.autoStart ? 'on' : ''}`}
-                  onClick={() => update({ autoStart: !local.autoStart })}>
+              <div className="form-group">
+                <label className="form-label">{t.settings.notifications.position}</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4, marginTop: 4 }}>
+                  {positions.map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => updateNotif({ position: p })}
+                      style={{
+                        padding: '6px 4px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: `1px solid ${local.notifications.position === p ? 'var(--accent)' : 'var(--border)'}`,
+                        background: local.notifications.position === p ? 'var(--accent-subtle)' : 'var(--bg-2)',
+                        color: local.notifications.position === p ? 'var(--accent)' : 'var(--text-secondary)',
+                        fontSize: 11,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'all 0.15s',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      {t.settings.notifications.positions[p]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">{t.settings.notifications.duration}</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={1000}
+                  step={500}
+                  value={local.notifications.duration}
+                  onChange={e => updateNotif({ duration: Number(e.target.value) }, 300)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">{t.settings.notifications.maxStack}</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={local.notifications.maxStack}
+                  onChange={e => updateNotif({ maxStack: Number(e.target.value) }, 300)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">{t.settings.notifications.snoozeDuration}</label>
+                <select
+                  className="form-select"
+                  value={local.notifications.snoozeMinutes ?? 30}
+                  onChange={e => updateNotif({ snoozeMinutes: Number(e.target.value) })}
+                >
+                  <option value={15}>15m</option>
+                  <option value={30}>30m</option>
+                  <option value={60}>1h</option>
+                  <option value={120}>2h</option>
+                  <option value={240}>4h</option>
+                  <option value={480}>8h</option>
+                  <option value={1440}>24h</option>
+                </select>
+              </div>
+
+              <label className="toggle" style={{ marginBottom: 14 }}>
+                <div
+                  className={`toggle-track ${local.notifications.soundEnabled ? 'on' : ''}`}
+                  onClick={() => updateNotif({ soundEnabled: !local.notifications.soundEnabled })}
+                >
                   <div className="toggle-thumb" />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.general.startWithWindows}</span>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.soundEnabled}</span>
               </label>
-              <label className={`toggle ${!local.autoStart ? 'disabled' : ''}`}>
-                <div className={`toggle-track ${local.startMinimized && local.autoStart ? 'on' : ''}`}
-                  onClick={() => { if (local.autoStart) update({ startMinimized: !local.startMinimized }) }}>
-                  <div className="toggle-thumb" />
-                </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                  {t.settings.general.startMinimized}
-                  {!local.autoStart && (
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>
-                      {t.settings.general.requiresStartWithWindows}
-                    </span>
+
+              <div className="form-group" style={{ opacity: local.notifications.soundEnabled ? 1 : 0.5, pointerEvents: local.notifications.soundEnabled ? 'auto' : 'none' }}>
+                <label className="form-label">{t.settings.notifications.alertSound}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ fontSize: 12 }}
+                    disabled={!local.notifications.soundEnabled}
+                    onClick={async () => {
+                      const filePath = await window.api.pickSoundFile()
+                      if (filePath) updateNotif({ soundFile: filePath })
+                    }}
+                  >
+                    {t.settings.notifications.browseBtn}
+                  </button>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                    {local.notifications.soundFile
+                      ? local.notifications.soundFile.split(/[\\/]/).pop()
+                      : t.settings.notifications.systemDefaultSound}
+                  </span>
+                  {local.notifications.soundFile && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      style={{ fontSize: 11, padding: '2px 6px' }}
+                      disabled={!local.notifications.soundEnabled}
+                      onClick={() => updateNotif({ soundFile: null })}
+                      title={t.settings.notifications.resetToDefault}
+                    >
+                      ✕
+                    </button>
                   )}
-                </span>
-              </label>
-              <label className="toggle">
-                <div className={`toggle-track ${local.minimizeToTray ? 'on' : ''}`}
-                  onClick={() => update({ minimizeToTray: !local.minimizeToTray })}>
-                  <div className="toggle-thumb" />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.general.minimizeToTray}</span>
-              </label>
+              </div>
+
+              <button
+                type="button"
+                className={`btn settings-preview-btn${testing ? ' is-sending' : ''}`}
+                disabled={testing}
+                onClick={async () => {
+                  setTesting(true)
+                  try {
+                    await window.api.previewNotification(local.notifications)
+                  } finally {
+                    setTimeout(() => setTesting(false), 1600)
+                  }
+                }}
+              >
+                {testing ? <Zap size={15} /> : <Bell size={15} />}
+                {testing ? t.settings.notifications.sendingBtn : t.settings.notifications.previewBtn}
+              </button>
             </div>
+          )}
 
-            {/* ── Keyboard Shortcuts ────────────────────────────────────── */}
-            <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border-muted)' }}>
-              <h3 style={{ fontSize: 13, marginBottom: 8 }}>{t.settings.keyboard.title}</h3>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
-                {t.settings.keyboard.explanation}
-              </p>
+          {activeTab === 'keyboard' && (
+            <div className="settings-card">
+              <h3>{t.settings.keyboard.title}</h3>
+              <p className="settings-card-hint">{t.settings.keyboard.explanation}</p>
 
-               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {Object.entries(local.shortcuts).map(([key, shortcut]) => (
-                  <div key={key} style={{
-                    display: 'grid',
-                    gridTemplateColumns: '120px 1fr auto',
-                    gap: 12,
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    background: 'var(--bg-1)',
-                    border: '1px solid var(--border-muted)',
-                    borderRadius: 'var(--radius)'
-                  }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
-                      {t.settings.keyboard.actions[key as keyof typeof t.settings.keyboard.actions]}
-                    </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <HotkeyRecorder
-                        actionKey={key}
-                        value={shortcut.accelerator}
-                        onChange={newVal => {
-                          const newShortcuts = { ...local.shortcuts }
-                          newShortcuts[key as keyof typeof local.shortcuts] = {
-                            ...shortcut,
-                            accelerator: newVal,
-                            enabled: newVal !== ''
-                          }
-                          update({ shortcuts: newShortcuts })
-                        }}
-                        shortcuts={local.shortcuts}
-                        t={t}
-                      />
+              {Object.entries(local.shortcuts).map(([key, shortcut]) => (
+                <div key={key} className="shortcut-row">
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
+                    {t.settings.keyboard.actions[key as keyof typeof t.settings.keyboard.actions]}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <HotkeyRecorder
+                      actionKey={key}
+                      value={shortcut.accelerator}
+                      onChange={newVal => {
+                        const cur = localRef.current.shortcuts
+                        const newShortcuts = { ...cur }
+                        newShortcuts[key as keyof KeyboardShortcuts] = {
+                          ...cur[key as keyof KeyboardShortcuts],
+                          accelerator: newVal,
+                          enabled: newVal !== ''
+                        }
+                        updateShortcuts(newShortcuts)
+                      }}
+                      shortcuts={local.shortcuts}
+                      t={t}
+                    />
+                    {shortcut.accelerator ? (
                       <button
+                        type="button"
                         className="btn btn-ghost"
                         style={{
                           fontSize: 12,
@@ -486,390 +815,133 @@ export default function SettingsPanel(): JSX.Element {
                           border: '1px solid var(--border)',
                           background: 'var(--bg-2)',
                           cursor: 'pointer',
-                          color: shortcut.accelerator ? 'var(--orange)' : 'var(--text-muted)',
-                          opacity: shortcut.accelerator ? 1 : 0.7,
+                          color: 'var(--orange)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0
                         }}
-                        title={'Clear shortcut'}
+                        title={t.settings.keyboard.clear}
                         onClick={() => {
-                          const newShortcuts = { ...local.shortcuts }
-                          newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, accelerator: '', enabled: false }
-                          update({ shortcuts: newShortcuts })
+                          const cur = localRef.current.shortcuts
+                          const newShortcuts = { ...cur }
+                          newShortcuts[key as keyof KeyboardShortcuts] = {
+                            ...cur[key as keyof KeyboardShortcuts],
+                            accelerator: '',
+                            enabled: false
+                          }
+                          updateShortcuts(newShortcuts)
                         }}
                       >
-                        ✕
+                        <X size={12} />
                       </button>
-                    </div>
-                    <label className="toggle" style={{ margin: 0 }}>
-                      <div
-                        className={`toggle-track ${shortcut.global ? 'on' : ''}`}
-                        onClick={() => {
-                          const newShortcuts = { ...local.shortcuts }
-                          newShortcuts[key as keyof typeof local.shortcuts] = { ...shortcut, global: !shortcut.global }
-                          update({ shortcuts: newShortcuts })
-                        }}
-                      >
-                        <div className="toggle-thumb" />
-                      </div>
-                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'inline-block', width: 42, textAlign: 'left' }}>
-                        {shortcut.global ? 'Global' : 'App'}
-                      </span>
-                    </label>
+                    ) : null}
                   </div>
-                ))}
-              </div>
+                  <label
+                    className="toggle"
+                    style={{ margin: 0 }}
+                    title={shortcut.global ? t.settings.keyboard.scopeGlobalHint : t.settings.keyboard.scopeAppHint}
+                  >
+                    <div
+                      className={`toggle-track ${shortcut.global ? 'on' : ''}`}
+                      onClick={() => {
+                        const cur = localRef.current.shortcuts
+                        const newShortcuts = { ...cur }
+                        newShortcuts[key as keyof KeyboardShortcuts] = {
+                          ...cur[key as keyof KeyboardShortcuts],
+                          global: !cur[key as keyof KeyboardShortcuts].global
+                        }
+                        updateShortcuts(newShortcuts)
+                      }}
+                    >
+                      <div className="toggle-thumb" />
+                    </div>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'inline-block', width: 42, textAlign: 'left' }}>
+                      {shortcut.global ? t.settings.keyboard.scopeGlobal : t.settings.keyboard.scopeApp}
+                    </span>
+                  </label>
+                </div>
+              ))}
 
               <button
+                type="button"
                 className="btn btn-secondary"
                 style={{ fontSize: 11, marginTop: 12 }}
                 onClick={async () => {
-                  const result = await window.api.resetShortcuts() as any
+                  const result = await window.api.resetShortcuts() as { ok?: boolean; shortcuts?: KeyboardShortcuts }
                   if (result?.shortcuts) {
-                    setLocal(prev => ({ ...prev, shortcuts: result.shortcuts }))
+                    persist({ ...localRef.current, shortcuts: result.shortcuts })
                   }
                 }}
               >
                 {t.settings.keyboard.resetToDefaults}
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ── Appearance ────────────────────────────────────────── */}
-        {activeTab === 'appearance' && (
-          <div className="panel-section">
-            <div className="form-group">
-              <label className="form-label">{t.settings.general.theme}</label>
-              <select className="form-select" value={local.theme}
-                onChange={e => {
-                  const newTheme = e.target.value as AppSettings['theme']
-                  update({ theme: newTheme })
-                  document.documentElement.setAttribute('data-theme', newTheme)
-                  try { localStorage.setItem('cyberfeeds-theme', newTheme) } catch { /* ignore */ }
-                }}>
-                <option value="dark">{t.settings.general.themes.dark}</option>
-                <option value="light">{t.settings.general.themes.light}</option>
-                <option value="dracula">{t.settings.general.themes.dracula}</option>
-                <option value="nord">{t.settings.general.themes.nord}</option>
-                <option value="hacker">{t.settings.general.themes.hacker}</option>
-                <option value="monokai">{t.settings.general.themes.monokai}</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">{t.settings.general.layout}</label>
-              <select className="form-select" value={local.layout}
-                onChange={e => update({ layout: e.target.value as AppSettings['layout'] })}>
-                <option value="three-panel">{t.settings.general.layouts.threePanel}</option>
-                <option value="two-panel">{t.settings.general.layouts.twoPanel}</option>
-                <option value="one-panel">{t.settings.general.layouts.onePanel}</option>
-              </select>
-            </div>
-
-            <label className="toggle" style={{ marginBottom: 16 }}>
-              <div className={`toggle-track ${local.showArticleThumbnails ? 'on' : ''}`}
-                onClick={() => update({ showArticleThumbnails: !local.showArticleThumbnails })}>
-                <div className="toggle-thumb" />
-              </div>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.general.showThumbnails}</span>
-            </label>
-
-            {/* Typography */}
-            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-muted)' }}>
-              <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 12 }}>
-                {t.settings.fontSizes.title}
-              </h3>
-              <div className="form-group">
-                <label className="form-label">{t.settings.fontSizes.sidebar.replace('{size}', String(local.sidebarFontSize ?? 13))}</label>
-                <input
-                  type="range" min={10} max={16} step={1}
-                  value={local.sidebarFontSize ?? 13}
-                  onChange={e => {
-                    const v = Number(e.target.value)
-                    update({ sidebarFontSize: v })
-                    document.documentElement.style.setProperty('--sidebar-font-size', `${v}px`)
-                  }}
-                  style={{ width: '100%' }}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">{t.settings.fontSizes.articleList.replace('{size}', String(local.listFontSize ?? 13))}</label>
-                <input
-                  type="range" min={10} max={16} step={1}
-                  value={local.listFontSize ?? 13}
-                  onChange={e => {
-                    const v = Number(e.target.value)
-                    update({ listFontSize: v })
-                    document.documentElement.style.setProperty('--list-font-size', `${v}px`)
-                  }}
-                  style={{ width: '100%' }}
-                />
-              </div>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                {t.settings.fontSizes.explanation}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ── Notifications ─────────────────────────────────────── */}
-        {activeTab === 'notifications' && (
-          <div className="panel-section">
-            <label className="toggle" style={{ marginBottom: 14 }}>
-              <div className={`toggle-track ${local.notifications.enabled ? 'on' : ''}`}
-                onClick={() => updateNotif({ enabled: !local.notifications.enabled })}>
-                <div className="toggle-thumb" />
-              </div>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.enable}</span>
-            </label>
-
-            <label className="toggle" style={{ marginBottom: 14 }}>
-              <div className={`toggle-track ${local.notifications.showThumbnails ? 'on' : ''}`}
-                onClick={() => updateNotif({ showThumbnails: !local.notifications.showThumbnails })}>
-                <div className="toggle-thumb" />
-              </div>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.showThumbnails}</span>
-            </label>
-
-            {local.notifications.showThumbnails && (
-              <label className="toggle" style={{ marginBottom: 14, marginLeft: 22 }}>
-                <div className={`toggle-track ${local.notifications.preloadImages !== false ? 'on' : ''}`}
-                  onClick={() => updateNotif({ preloadImages: local.notifications.preloadImages === false })}>
-                  <div className="toggle-thumb" />
+          {activeTab === 'backupMaintenance' && (
+            <>
+              <div className="settings-card">
+                <h3>{t.settings.backup.title}</h3>
+                <p className="settings-card-hint">{t.settings.backup.explanation}</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" className="btn btn-secondary" onClick={handleExportBackup}>
+                    {t.settings.backup.exportBtn}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleImportBackup} disabled={importing}>
+                    {importing ? <div className="spinner" style={{ width: 13, height: 13 }} /> : t.settings.backup.importBtn}
+                  </button>
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.preloadImages}</span>
-              </label>
-            )}
+              </div>
 
-            {/* Monitor selector */}
-            {displays.length > 1 && (
-              <div className="form-group">
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Monitor size={12} />
-                  {t.settings.notifications.displayMonitor}
+              <div className="settings-card">
+                <h3>{t.settings.maintenance.title}</h3>
+                <p className="settings-card-hint">{t.settings.maintenance.explanation}</p>
+                <div className="form-group">
+                  <label className="form-label">{t.settings.maintenance.deleteOlder}</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={1}
+                    value={local.cleanupReadDays}
+                    onChange={e => update({ cleanupReadDays: Number(e.target.value) }, 300)}
+                  />
+                </div>
+                <label className="toggle">
+                  <div
+                    className={`toggle-track ${local.autoCleanup ? 'on' : ''}`}
+                    onClick={() => update({ autoCleanup: !local.autoCleanup })}
+                  >
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.maintenance.autoClean}</span>
                 </label>
-                <select
-                  className="form-select"
-                  value={local.notifications.displayId}
-                  onChange={e => {
-                    const selectedId = Number(e.target.value)
-                    const selectedDisplay = displays.find(d => d.id === selectedId)
-                    updateNotif({
-                      displayId: selectedId,
-                      displayBounds: selectedDisplay?.bounds
-                    })
-                  }}
-                >
-                  {displays.map(d => (
-                    <option key={d.id} value={d.id}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {displays.length === 1 && (
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Monitor size={12} />
-                {t.settings.notifications.singleDisplay
-                  .replace('{width}', String(displays[0]?.bounds.width))
-                  .replace('{height}', String(displays[0]?.bounds.height))}
-              </div>
-            )}
-
-            <div className="form-group">
-              <label className="form-label">{t.settings.notifications.position}</label>
-              {/* Visual 3×2 grid picker */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4, marginTop: 4 }}>
-                {positions.map(p => (
-                  <button
-                    key={p}
-                    onClick={() => updateNotif({ position: p as AppSettings['notifications']['position'] })}
-                    style={{
-                      padding: '6px 4px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: `1px solid ${local.notifications.position === p ? 'var(--accent)' : 'var(--border)'}`,
-                      background: local.notifications.position === p ? 'var(--accent-subtle)' : 'var(--bg-2)',
-                      color: local.notifications.position === p ? 'var(--accent)' : 'var(--text-secondary)',
-                      fontSize: 11,
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      transition: 'all 0.15s',
-                      fontFamily: 'inherit'
-                    }}
-                  >
-                    {t.settings.notifications.positions[p as keyof typeof t.settings.notifications.positions]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">{t.settings.notifications.duration}</label>
-              <input className="form-input" type="number" min={1000} step={500}
-                value={local.notifications.duration}
-                onChange={e => updateNotif({ duration: Number(e.target.value) })} />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">{t.settings.notifications.maxStack}</label>
-              <input className="form-input" type="number" min={1} max={10}
-                value={local.notifications.maxStack}
-                onChange={e => updateNotif({ maxStack: Number(e.target.value) })} />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">{t.settings.notifications.snoozeDuration}</label>
-              <select
-                className="form-select"
-                value={local.notifications.snoozeMinutes ?? 30}
-                onChange={e => updateNotif({ snoozeMinutes: Number(e.target.value) })}
-              >
-                <option value={15}>15m</option>
-                <option value={30}>30m</option>
-                <option value={60}>1h</option>
-                <option value={120}>2h</option>
-                <option value={240}>4h</option>
-                <option value={480}>8h</option>
-                <option value={1440}>24h</option>
-              </select>
-            </div>
-
-            <label className="toggle" style={{ marginBottom: 14 }}>
-              <div className={`toggle-track ${local.notifications.soundEnabled ? 'on' : ''}`}
-                onClick={() => updateNotif({ soundEnabled: !local.notifications.soundEnabled })}>
-                <div className="toggle-thumb" />
-              </div>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.soundEnabled}</span>
-            </label>
-
-            <div className="form-group" style={{ opacity: local.notifications.soundEnabled ? 1 : 0.5, pointerEvents: local.notifications.soundEnabled ? 'auto' : 'none' }}>
-              <label className="form-label">{t.settings.notifications.alertSound}</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <button
-                  className="btn btn-secondary"
-                  style={{ fontSize: 12 }}
-                  disabled={!local.notifications.soundEnabled}
-                  onClick={async () => {
-                    const filePath = await window.api.pickSoundFile()
-                    if (filePath) updateNotif({ soundFile: filePath })
-                  }}
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ fontSize: 12, marginTop: 4 }}
+                  onClick={() => window.api.cleanup(local.cleanupReadDays)}
                 >
-                  {t.settings.notifications.browseBtn}
-                </button>
-                <span style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                  {local.notifications.soundFile
-                    ? local.notifications.soundFile.split(/[\\/]/).pop()
-                    : t.settings.notifications.systemDefaultSound}
-                </span>
-                {local.notifications.soundFile && (
-                  <button
-                    className="btn btn-ghost"
-                    style={{ fontSize: 11, padding: '2px 6px' }}
-                    disabled={!local.notifications.soundEnabled}
-                    onClick={() => updateNotif({ soundFile: null })}
-                    title={t.settings.notifications.resetToDefault}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <button
-              className={`btn ${testing ? 'btn-accent' : 'btn-secondary'}`}
-              style={{ 
-                fontSize: 12, 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 6, 
-                transition: 'all 0.2s',
-                minWidth: 160,
-                color: testing ? '#0d1117' : 'inherit',
-                fontWeight: testing ? 700 : 400,
-                pointerEvents: testing ? 'none' : 'auto',
-                opacity: 1 // Override any inherited disabled opacity
-              }}
-              onClick={async () => {
-                setTesting(true)
-                await window.api.previewNotification(local.notifications)
-                setTimeout(() => setTesting(false), 2000)
-              }}
-            >
-              {testing ? <Zap size={14} style={{ animation: 'pulse 1s infinite' }} /> : <Bell size={14} />}
-              {testing ? t.settings.notifications.sendingBtn : t.settings.notifications.previewBtn}
-            </button>
-          </div>
-        )}
-
-        {/* ── Backup & Maintenance ────────────────────────────────── */}
-        {activeTab === 'backupMaintenance' && (
-          <div>
-            <div className="panel-section">
-              <h3>{t.settings.backup.title}</h3>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
-                {t.settings.backup.explanation}
-              </p>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-secondary" onClick={handleExportBackup}>
-                  {t.settings.backup.exportBtn}
-                </button>
-                <button className="btn btn-secondary" onClick={handleImportBackup} disabled={importing}>
-                  {importing ? <div className="spinner" style={{ width: 13, height: 13 }} /> : t.settings.backup.importBtn}
+                  {t.settings.maintenance.runCleanBtn}
                 </button>
               </div>
-            </div>
 
-            <div className="panel-section" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-muted)' }}>
-              <h3>{t.settings.maintenance.title}</h3>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
-                {t.settings.maintenance.explanation}
-              </p>
-              <div className="form-group">
-                <label className="form-label">{t.settings.maintenance.deleteOlder}</label>
-                <input className="form-input" type="number" min={1}
-                  value={local.cleanupReadDays}
-                  onChange={e => update({ cleanupReadDays: Number(e.target.value) })} />
+              <div className="settings-card">
+                <h3>{t.sidebar.feedsDoctor}</h3>
+                <p className="settings-card-hint">{t.doctor.explanation}</p>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}
+                  onClick={() => openPanel('doctor')}
+                >
+                  <Stethoscope size={14} />
+                  {t.sidebar.feedsDoctor}
+                </button>
               </div>
-              <label className="toggle">
-                <div className={`toggle-track ${local.autoCleanup ? 'on' : ''}`}
-                  onClick={() => update({ autoCleanup: !local.autoCleanup })}>
-                  <div className="toggle-thumb" />
-                </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.maintenance.autoClean}</span>
-              </label>
-              <button className="btn btn-danger" style={{ fontSize: 12, marginTop: 4 }}
-                onClick={() => window.api.cleanup(local.cleanupReadDays)}>
-                {t.settings.maintenance.runCleanBtn}
-              </button>
-            </div>
-
-            <div className="panel-section" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-muted)' }}>
-              <h3>{t.sidebar.feedsDoctor}</h3>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
-                {t.doctor.explanation}
-              </p>
-              <button
-                className="btn btn-secondary"
-                style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}
-                onClick={() => openPanel('doctor')}
-              >
-                <Stethoscope size={14} />
-                {t.sidebar.feedsDoctor}
-              </button>
-            </div>
-          </div>
-        )}
-
-      </div>
-      <div style={{ borderTop: '1px solid var(--border)', padding: '12px 16px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-        <button className="btn btn-ghost" onClick={closePanel}>{t.settings.cancel}</button>
-        <button className="btn btn-primary" onClick={handleSave}>
-          {t.settings.saveSettings}
-        </button>
+            </>
+          )}
+        </div>
       </div>
 
       <ConfirmDialog

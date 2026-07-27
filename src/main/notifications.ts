@@ -5,6 +5,7 @@ import fs from 'fs'
 import { is } from '@electron-toolkit/utils'
 import * as db from './db'
 import { restoreMainWindow } from './index'
+import { translations } from '../shared/translations'
 import type { NotificationHistoryItem, NotificationSettings } from './types'
 
 let notifierWindow: BrowserWindow | null = null
@@ -335,7 +336,7 @@ export function showNotification(item: NotificationHistoryItem): void {
 async function presentInPopup(item: NotificationHistoryItem): Promise<void> {
   const displayItem: NotificationHistoryItem = { ...item }
 
-  if (settings.showThumbnails && settings.preloadImages !== false && displayItem.thumbnail) {
+  if (settings.showThumbnails && displayItem.thumbnail) {
     const dataUrl = await preloadImageDataUrl(displayItem.thumbnail)
     // On success render the painted image instantly; on failure fall back to the
     // original URL (better a late lazy-load than suppressing the card forever).
@@ -456,10 +457,12 @@ export function registerNotifierIpc(): void {
         setTimeout(resolve, 1500)
       })
 
+      const lang = (db.getSettings().language || 'en') as 'en' | 'es'
+      const previewT = translations[lang]?.settings?.notifications
       const previewItem: NotificationHistoryItem = {
         id: 'preview-' + Date.now(),
-        title: 'CyberFeeds — Notification Preview',
-        body: 'Your notifications will appear like this.',
+        title: previewT?.previewTitle || 'CyberFeeds — Notification Preview',
+        body: previewT?.previewBody || 'Your notifications will appear like this.',
         link: '',
         feedName: 'CyberFeeds',
         createdAt: Date.now()

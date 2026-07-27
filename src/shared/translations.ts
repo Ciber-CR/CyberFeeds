@@ -101,6 +101,10 @@ export const translations = {
       title: 'Settings',
       cancel: 'Cancel',
       saveSettings: 'Save Settings',
+      close: 'Close',
+      saved: 'Settings saved',
+      saving: 'Saving…',
+      saveError: 'Could not save settings',
       tabs: {
         general: 'General',
         appearance: 'Appearance',
@@ -165,7 +169,9 @@ export const translations = {
         systemDefaultSound: "CyberFeeds' Default Sound",
         resetToDefault: 'Reset to default sound',
         previewBtn: 'Preview Notification',
-        sendingBtn: 'Sending...'
+        sendingBtn: 'Sending...',
+        previewTitle: 'CyberFeeds — Notification Preview',
+        previewBody: 'Your notifications will appear like this.'
       },
       fontSizes: {
         title: 'Column Font Sizes',
@@ -210,6 +216,14 @@ export const translations = {
         enabled: 'Enabled',
         global: 'Global Hotkey',
         accelerator: 'Shortcut',
+        empty: 'None',
+        emptyHint: 'Click to set a shortcut',
+        recording: 'Press keys…',
+        clear: 'Clear shortcut',
+        scopeGlobal: 'Global',
+        scopeApp: 'App',
+        scopeGlobalHint: 'Works even when CyberFeeds is minimized',
+        scopeAppHint: 'Works only while CyberFeeds is focused',
         resetToDefaults: 'Reset to Defaults',
         save: 'Save',
         validation: {
@@ -446,6 +460,10 @@ export const translations = {
       title: 'Configuración',
       cancel: 'Cancelar',
       saveSettings: 'Guardar configuración',
+      close: 'Cerrar',
+      saved: 'Configuración guardada',
+      saving: 'Guardando…',
+      saveError: 'No se pudo guardar',
       tabs: {
         general: 'General',
         appearance: 'Apariencia',
@@ -510,7 +528,9 @@ export const translations = {
         systemDefaultSound: 'Sonido predeterminado de CyberFeeds',
         resetToDefault: 'Restablecer al sonido predeterminado',
         previewBtn: 'Vista previa de notificación',
-        sendingBtn: 'Enviando...'
+        sendingBtn: 'Enviando...',
+        previewTitle: 'CyberFeeds — Vista previa de notificación',
+        previewBody: 'Así se verán tus notificaciones.'
       },
       fontSizes: {
         title: 'Tamaños de letra de las columnas',
@@ -555,6 +575,14 @@ export const translations = {
         enabled: 'Habilitado',
         global: 'Atajo global',
         accelerator: 'Atajo',
+        empty: 'Ninguno',
+        emptyHint: 'Clic para asignar un atajo',
+        recording: 'Presiona teclas…',
+        clear: 'Quitar atajo',
+        scopeGlobal: 'Global',
+        scopeApp: 'App',
+        scopeGlobalHint: 'Funciona incluso con CyberFeeds minimizado',
+        scopeAppHint: 'Solo funciona con CyberFeeds en primer plano',
         resetToDefaults: 'Restablecer valores predeterminados',
         save: 'Guardar',
         validation: {
