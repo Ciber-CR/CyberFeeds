@@ -452,6 +452,51 @@ body {
 .modal-body { padding: 16px; }
 .modal-footer { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--border); }
 
+/* ─── About modal ───────────────────────────────────────────────────────── */
+.about-modal { display: flex; flex-direction: column; }
+.about-modal-body { min-height: 0; }
+.about-maintenance {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.about-action-btn {
+  font-size: 12px;
+  gap: 6px;
+  padding: 9px 10px;
+  justify-content: center;
+  white-space: normal;
+  line-height: 1.25;
+  text-align: center;
+  min-height: 38px;
+}
+.about-auto-update {
+  grid-column: 1 / -1;
+  margin: 0;
+  gap: 8px;
+  justify-content: center;
+  padding-top: 2px;
+}
+.about-auto-update span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.about-modal-footer {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-muted);
+  background: rgba(0, 0, 0, 0.12);
+}
+
 /* ─── Resize Handles ────────────────────────────────────────────────────── */
 .resize-handle {
   width: 4px;
