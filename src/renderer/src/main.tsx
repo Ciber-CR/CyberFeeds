@@ -15,3 +15,22 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <App />
   </React.StrictMode>
 )
+
+// Tell main the first paint is ready (avoids white flash on win.show) — CyberViewer pattern
+function notifyUiReady(): void {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      try {
+        window.api.uiReady()
+      } catch {
+        /* ignore */
+      }
+    })
+  })
+}
+
+if (document.readyState === 'complete') {
+  notifyUiReady()
+} else {
+  window.addEventListener('load', notifyUiReady, { once: true })
+}

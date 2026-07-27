@@ -125,7 +125,10 @@ const api = {
   // Window controls (for custom titlebar)
   windowMinimize: () => ipcRenderer.send('window:minimize'),
   windowMaximize: () => ipcRenderer.send('window:maximize'),
-  windowClose: () => ipcRenderer.send('window:close')
+  windowClose: () => ipcRenderer.send('window:close'),
+
+  // First paint ack — main waits for this before showing (avoids white flash)
+  uiReady: () => ipcRenderer.send('ui-ready')
 }
 
 if (process.contextIsolated) {
