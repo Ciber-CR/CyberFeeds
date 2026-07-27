@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback } from 'react'
-import { FolderPlus, ChevronRight, ChevronDown, ChevronsUpDown, ChevronsDownUp, Plus, Upload, Download, Stethoscope, Rss, Star } from 'lucide-react'
+import { FolderPlus, ChevronRight, ChevronDown, ChevronsUpDown, ChevronsDownUp, Plus, Upload, Download, Stethoscope, Rss, Star, RefreshCw, Pencil, Pause, Play, Trash2 } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
 import { FeedFavicon } from './ArticleList'
@@ -20,8 +20,15 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
 
   React.useEffect(() => {
     const handleUp = () => setCtx(null)
+    const handleOtherMenu = (e: Event): void => {
+      if ((e as CustomEvent<string>).detail !== 'sidebar') setCtx(null)
+    }
     window.addEventListener('click', handleUp)
-    return () => window.removeEventListener('click', handleUp)
+    window.addEventListener('cyberfeeds:close-context-menus', handleOtherMenu)
+    return () => {
+      window.removeEventListener('click', handleUp)
+      window.removeEventListener('cyberfeeds:close-context-menus', handleOtherMenu)
+    }
   }, [])
 
   const totalUnread = Object.entries(unreadCounts)
@@ -116,6 +123,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               unreadCounts={unreadCounts}
               onContextMenu={(e, type, id) => {
                 e.preventDefault()
+                window.dispatchEvent(new CustomEvent('cyberfeeds:close-context-menus', { detail: 'sidebar' }))
                 setCtx({ x: e.clientX, y: e.clientY, type, id })
               }}
             />
@@ -135,6 +143,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 unread={unreadCounts[feed.id] || 0}
                 onContextMenu={(e, id) => {
                   e.preventDefault()
+                  window.dispatchEvent(new CustomEvent('cyberfeeds:close-context-menus', { detail: 'sidebar' }))
                   setCtx({ x: e.clientX, y: e.clientY, type: 'feed', id })
                 }}
               />
@@ -209,41 +218,35 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
       {ctx && (
         <div
           className="ctx-menu"
-          style={{
-            left: ctx.x,
-            top: Math.min(ctx.y, window.innerHeight - 130),
-            background: '#2d2d2d',
-            border: '1px solid rgba(21,255,255,0.08)',
-            borderRadius: '6px',
-            padding: '4px',
-            minWidth: '156px',
-            zIndex: 1000,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
-          }}
+          style={{ left: ctx.x, top: Math.min(ctx.y, window.innerHeight - 160) }}
           onClick={e => e.stopPropagation()}
         >
           {ctx.type === 'feed' ? (
             <>
-              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
+              <div className="ctx-item" onClick={() => {
                 fetchFeed(ctx.id)
                 setCtx(null)
               }}>
+                <RefreshCw size={14} />
                 {t.sidebar.refreshFeed}
               </div>
-              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
+              <div className="ctx-item" onClick={() => {
                 openPanel('editFeed', ctx.id)
                 setCtx(null)
               }}>
+                <Pencil size={14} />
                 {t.sidebar.editFeed}
               </div>
-              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
+              <div className="ctx-item" onClick={() => {
                 togglePauseFeed(ctx.id)
                 setCtx(null)
               }}>
-                {feeds.find(f => f.id === ctx.id)?.disabled ? t.sidebar.resumeFeed : t.sidebar.pauseFeed}
+                {feeds.find(f => f.id === ctx.id)?.disabled
+                  ? <><Play size={14} />{t.sidebar.resumeFeed}</>
+                  : <><Pause size={14} />{t.sidebar.pauseFeed}</>}
               </div>
-              <div className="ctx-divider" style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '3px 0' }} />
-              <div className="ctx-item danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f85149' }} onClick={async () => {
+              <div className="ctx-divider" />
+              <div className="ctx-item danger" onClick={async () => {
                 const feed = feeds.find(f => f.id === ctx.id)
                 if (feed) {
                   const confirmed = await confirm({
@@ -259,31 +262,36 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 }
                 setCtx(null)
               }}>
+                <Trash2 size={14} />
                 {t.sidebar.deleteFeed}
               </div>
             </>
           ) : (
             <>
-              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
+              <div className="ctx-item" onClick={() => {
                 fetchFolder(ctx.id)
                 setCtx(null)
               }}>
+                <RefreshCw size={14} />
                 {t.sidebar.refreshFolder}
               </div>
-              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
+              <div className="ctx-item" onClick={() => {
                 openPanel('editFolder', ctx.id)
                 setCtx(null)
               }}>
+                <Pencil size={14} />
                 {t.sidebar.renameFolder}
               </div>
-              <div className="ctx-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f0f0f0' }} onClick={() => {
+              <div className="ctx-item" onClick={() => {
                 togglePauseFolder(ctx.id)
                 setCtx(null)
               }}>
-                {feeds.filter(f => f.folderId === ctx.id)[0]?.disabled ? t.sidebar.resumeFolder : t.sidebar.pauseFolder}
+                {feeds.filter(f => f.folderId === ctx.id)[0]?.disabled
+                  ? <><Play size={14} />{t.sidebar.resumeFolder}</>
+                  : <><Pause size={14} />{t.sidebar.pauseFolder}</>}
               </div>
-              <div className="ctx-divider" style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '3px 0' }} />
-              <div className="ctx-item danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', minHeight: '36px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: '#f85149' }} onClick={async () => {
+              <div className="ctx-divider" />
+              <div className="ctx-item danger" onClick={async () => {
                 const folder = folders.find(f => f.id === ctx.id)
                 if (folder) {
                   const confirmed = await confirm({
@@ -299,6 +307,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 }
                 setCtx(null)
               }}>
+                <Trash2 size={14} />
                 {t.sidebar.deleteFolder}
               </div>
             </>
