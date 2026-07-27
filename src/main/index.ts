@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, screen } from 'electron'
+import { app, BrowserWindow, shell, screen, ipcMain } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
 import { initDb, getSettings, getWindowState, saveWindowState, backfillFavicons, cleanupOldArticles } from './db'
@@ -106,20 +106,57 @@ function createMainWindow(): BrowserWindow {
     }
   })
 
-  // Restore saved maximized state unless starting hidden in the tray
-  if (!startHidden && windowState.maximized) {
-    win.maximize()
+  try {
+    win.setBackgroundColor(THEME_BACKGROUND[theme] ?? THEME_BACKGROUND.dark)
+  } catch {
+    /* ignore */
   }
 
-  // Show window or hide to tray depending on the Windows-startup launch
-  win.on('ready-to-show', () => {
+  // Reveal only after the renderer paints (CyberViewer pattern) to avoid white flash.
+  let shown = false
+  const revealWindow = (): void => {
+    if (shown || win.isDestroyed()) return
+    shown = true
+
     if (startHidden) {
-      // Force brief show/hide to initialize renderer context (prevents black/grey screen and notification failures when hidden)
+      // Brief invisible show/hide initializes renderer context for tray startup
+      try { win.setOpacity(0) } catch { /* ignore */ }
       win.show()
       win.hide()
-    } else {
-      win.show()
+      try { win.setOpacity(1) } catch { /* ignore */ }
+      return
     }
+
+    try { win.setOpacity(0) } catch { /* ignore */ }
+    win.show()
+
+    if (windowState.maximized) {
+      try {
+        if (!win.isMaximized()) win.maximize()
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // Two ticks: let Chromium/DWM composite the dark frame before becoming visible
+    setTimeout(() => {
+      if (win.isDestroyed()) return
+      try { win.setOpacity(1) } catch { /* ignore */ }
+    }, 32)
+  }
+
+  const onUiReady = (): void => {
+    ipcMain.removeListener('ui-ready', onUiReady)
+    revealWindow()
+  }
+  // Register before loadURL to avoid missing a fast ui-ready
+  ipcMain.on('ui-ready', onUiReady)
+  win.once('ready-to-show', () => {
+    // Fallback if renderer never acks
+    setTimeout(() => revealWindow(), 1500)
+  })
+  win.on('closed', () => {
+    ipcMain.removeListener('ui-ready', onUiReady)
   })
 
   // Open external links in browser
@@ -230,7 +267,6 @@ app.on('activate', () => {
 })
 
 // Window controls
-import { ipcMain } from 'electron'
 ipcMain.on('window:minimize', () => mainWindow?.minimize())
 ipcMain.on('window:maximize', () => { if (mainWindow?.isMaximized()) mainWindow.unmaximize(); else mainWindow?.maximize() })
 ipcMain.on('window:close', () => mainWindow?.close())
