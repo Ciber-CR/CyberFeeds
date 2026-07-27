@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self';" />
     <title>CyberFeeds</title>
+    <!-- Prevent white flash before CSS/theme hydrate. Synced with AppSettings.theme via localStorage. -->
+    <style>
+      html, body { margin: 0; background-color: #0d1117; color-scheme: dark; }
+      html[data-theme="light"], html[data-theme="light"] body { background-color: #f6f8fa; color-scheme: light; }
+      html[data-theme="dracula"], html[data-theme="dracula"] body { background-color: #282a36; }
+      html[data-theme="nord"], html[data-theme="nord"] body { background-color: #2e3440; }
+      html[data-theme="hacker"], html[data-theme="hacker"] body { background-color: #0d0d0d; }
+      html[data-theme="monokai"], html[data-theme="monokai"] body { background-color: #272822; }
+    </style>
+    <script src="./theme-boot.js"></script>
   </head>
   <body>
     <div id="root"></div>
