@@ -54,7 +54,6 @@ export default function EditFolderModal(): JSX.Element | null {
               value={name}
               onChange={e => { setName(e.target.value); setError('') }}
               onKeyDown={e => e.key === 'Enter' && handleSave()}
-              onContextMenu={() => window.api.showInputContextMenu()}
               autoFocus
             />
           </div>

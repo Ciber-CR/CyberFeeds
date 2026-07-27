@@ -636,9 +636,6 @@ export function registerIpc(): void {
     const lang = db.getSettings().language || 'en'
     const t = translations[lang].mainProcess.webviewCtx
     const template: MenuItemConstructorOptions[] = [
-      { role: 'undo', label: t.undo },
-      { role: 'redo', label: t.redo },
-      { type: 'separator' },
       { role: 'cut', label: t.cut },
       { role: 'copy', label: t.copy },
       { role: 'paste', label: t.paste },
