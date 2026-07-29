@@ -336,6 +336,38 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
             {title}
           </h2>
         </div>
+      </div>
+
+      {/* Search & Actions Row */}
+      <div
+        style={{
+          padding: '6px 10px',
+          borderBottom: '1px solid var(--border-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6
+        }}
+      >
+        <div style={{ position: 'relative', flex: 1 }}>
+          <Search
+            size={13}
+            style={{
+              position: 'absolute',
+              left: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-muted)',
+              pointerEvents: 'none'
+            }}
+          />
+          <input
+            className="search-input"
+            style={{ paddingLeft: 28, width: '100%' }}
+            placeholder={t.articleList.searchPlaceholder}
+            defaultValue={search}
+            onChange={handleSearch}
+          />
+        </div>
 
         <Tooltip
           label={
@@ -354,9 +386,9 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               display: 'flex',
               alignItems: 'center',
               flexShrink: 0,
-              margin: '0 10px',
               gap: 8,
-              padding: '3px 10px'
+              padding: '3px 8px',
+              height: 24
             }}
           >
             <span
@@ -385,44 +417,23 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           </div>
         </Tooltip>
 
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <Tooltip
-            label={unreadOnly ? t.articleList.showAll : t.articleList.unreadOnly}
-            placement="bottom"
-          >
-            <button
-              className="btn btn-ghost btn-icon"
-              onClick={() => setUnreadOnly(!unreadOnly)}
-              style={unreadOnly ? { color: 'var(--accent)' } : undefined}
-            >
-              <Filter size={14} />
-            </button>
-          </Tooltip>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--border-muted)' }}>
-        <div style={{ position: 'relative' }}>
-          <Search
-            size={13}
+        <Tooltip
+          label={unreadOnly ? t.articleList.showAll : t.articleList.unreadOnly}
+          placement="bottom"
+        >
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={() => setUnreadOnly(!unreadOnly)}
             style={{
-              position: 'absolute',
-              left: 8,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--text-muted)',
-              pointerEvents: 'none'
+              color: unreadOnly ? 'var(--accent)' : undefined,
+              flexShrink: 0,
+              width: 24,
+              height: 24
             }}
-          />
-          <input
-            className="search-input"
-            style={{ paddingLeft: 28 }}
-            placeholder={t.articleList.searchPlaceholder}
-            defaultValue={search}
-            onChange={handleSearch}
-          />
-        </div>
+          >
+            <Filter size={14} />
+          </button>
+        </Tooltip>
       </div>
 
       {/* Virtual list */}
