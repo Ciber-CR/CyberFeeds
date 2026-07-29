@@ -126,6 +126,14 @@ const api = {
   windowMinimize: () => ipcRenderer.send('window:minimize'),
   windowMaximize: () => ipcRenderer.send('window:maximize'),
   windowClose: () => ipcRenderer.send('window:close'),
+  isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+  onMaximizedChange: (cb: (maximized: boolean) => void) => {
+    const handler = (_: unknown, val: boolean) => cb(val)
+    ipcRenderer.on('window:maximized-change', handler)
+    return () => {
+      ipcRenderer.removeListener('window:maximized-change', handler)
+    }
+  },
 
   // First paint ack — main waits for this before showing (avoids white flash)
   uiReady: () => ipcRenderer.send('ui-ready')

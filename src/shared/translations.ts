@@ -14,7 +14,9 @@ export const translations = {
       about: 'About CyberFeeds',
       minimize: 'Minimize',
       maximize: 'Maximize',
-      close: 'Close'
+      restore: 'Restore',
+      close: 'Close',
+      minimizeToTray: 'Minimize to tray'
     },
     sidebar: {
       allFeeds: 'All Feeds',
@@ -391,7 +393,9 @@ export const translations = {
       about: 'Acerca de CyberFeeds',
       minimize: 'Minimizar',
       maximize: 'Maximizar',
-      close: 'Cerrar'
+      restore: 'Restaurar',
+      close: 'Cerrar',
+      minimizeToTray: 'Ocultar a la bandeja'
     },
     sidebar: {
       allFeeds: 'Todos los feeds',

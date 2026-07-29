@@ -204,7 +204,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           {/* Toggle All Expand/Collapse */}
           <Tooltip
             label={collapsed.size > 0 ? t.sidebar.expandAll : t.sidebar.collapseAll}
-            placement="bottom"
+            placement="top"
           >
             <button
               className="add-feed-btn"
@@ -215,7 +215,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
             </button>
           </Tooltip>
 
-          <Tooltip label={t.sidebar.newFolder} placement="bottom">
+          <Tooltip label={t.sidebar.newFolder} placement="top">
             <button
               className="add-feed-btn"
               style={{ flex: 0, padding: '6px 8px' }}
@@ -229,7 +229,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
             <Plus size={13} />
             {t.sidebar.addFeed}
           </button>
-          <Tooltip label={t.sidebar.importOpml} placement="bottom">
+          <Tooltip label={t.sidebar.importOpml} placement="top">
             <button
               className="add-feed-btn"
               style={{ flex: 0, padding: '6px 8px' }}
@@ -243,7 +243,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               )}
             </button>
           </Tooltip>
-          <Tooltip label={t.sidebar.exportOpml} placement="bottom">
+          <Tooltip label={t.sidebar.exportOpml} placement="top">
             <button
               className="add-feed-btn"
               style={{ flex: 0, padding: '6px 8px' }}
@@ -252,7 +252,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               <Download size={13} />
             </button>
           </Tooltip>
-          <Tooltip label={t.sidebar.feedsDoctor} placement="bottom">
+          <Tooltip label={t.sidebar.feedsDoctor} placement="top">
             <button
               className="add-feed-btn"
               style={{ flex: 0, padding: '6px 8px' }}
