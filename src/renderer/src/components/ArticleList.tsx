@@ -345,7 +345,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           borderBottom: '1px solid var(--border-muted)',
           display: 'flex',
           alignItems: 'center',
-          gap: 6
+          gap: 10
         }}
       >
         <div style={{ position: 'relative', flex: 1 }}>
