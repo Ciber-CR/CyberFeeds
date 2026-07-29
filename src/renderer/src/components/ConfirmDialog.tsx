@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { AlertTriangle, Info, Trash2, X } from 'lucide-react'
 import { useOverlayDismiss } from '../hooks/useOverlayDismiss'
+import Tooltip from './Tooltip'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface ConfirmDialogProps {
   isOpen: boolean
@@ -23,6 +25,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel
 }: ConfirmDialogProps): JSX.Element | null {
+  const { t } = useTranslation()
   const overlayDismiss = useOverlayDismiss(onCancel)
 
   useEffect(() => {
@@ -78,9 +81,11 @@ export default function ConfirmDialog({
             {getIcon()}
             <h2 className="confirm-dialog-title">{title}</h2>
           </div>
-          <button className="confirm-dialog-close" onClick={onCancel} title="Close">
-            <X size={18} />
-          </button>
+          <Tooltip label={t.common.close} placement="left">
+            <button className="confirm-dialog-close" onClick={onCancel}>
+              <X size={18} />
+            </button>
+          </Tooltip>
         </div>
         <div className="confirm-dialog-body">
           <p className="confirm-dialog-message">{message}</p>

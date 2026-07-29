@@ -4,6 +4,7 @@ import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
 import type { NotificationHistoryItem } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
+import Tooltip from './Tooltip'
 
 function timeAgo(ts: number, t: any): string {
   const d = (Date.now() - ts) / 1000
@@ -124,7 +125,9 @@ export default function NotificationHistoryPanel(): JSX.Element {
             </span>
           )}
         </h2>
-        <button className="btn btn-ghost btn-icon" onClick={handleClear} title={t.notificationHistory.clearAll}><Trash2 size={14} /></button>
+        <Tooltip label={t.notificationHistory.clearAll} placement="bottom">
+          <button className="btn btn-ghost btn-icon" onClick={handleClear}><Trash2 size={14} /></button>
+        </Tooltip>
         <button className="btn btn-ghost btn-icon" onClick={closePanel}><X size={15} /></button>
       </div>
       <div className="panel-body">

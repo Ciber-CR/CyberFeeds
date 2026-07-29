@@ -1,5 +1,10 @@
 export const translations = {
   en: {
+    common: {
+      close: 'Close',
+      resizeSidebar: 'Drag to resize sidebar',
+      resizeArticleList: 'Drag to resize article list'
+    },
     topBar: {
       inboxToday: 'Inbox Today',
       notificationHistory: 'Notification History',
@@ -363,6 +368,11 @@ export const translations = {
     }
   },
   es: {
+    common: {
+      close: 'Cerrar',
+      resizeSidebar: 'Arrastra para redimensionar la barra lateral',
+      resizeArticleList: 'Arrastra para redimensionar la lista de artículos'
+    },
     topBar: {
       inboxToday: 'Bandeja de entrada de hoy',
       notificationHistory: 'Historial de notificaciones',

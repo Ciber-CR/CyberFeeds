@@ -9,6 +9,7 @@ import { useConfirm } from '../hooks/useConfirm'
 import { useAlert } from '../hooks/useAlert'
 import ConfirmDialog from './ConfirmDialog'
 import AlertDialog from './AlertDialog'
+import Tooltip from './Tooltip'
 import type { AppSettings, KeyboardShortcuts } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 
@@ -149,23 +150,24 @@ function HotkeyRecorder({ actionKey, value, onChange, shortcuts, t }: HotkeyReco
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      <input
-        type="text"
-        className={inputClass}
-        readOnly
-        value={recording ? tempValue : formatDisplay(value)}
-        onFocus={() => {
-          setRecording(true)
-          setTempValue(t.settings.keyboard.recording)
-        }}
-        onBlur={() => {
-          setRecording(false)
-          setTempValue('')
-        }}
-        onKeyDown={handleKeyDown}
-        placeholder={t.settings.keyboard.accelerator}
-        title={value ? formatDisplay(value) : t.settings.keyboard.emptyHint}
-      />
+      <Tooltip label={value ? formatDisplay(value) : t.settings.keyboard.emptyHint} placement="bottom">
+        <input
+          type="text"
+          className={inputClass}
+          readOnly
+          value={recording ? tempValue : formatDisplay(value)}
+          onFocus={() => {
+            setRecording(true)
+            setTempValue(t.settings.keyboard.recording)
+          }}
+          onBlur={() => {
+            setRecording(false)
+            setTempValue('')
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={t.settings.keyboard.accelerator}
+        />
+      </Tooltip>
       {hasConflict && (
         <span style={{
           fontSize: 9,
@@ -427,26 +429,27 @@ export default function SettingsPanel(): JSX.Element {
                     <option value="default">{t.settings.general.openOptions.default}</option>
                     <option value="custom">{t.settings.general.openOptions.custom}</option>
                   </select>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    onClick={async () => {
-                      const path = await window.api.pickBrowser()
-                      if (path) update({ customBrowserPath: path })
+                  <Tooltip label={t.settings.general.pickTooltip} placement="bottom">
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={async () => {
+                        const path = await window.api.pickBrowser()
+                        if (path) update({ customBrowserPath: path })
+                      }}
+                      style={{
+                        fontSize: 12,
+                        padding: '4px 10px',
+                        color: 'var(--accent)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--bg-2)',
+                        cursor: 'pointer'
                     }}
-                    style={{
-                      fontSize: 12,
-                      padding: '4px 10px',
-                      color: 'var(--accent)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'var(--bg-2)',
-                      cursor: 'pointer'
-                    }}
-                    title={t.settings.general.pickTooltip}
-                  >
-                    {t.settings.general.pickBtn}
-                  </button>
+                    >
+                      {t.settings.general.pickBtn}
+                    </button>
+                  </Tooltip>
                 </div>
                 {local.customBrowserPath && (
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, wordBreak: 'break-all' }}>
@@ -765,16 +768,17 @@ export default function SettingsPanel(): JSX.Element {
                       : t.settings.notifications.systemDefaultSound}
                   </span>
                   {local.notifications.soundFile && (
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      style={{ fontSize: 11, padding: '2px 6px' }}
-                      disabled={!local.notifications.soundEnabled}
-                      onClick={() => updateNotif({ soundFile: null })}
-                      title={t.settings.notifications.resetToDefault}
+                    <Tooltip label={t.settings.notifications.resetToDefault} placement="bottom">
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        style={{ fontSize: 11, padding: '2px 6px' }}
+                        disabled={!local.notifications.soundEnabled}
+                        onClick={() => updateNotif({ soundFile: null })}
                     >
-                      ✕
-                    </button>
+                        ✕
+                      </button>
+                    </Tooltip>
                   )}
                 </div>
               </div>
@@ -826,63 +830,65 @@ export default function SettingsPanel(): JSX.Element {
                       t={t}
                     />
                     {shortcut.accelerator ? (
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        style={{
-                          fontSize: 12,
-                          width: 26,
-                          height: 26,
-                          padding: 0,
-                          borderRadius: 'var(--radius-sm)',
-                          border: '1px solid var(--border)',
-                          background: 'var(--bg-2)',
-                          cursor: 'pointer',
-                          color: 'var(--orange)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
+                      <Tooltip label={t.settings.keyboard.clear} placement="bottom">
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          style={{
+                            fontSize: 12,
+                            width: 26,
+                            height: 26,
+                            padding: 0,
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-2)',
+                            cursor: 'pointer',
+                            color: 'var(--orange)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
                         }}
-                        title={t.settings.keyboard.clear}
+                          onClick={() => {
+                            const cur = localRef.current.shortcuts
+                            const newShortcuts = { ...cur }
+                            newShortcuts[key as keyof KeyboardShortcuts] = {
+                              ...cur[key as keyof KeyboardShortcuts],
+                              accelerator: '',
+                              enabled: false
+                            }
+                            updateShortcuts(newShortcuts)
+                          }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </Tooltip>
+                    ) : null}
+                  </div>
+                  <Tooltip label={shortcut.global ? t.settings.keyboard.scopeGlobalHint : t.settings.keyboard.scopeAppHint} placement="bottom">
+                    <label
+                      className="toggle"
+                      style={{ margin: 0 }}
+                    >
+                      <div
+                        className={`toggle-track ${shortcut.global ? 'on' : ''}`}
                         onClick={() => {
                           const cur = localRef.current.shortcuts
                           const newShortcuts = { ...cur }
                           newShortcuts[key as keyof KeyboardShortcuts] = {
                             ...cur[key as keyof KeyboardShortcuts],
-                            accelerator: '',
-                            enabled: false
+                            global: !cur[key as keyof KeyboardShortcuts].global
                           }
                           updateShortcuts(newShortcuts)
                         }}
                       >
-                        <X size={12} />
-                      </button>
-                    ) : null}
-                  </div>
-                  <label
-                    className="toggle"
-                    style={{ margin: 0 }}
-                    title={shortcut.global ? t.settings.keyboard.scopeGlobalHint : t.settings.keyboard.scopeAppHint}
-                  >
-                    <div
-                      className={`toggle-track ${shortcut.global ? 'on' : ''}`}
-                      onClick={() => {
-                        const cur = localRef.current.shortcuts
-                        const newShortcuts = { ...cur }
-                        newShortcuts[key as keyof KeyboardShortcuts] = {
-                          ...cur[key as keyof KeyboardShortcuts],
-                          global: !cur[key as keyof KeyboardShortcuts].global
-                        }
-                        updateShortcuts(newShortcuts)
-                      }}
-                    >
-                      <div className="toggle-thumb" />
-                    </div>
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'inline-block', width: 42, textAlign: 'left' }}>
-                      {shortcut.global ? t.settings.keyboard.scopeGlobal : t.settings.keyboard.scopeApp}
-                    </span>
-                  </label>
+                        <div className="toggle-thumb" />
+                      </div>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'inline-block', width: 42, textAlign: 'left' }}>
+                        {shortcut.global ? t.settings.keyboard.scopeGlobal : t.settings.keyboard.scopeApp}
+                      </span>
+                    </label>
+                  </Tooltip>
                 </div>
               ))}
 

@@ -9,6 +9,7 @@ import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import type { Article } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
+import Tooltip from './Tooltip'
 
 function formatDate(ts: number, t: any): string {
   const d = new Date(ts)
@@ -265,14 +266,14 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           }}>{title}</h2>
         </div>
 
-        <div 
-          className="cyber-badge no-brackets"
-          onClick={() => togglePolling()}
-          title={language === 'es'
-            ? `Sondeo: ${settings.pollingEnabled ? 'ENCENDIDO' : 'APAGADO'} | Sin leer: ${unreadDisplayCount} | Total: ${totalCount} | Clic para alternar`
-            : `Polling: ${settings.pollingEnabled ? 'ON' : 'OFF'} | Unread: ${unreadDisplayCount} | Total: ${totalCount} | Click to toggle`}
-          style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', flexShrink: 0, margin: '0 10px', gap: 8, padding: '3px 10px' }}
-        >
+        <Tooltip label={language === 'es'
+          ? `Sondeo: ${settings.pollingEnabled ? 'ENCENDIDO' : 'APAGADO'} | Sin leer: ${unreadDisplayCount} | Total: ${totalCount} | Clic para alternar`
+          : `Polling: ${settings.pollingEnabled ? 'ON' : 'OFF'} | Unread: ${unreadDisplayCount} | Total: ${totalCount} | Click to toggle`} placement="bottom">
+          <div
+            className="cyber-badge no-brackets"
+            onClick={() => togglePolling()}
+            style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', flexShrink: 0, margin: '0 10px', gap: 8, padding: '3px 10px' }}
+          >
           <span style={{ 
             fontSize: 9, 
             fontWeight: 700, 
@@ -290,17 +291,19 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           <span style={{ opacity: 0.8, marginLeft: 4 }}>
             [{unreadOnly ? unreadDisplayCount : `${unreadDisplayCount} / ${totalCount}`}]
           </span>
-        </div>
+          </div>
+        </Tooltip>
 
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <button
-            className="btn btn-ghost btn-icon"
-            onClick={() => setUnreadOnly(!unreadOnly)}
-            title={unreadOnly ? t.articleList.showAll : t.articleList.unreadOnly}
-            style={unreadOnly ? { color: 'var(--accent)' } : undefined}
-          >
-            <Filter size={14} />
-          </button>
+          <Tooltip label={unreadOnly ? t.articleList.showAll : t.articleList.unreadOnly} placement="bottom">
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={() => setUnreadOnly(!unreadOnly)}
+              style={unreadOnly ? { color: 'var(--accent)' } : undefined}
+            >
+              <Filter size={14} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -368,14 +371,15 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
 
       {/* Back-to-top button — appears once scrolled down */}
       {!loading && showScrollTop && (
-        <button
-          className="scroll-top-fab"
-          onClick={scrollToTop}
-          title={t.articleList.backToTop}
-          aria-label={t.articleList.backToTop}
-        >
-          <ArrowUp size={16} />
-        </button>
+        <Tooltip label={t.articleList.backToTop} placement="bottom">
+          <button
+            className="scroll-top-fab"
+            onClick={scrollToTop}
+            aria-label={t.articleList.backToTop}
+          >
+            <ArrowUp size={16} />
+          </button>
+        </Tooltip>
       )}
 
       {ctx && (() => {

@@ -5,6 +5,7 @@ import { useUIStore } from './store/ui.store'
 import { useSettingsStore } from './store/settings.store'
 import { useColumnResize } from './hooks/useColumnResize'
 import { useOverlayDismiss } from './hooks/useOverlayDismiss'
+import { useTranslation } from './hooks/useTranslation'
 import TopBar from './components/TopBar'
 import Sidebar from './components/Sidebar'
 import ArticleList from './components/ArticleList'
@@ -18,12 +19,14 @@ import InboxPanel from './components/InboxPanel'
 import NotificationHistoryPanel from './components/NotificationHistoryPanel'
 import AboutModal from './components/AboutModal'
 import DoctorPanel from './components/DoctorPanel'
+import Tooltip from './components/Tooltip'
 
 export default function App(): JSX.Element {
   const { loadAll, refreshUnreadCounts } = useFeedsStore()
   const { load, refresh } = useArticlesStore()
   const { selectedFeedId, selectedArticleId, activePanel, layout, unreadOnly, search, closePanel } = useUIStore()
   const { load: loadSettings, settings } = useSettingsStore()
+  const { t } = useTranslation()
   const dismissInbox = useOverlayDismiss(closePanel)
   const dismissHistory = useOverlayDismiss(closePanel)
 
@@ -182,20 +185,22 @@ export default function App(): JSX.Element {
       <div className="app-layout">
         {showSidebar && <Sidebar />}
         {showSidebar && (
-          <div
-            className={`resize-handle${sidebarDragging ? ' active' : ''}`}
-            onMouseDown={handleSidebarDrag}
-            title="Drag to resize sidebar"
-          />
+          <Tooltip label={t.common.resizeSidebar} placement="right">
+            <div
+              className={`resize-handle${sidebarDragging ? ' active' : ''}`}
+              onMouseDown={handleSidebarDrag}
+            />
+          </Tooltip>
         )}
         <div className="main-area">
           {showArticleList && <ArticleList />}
           {showArticleList && (
-            <div
-              className={`resize-handle${listDragging ? ' active' : ''}`}
-              onMouseDown={handleListDrag}
-              title="Drag to resize article list"
-            />
+            <Tooltip label={t.common.resizeArticleList} placement="right">
+              <div
+                className={`resize-handle${listDragging ? ' active' : ''}`}
+                onMouseDown={handleListDrag}
+              />
+            </Tooltip>
           )}
           <ArticleViewer key={selectedArticleId} />
         </div>

@@ -5,6 +5,7 @@ import { useUIStore } from '../store/ui.store'
 import { useArticlesStore } from '../store/articles.store'
 import { useSettingsStore } from '../store/settings.store'
 import { FeedFavicon } from './ArticleList'
+import Tooltip from './Tooltip'
 import type { Article } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 
@@ -140,61 +141,69 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
   return (
     <div className="article-viewer">
       <div className="viewer-toolbar">
-        <button className="btn btn-ghost has-label" style={{ fontSize: 12 }} onClick={handleSummary} title={t.articleViewer.quickSummary}>
-          <FileText size={13} />
-          <span className="viewer-toolbar-label">{t.articleViewer.summary}</span>
-        </button>
-        <button
-          className={`btn btn-ghost has-label${fullHtml ? ' is-active' : ''}`}
-          style={{ fontSize: 12 }}
-          onClick={fetchFullContent}
-          disabled={loading}
-          title={fullHtml ? t.articleViewer.reloadTooltip : t.articleViewer.loadFull}
-        >
-          {loading ? <div className="spinner" style={{ width: 13, height: 13 }} /> : <BookOpen size={13} />}
-          <span className="viewer-toolbar-label">{fullHtml ? t.articleViewer.reload : t.articleViewer.fullArticle}</span>
-        </button>
-        <button
-          className="btn btn-ghost has-label"
-          style={{ fontSize: 12 }}
-          onClick={() => window.api.openExternal(article.link)}
-          title={t.articleViewer.openInBrowserTooltip}
-        >
-          <ExternalLink size={13} />
-          <span className="viewer-toolbar-label">{t.articleViewer.openInBrowser}</span>
-        </button>
-        <button
-          className={`btn btn-ghost has-label${linkCopied ? ' is-copied' : ''}`}
-          style={{ fontSize: 12 }}
-          onClick={handleShare}
-          title={linkCopied ? t.articleViewer.linkCopied : t.articleViewer.shareTooltip}
-        >
-          {linkCopied ? <Check size={13} /> : <Share2 size={13} />}
-          <span className="viewer-toolbar-label">{linkCopied ? t.articleViewer.copied : t.articleViewer.share}</span>
-        </button>
+        <Tooltip label={t.articleViewer.quickSummary} placement="bottom">
+          <button className="btn btn-ghost has-label" style={{ fontSize: 12 }} onClick={handleSummary}>
+            <FileText size={13} />
+            <span className="viewer-toolbar-label">{t.articleViewer.summary}</span>
+          </button>
+        </Tooltip>
+        <Tooltip label={fullHtml ? t.articleViewer.reloadTooltip : t.articleViewer.loadFull} placement="bottom">
+          <button
+            className={`btn btn-ghost has-label${fullHtml ? ' is-active' : ''}`}
+            style={{ fontSize: 12 }}
+            onClick={fetchFullContent}
+            disabled={loading}
+          >
+            {loading ? <div className="spinner" style={{ width: 13, height: 13 }} /> : <BookOpen size={13} />}
+            <span className="viewer-toolbar-label">{fullHtml ? t.articleViewer.reload : t.articleViewer.fullArticle}</span>
+          </button>
+        </Tooltip>
+        <Tooltip label={t.articleViewer.openInBrowserTooltip} placement="bottom">
+          <button
+            className="btn btn-ghost has-label"
+            style={{ fontSize: 12 }}
+            onClick={() => window.api.openExternal(article.link)}
+          >
+            <ExternalLink size={13} />
+            <span className="viewer-toolbar-label">{t.articleViewer.openInBrowser}</span>
+          </button>
+        </Tooltip>
+        <Tooltip label={linkCopied ? t.articleViewer.linkCopied : t.articleViewer.shareTooltip} placement="bottom">
+          <button
+            className={`btn btn-ghost has-label${linkCopied ? ' is-copied' : ''}`}
+            style={{ fontSize: 12 }}
+            onClick={handleShare}
+          >
+            {linkCopied ? <Check size={13} /> : <Share2 size={13} />}
+            <span className="viewer-toolbar-label">{linkCopied ? t.articleViewer.copied : t.articleViewer.share}</span>
+          </button>
+        </Tooltip>
         <div className="viewer-toolbar-sep" />
-        <button
-          className="btn btn-ghost btn-icon"
-          onClick={() => update({ readingFontSize: Math.max(12, (settings.readingFontSize || 15) - 1) })}
-          title={t.articleViewer.decreaseFont}
-        >
-          <span style={{ fontSize: 11, fontWeight: 700 }}>A-</span>
-        </button>
-        <button
-          className="btn btn-ghost btn-icon"
-          onClick={() => update({ readingFontSize: Math.min(24, (settings.readingFontSize || 15) + 1) })}
-          title={t.articleViewer.increaseFont}
-        >
-          <span style={{ fontSize: 13, fontWeight: 700 }}>A+</span>
-        </button>
+        <Tooltip label={t.articleViewer.decreaseFont} placement="bottom">
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={() => update({ readingFontSize: Math.max(12, (settings.readingFontSize || 15) - 1) })}
+          >
+            <span style={{ fontSize: 11, fontWeight: 700 }}>A-</span>
+          </button>
+        </Tooltip>
+        <Tooltip label={t.articleViewer.increaseFont} placement="bottom">
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={() => update({ readingFontSize: Math.min(24, (settings.readingFontSize || 15) + 1) })}
+          >
+            <span style={{ fontSize: 13, fontWeight: 700 }}>A+</span>
+          </button>
+        </Tooltip>
         <div className="viewer-toolbar-sep" />
-        <button
-          className="btn btn-ghost btn-icon"
-          onClick={() => starArticle(article.id, !article.starred)}
-          title={article.starred ? t.articleViewer.unstar : t.articleViewer.star}
-        >
-          <Star size={15} fill={article.starred ? 'var(--star)' : 'none'} color={article.starred ? 'var(--star)' : undefined} />
-        </button>
+        <Tooltip label={article.starred ? t.articleViewer.unstar : t.articleViewer.star} placement="bottom">
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={() => starArticle(article.id, !article.starred)}
+          >
+            <Star size={15} fill={article.starred ? 'var(--star)' : 'none'} color={article.starred ? 'var(--star)' : undefined} />
+          </button>
+        </Tooltip>
       </div>
 
       <div
@@ -220,14 +229,15 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
       >
         <div className="reader-wrap" style={{ maxWidth: settings.readingMaxWidth || 720 }}>
           <h1 className="reader-title">
-            <a
-              href="#"
-              onClick={(e) => { e.preventDefault(); window.api.openExternal(article.link) }}
-              style={{ color: 'inherit', textDecoration: 'none' }}
-              title={t.articleViewer.openDefaultBrowser}
-            >
-              {article.title}
-            </a>
+            <Tooltip label={t.articleViewer.openDefaultBrowser} placement="bottom">
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); window.api.openExternal(article.link) }}
+                style={{ color: 'inherit', textDecoration: 'none' }}
+              >
+                {article.title}
+              </a>
+            </Tooltip>
           </h1>
           <div className="reader-meta">
             {(article.feedIcon || article.feedTitle) && (
@@ -279,15 +289,16 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
       </div>
 
       {showScrollTop && (
-        <button
-          type="button"
-          className="scroll-top-fab"
-          onClick={scrollToTop}
-          title={t.articleViewer.backToTop}
-          aria-label={t.articleViewer.backToTop}
-        >
-          <ArrowUp size={16} />
-        </button>
+        <Tooltip label={t.articleViewer.backToTop} placement="bottom">
+          <button
+            type="button"
+            className="scroll-top-fab"
+            onClick={scrollToTop}
+            aria-label={t.articleViewer.backToTop}
+          >
+            <ArrowUp size={16} />
+          </button>
+        </Tooltip>
       )}
 
       {hoveredLink && (
