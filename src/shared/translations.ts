@@ -41,7 +41,8 @@ export const translations = {
       deleteFeedTitle: 'Delete Feed',
       deleteFeedMsg: 'Are you sure you want to delete "{title}"? This action cannot be undone.',
       deleteFolderTitle: 'Delete Folder',
-      deleteFolderMsg: 'Are you sure you want to delete folder "{name}"? Feeds inside will be unfiled.',
+      deleteFolderMsg:
+        'Are you sure you want to delete folder "{name}"? Feeds inside will be unfiled.',
       cancel: 'Cancel',
       delete: 'Delete'
     },
@@ -75,7 +76,8 @@ export const translations = {
       },
       dialogs: {
         deleteAllTitle: 'Delete All Articles',
-        deleteAllMsg: 'Are you sure you want to delete all articles in the current list? This action cannot be undone.',
+        deleteAllMsg:
+          'Are you sure you want to delete all articles in the current list? This action cannot be undone.',
         deleteAllBtn: 'Delete All'
       }
     },
@@ -100,7 +102,8 @@ export const translations = {
       autoFetch: 'Fetch full content',
       openDefaultBrowser: 'Open in default browser',
       dismiss: 'Dismiss',
-      backToTop: 'Back to top'
+      backToTop: 'Back to top',
+      loadingFull: 'Loading full article...'
     },
     settings: {
       title: 'Settings',
@@ -190,7 +193,8 @@ export const translations = {
       },
       backup: {
         title: 'Global Backup & Restore',
-        explanation: 'Export or import your entire configuration (feeds, folders, and settings). Note: Regular articles will be cleared, but your Favorites will be preserved.',
+        explanation:
+          'Export or import your entire configuration (feeds, folders, and settings). Note: Regular articles will be cleared, but your Favorites will be preserved.',
         exportBtn: 'Export Backup',
         importBtn: 'Import Backup',
         importSpinner: 'Importing...',
@@ -208,14 +212,16 @@ export const translations = {
       },
       maintenance: {
         title: 'Maintenance',
-        explanation: 'Optimize your database by removing old data. Note: Articles marked with a star (Favorites) are never deleted.',
+        explanation:
+          'Optimize your database by removing old data. Note: Articles marked with a star (Favorites) are never deleted.',
         deleteOlder: 'Delete read articles older than (days)',
         autoClean: 'Auto clean on startup',
         runCleanBtn: 'Run Clean Up Now'
       },
       keyboard: {
         title: 'Keyboard Shortcuts',
-        explanation: 'Customize keyboard shortcuts for tray menu actions. Global shortcuts work even when the app is minimized.',
+        explanation:
+          'Customize keyboard shortcuts for tray menu actions. Global shortcuts work even when the app is minimized.',
         actions: {
           showHide: 'Show / Hide',
           notifications: 'Notifications',
@@ -275,7 +281,8 @@ export const translations = {
       title: 'Feeds Doctor',
       scanSubtitle: 'Diagnostic Scan',
       lastRun: 'Last run: {time}',
-      explanation: 'Scan all your feeds to detect connectivity issues, SSL errors, or invalid XML formats.',
+      explanation:
+        'Scan all your feeds to detect connectivity issues, SSL errors, or invalid XML formats.',
       scanning: 'Scanning System...',
       startBtn: 'Start Diagnostic',
       resultsTitle: 'Results',
@@ -283,7 +290,8 @@ export const translations = {
       issueFound: 'Issue Found',
       noIssues: 'No Issues Found',
       deleteFeedTitle: 'Delete Invalid Feed',
-      deleteFeedMsg: 'Are you sure you want to delete this invalid feed? This action cannot be undone.',
+      deleteFeedMsg:
+        'Are you sure you want to delete this invalid feed? This action cannot be undone.',
       readyMsg: 'System ready for scan.',
       warningNote: 'Doctor scans are on-demand and do not affect background polling.'
     },
@@ -407,9 +415,11 @@ export const translations = {
       resumeFolder: 'Reanudar carpeta',
       deleteFolder: 'Eliminar carpeta',
       deleteFeedTitle: 'Eliminar feed',
-      deleteFeedMsg: '¿Estás seguro de que deseas eliminar "{title}"? Esta acción no se puede deshacer.',
+      deleteFeedMsg:
+        '¿Estás seguro de que deseas eliminar "{title}"? Esta acción no se puede deshacer.',
       deleteFolderTitle: 'Eliminar carpeta',
-      deleteFolderMsg: '¿Estás seguro de que deseas eliminar la carpeta "{name}"? Los feeds que contiene quedarán sin clasificar.',
+      deleteFolderMsg:
+        '¿Estás seguro de que deseas eliminar la carpeta "{name}"? Los feeds que contiene quedarán sin clasificar.',
       cancel: 'Cancelar',
       delete: 'Eliminar'
     },
@@ -443,7 +453,8 @@ export const translations = {
       },
       dialogs: {
         deleteAllTitle: 'Eliminar todos los artículos',
-        deleteAllMsg: '¿Estás seguro de que deseas eliminar todos los artículos de la lista actual? Esta acción no se puede deshacer.',
+        deleteAllMsg:
+          '¿Estás seguro de que deseas eliminar todos los artículos de la lista actual? Esta acción no se puede deshacer.',
         deleteAllBtn: 'Eliminar todos'
       }
     },
@@ -468,7 +479,8 @@ export const translations = {
       autoFetch: 'Obtener contenido completo',
       openDefaultBrowser: 'Abrir en el navegador predeterminado',
       dismiss: 'Cerrar',
-      backToTop: 'Volver arriba'
+      backToTop: 'Volver arriba',
+      loadingFull: 'Cargando artículo completo...'
     },
     settings: {
       title: 'Configuración',
@@ -554,11 +566,13 @@ export const translations = {
         title: 'Tamaños de letra de las columnas',
         sidebar: 'Sidebar: {size}px',
         articleList: 'Lista de artículos: {size}px',
-        explanation: 'El ancho de las columnas se puede ajustar arrastrando los divisores en el diseño principal.'
+        explanation:
+          'El ancho de las columnas se puede ajustar arrastrando los divisores en el diseño principal.'
       },
       backup: {
         title: 'Copia de seguridad y restauración global',
-        explanation: 'Exporta o importa toda tu configuración (feeds, carpetas y ajustes). Nota: Los artículos normales se borrarán, pero se conservarán tus Favoritos.',
+        explanation:
+          'Exporta o importa toda tu configuración (feeds, carpetas y ajustes). Nota: Los artículos normales se borrarán, pero se conservarán tus Favoritos.',
         exportBtn: 'Exportar copia',
         importBtn: 'Importar copia',
         importSpinner: 'Importando...',
@@ -569,21 +583,24 @@ export const translations = {
           exportSuccessTitle: 'Exportación exitosa',
           exportSuccessMsg: '¡Copia de seguridad exportada con éxito!',
           importSuccessTitle: 'Importación exitosa',
-          importSuccessMsg: '¡Copia de seguridad importada con éxito! La aplicación se recargará para aplicar los cambios.',
+          importSuccessMsg:
+            '¡Copia de seguridad importada con éxito! La aplicación se recargará para aplicar los cambios.',
           importFailTitle: 'Error al importar',
           importFailMsg: 'La importación falló: {error}'
         }
       },
       maintenance: {
         title: 'Mantenimiento',
-        explanation: 'Optimiza tu base de datos eliminando datos antiguos. Nota: Los artículos marcados con estrella (Favoritos) nunca se eliminan.',
+        explanation:
+          'Optimiza tu base de datos eliminando datos antiguos. Nota: Los artículos marcados con estrella (Favoritos) nunca se eliminan.',
         deleteOlder: 'Eliminar artículos leídos anteriores a (días)',
         autoClean: 'Limpieza automática al iniciar',
         runCleanBtn: 'Ejecutar limpieza ahora'
       },
       keyboard: {
         title: 'Atajos de teclado',
-        explanation: 'Personaliza los atajos de teclado para las acciones del menú de la bandeja. Los atajos globales funcionan incluso cuando la aplicación está minimizada.',
+        explanation:
+          'Personaliza los atajos de teclado para las acciones del menú de la bandeja. Los atajos globales funcionan incluso cuando la aplicación está minimizada.',
         actions: {
           showHide: 'Mostrar / Ocultar',
           notifications: 'Notificaciones',
@@ -643,7 +660,8 @@ export const translations = {
       title: 'Doctor de feeds',
       scanSubtitle: 'Análisis de diagnóstico',
       lastRun: 'Última ejecución: {time}',
-      explanation: 'Analiza todos tus feeds para detectar problemas de conectividad, errores de SSL o formatos XML no válidos.',
+      explanation:
+        'Analiza todos tus feeds para detectar problemas de conectividad, errores de SSL o formatos XML no válidos.',
       scanning: 'Analizando el sistema...',
       startBtn: 'Iniciar diagnóstico',
       resultsTitle: 'Resultados',
@@ -651,9 +669,11 @@ export const translations = {
       issueFound: 'problema encontrado',
       noIssues: 'No se encontraron problemas',
       deleteFeedTitle: 'Eliminar feed no válido',
-      deleteFeedMsg: '¿Estás seguro de que deseas eliminar este feed no válido? Esta acción no se puede deshacer.',
+      deleteFeedMsg:
+        '¿Estás seguro de que deseas eliminar este feed no válido? Esta acción no se puede deshacer.',
       readyMsg: 'Sistema listo para el análisis.',
-      warningNote: 'Los análisis del Doctor son bajo demanda y no afectan al sondeo en segundo plano.'
+      warningNote:
+        'Los análisis del Doctor son bajo demanda y no afectan al sondeo en segundo plano.'
     },
     addFeed: {
       title: 'Añadir feed',
