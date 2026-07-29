@@ -44,16 +44,25 @@ interface State {
 }
 
 type Action =
-  | { type: 'SET_STACK'; stack: NotificationHistoryItem[]; settings: NotificationSettings; unseenCount: number }
+  | {
+      type: 'SET_STACK'
+      stack: NotificationHistoryItem[]
+      settings: NotificationSettings
+      unseenCount: number
+    }
   | { type: 'DISMISS'; id: string }
   | { type: 'CLEAR' }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'SET_STACK': return { stack: action.stack, settings: action.settings, unseenCount: action.unseenCount }
-    case 'DISMISS': return { ...state, stack: state.stack.filter(n => n.id !== action.id) }
-    case 'CLEAR': return { ...state, stack: [] }
-    default: return state
+    case 'SET_STACK':
+      return { stack: action.stack, settings: action.settings, unseenCount: action.unseenCount }
+    case 'DISMISS':
+      return { ...state, stack: state.stack.filter((n) => n.id !== action.id) }
+    case 'CLEAR':
+      return { ...state, stack: [] }
+    default:
+      return state
   }
 }
 
@@ -93,10 +102,17 @@ export default function NotifierApp(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    const unsub = window.api.onNotifierStack((stack: any, settings: any, language: any, unseenCount: any) => {
-      dispatch({ type: 'SET_STACK', stack: stack as NotificationHistoryItem[], settings: settings as NotificationSettings, unseenCount: Number(unseenCount) || 0 })
-      if (language) setLang(language)
-    })
+    const unsub = window.api.onNotifierStack(
+      (stack: any, settings: any, language: any, unseenCount: any) => {
+        dispatch({
+          type: 'SET_STACK',
+          stack: stack as NotificationHistoryItem[],
+          settings: settings as NotificationSettings,
+          unseenCount: Number(unseenCount) || 0
+        })
+        if (language) setLang(language)
+      }
+    )
     return unsub
   }, [])
 
@@ -172,20 +188,33 @@ export default function NotifierApp(): JSX.Element {
   const snoozeLabel = formatSnoozeLabel(snoozeMinutes)
   const snoozeText = t.notifier.snooze.replace('{time}', snoozeLabel)
   const snoozeTooltip = t.notifier.snoozeTooltip.replace('{time}', snoozeLabel)
-  const cardOpenTooltip = state.settings?.openBehavior === 'browser'
-    ? t.notifier.openTooltip
-    : t.notifier.viewTooltip
+  const cardOpenTooltip =
+    state.settings?.openBehavior === 'browser' ? t.notifier.openTooltip : t.notifier.viewTooltip
 
   return (
     <div
       className="notifier-root"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'rgba(0,0,0,0.01)' }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        background: 'rgba(0,0,0,0.01)'
+      }}
     >
       {/* Clear & See History — fixed at top, always accessible */}
       {state.stack.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: 4, paddingRight: Math.max(scrollbarW, 16) + 4, paddingBottom: 4, flexShrink: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            paddingLeft: 4,
+            paddingRight: Math.max(scrollbarW, 16) + 4,
+            paddingBottom: 4,
+            flexShrink: 0
+          }}
+        >
           <Tooltip label={t.notifier.historyTooltip} placement="bottom">
             <button
               className="clear-all-btn"
@@ -200,24 +229,35 @@ export default function NotifierApp(): JSX.Element {
               }}
               onMouseEnter={() => setHistoryHovered(true)}
               onMouseLeave={() => setHistoryHovered(false)}
-              onClick={(e) => { e.stopPropagation(); window.api.openHistoryInApp() }}
+              onClick={(e) => {
+                e.stopPropagation()
+                window.api.openHistoryInApp()
+              }}
             >
               <Bell size={12} style={{ flexShrink: 0 }} />
               {t.notifier.history}
               {state.unseenCount > 0 && (
-                <span style={{
-                  fontWeight: 700,
-                  color: historyHovered ? '#0d1117' : 'var(--accent, #bd93f9)'
-                }}>
+                <span
+                  style={{
+                    fontWeight: 700,
+                    color: historyHovered ? '#0d1117' : 'var(--accent, #bd93f9)'
+                  }}
+                >
                   {state.unseenCount > 99 ? '99+' : state.unseenCount}
                 </span>
               )}
             </button>
           </Tooltip>
-          <Tooltip label={state.stack.length > 1 ? t.notifier.closeAllTooltip : t.notifier.closeTooltip} placement="bottom">
+          <Tooltip
+            label={state.stack.length > 1 ? t.notifier.closeAllTooltip : t.notifier.closeTooltip}
+            placement="bottom"
+          >
             <button
               className="clear-all-btn"
-              onClick={(e) => { e.stopPropagation(); window.api.clearAllNotifications() }}
+              onClick={(e) => {
+                e.stopPropagation()
+                window.api.clearAllNotifications()
+              }}
             >
               ✕ {state.stack.length > 1 ? t.notifier.closeAll : t.notifier.close}
             </button>
@@ -242,16 +282,17 @@ export default function NotifierApp(): JSX.Element {
           scrollbarColor: 'rgba(255,255,255,0.15) transparent'
         }}
       >
-        {state.stack.map(item => (
-          <Tooltip label={cardOpenTooltip} placement="bottom">
-            <div key={item.id} className="notif-card" onClick={() => handleOpen(item)}>
+        {state.stack.map((item) => (
+          <div key={item.id} className="notif-card" onClick={() => handleOpen(item)}>
             {item.thumbnail && state.settings?.showThumbnails && (
               <div className="notif-thumbnail">
                 <img
                   src={item.thumbnail}
                   alt=""
                   loading="lazy"
-                  onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
+                  onError={(e) => {
+                    ;(e.target as HTMLImageElement).parentElement!.style.display = 'none'
+                  }}
                 />
               </div>
             )}
@@ -260,37 +301,76 @@ export default function NotifierApp(): JSX.Element {
                 <img
                   src={item.icon}
                   alt=""
-                  style={{ width: 15, height: 15, borderRadius: 3, objectFit: 'contain', flexShrink: 0 }}
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  style={{
+                    width: 15,
+                    height: 15,
+                    borderRadius: 3,
+                    objectFit: 'contain',
+                    flexShrink: 0
+                  }}
+                  onError={(e) => {
+                    ;(e.target as HTMLImageElement).style.display = 'none'
+                  }}
                 />
               ) : (
-                <span style={{
-                  width: 15, height: 15, borderRadius: 3, background: 'var(--accent)',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 9, fontWeight: 700, color: '#0d1117', flexShrink: 0
-                }}>
+                <span
+                  style={{
+                    width: 15,
+                    height: 15,
+                    borderRadius: 3,
+                    background: 'var(--accent)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: '#0d1117',
+                    flexShrink: 0
+                  }}
+                >
                   {(item.feedName || 'F').charAt(0).toUpperCase()}
                 </span>
               )}
-              <Tooltip label={item.feedName} placement="top">
-                <span className="notif-feed">{item.feedName}</span>
-              </Tooltip>
+              <div style={{ flex: 1, minWidth: 0, display: 'inline-flex' }}>
+                <Tooltip label={item.feedName} placement="top">
+                  <span className="notif-feed" style={{ flex: '0 1 auto' }}>
+                    {item.feedName}
+                  </span>
+                </Tooltip>
+              </div>
               <Tooltip label={t.notifier.dismissTooltip} placement="bottom">
                 <button
                   className="notif-close"
-                  onClick={e => { e.stopPropagation(); handleDismiss(item.id) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDismiss(item.id)
+                  }}
                 >
                   <X size={12} />
                 </button>
               </Tooltip>
             </div>
-            <div className="notif-title">{item.title}</div>
-            {item.body && <div className="notif-body" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.body}</div>}
-            <div className="notif-actions" onClick={e => e.stopPropagation()}>
+            <Tooltip label={cardOpenTooltip} placement="bottom">
+              <div className="notif-content-wrap">
+                <div className="notif-title">{item.title}</div>
+                {item.body && (
+                  <div
+                    className="notif-body"
+                    style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {item.body}
+                  </div>
+                )}
+              </div>
+            </Tooltip>
+            <div className="notif-actions" onClick={(e) => e.stopPropagation()}>
               <Tooltip label={t.notifier.markReadTooltip} placement="bottom">
                 <button
                   className="notif-btn"
-                  onClick={() => { window.api.markNotificationRead(item.articleId || ''); handleDismiss(item.id) }}
+                  onClick={() => {
+                    window.api.markNotificationRead(item.articleId || '')
+                    handleDismiss(item.id)
+                  }}
                 >
                   {t.notifier.markRead}
                 </button>
@@ -298,7 +378,7 @@ export default function NotifierApp(): JSX.Element {
               <Tooltip label={snoozeTooltip} placement="bottom">
                 <button
                   className="notif-btn"
-                  onClick={() => { window.api.snoozeNotifications(snoozeMinutes) }}
+                  onClick={() => window.api.snoozeNotifications(snoozeMinutes)}
                 >
                   {snoozeText}
                 </button>
@@ -318,16 +398,17 @@ export default function NotifierApp(): JSX.Element {
                   </button>
                 </Tooltip>
               )}
-              <Tooltip label={t.notifier.receivedAt.replace('{time}', formatAbsoluteTime(item.createdAt, lang))} placement="bottom">
-                <span
-                  className="notif-time"
-                >
-                  {formatReceivedAt(item.createdAt, t)}
-                </span>
+              <Tooltip
+                label={t.notifier.receivedAt.replace(
+                  '{time}',
+                  formatAbsoluteTime(item.createdAt, lang)
+                )}
+                placement="bottom"
+              >
+                <span className="notif-time">{formatReceivedAt(item.createdAt, t)}</span>
               </Tooltip>
             </div>
-            </div>
-          </Tooltip>
+          </div>
         ))}
       </div>
       {/* "More" floating indicator */}
