@@ -26,6 +26,7 @@ export default function Tooltip({ label, placement = 'bottom', children }: Toolt
   const [anchor, setAnchor] = useState<DOMRect | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number; arrow: CSSProperties } | null>(null)
+  const delayTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Medimos el tooltip ya renderizado y calculamos la posición con clamping.
   useLayoutEffect(() => {
@@ -100,11 +101,23 @@ export default function Tooltip({ label, placement = 'bottom', children }: Toolt
     }
   }, [anchor])
 
+  // Limpiar temporizadores de retardo al desmontar
+  useEffect(() => {
+    return () => {
+      if (delayTimer.current) clearTimeout(delayTimer.current)
+    }
+  }, [])
+
   if (!isValidElement(children)) return children
   const child = children as ReactElement<any>
 
   const show = (e: ReactMouseEvent<HTMLElement>): void => {
     child.props.onMouseEnter?.(e)
+    if (delayTimer.current) {
+      clearTimeout(delayTimer.current)
+      delayTimer.current = null
+    }
+
     const target = e.target as HTMLElement
     const currentTarget = e.currentTarget as HTMLElement
     const closestTooltipEl = target.closest('[data-has-tooltip="true"]')
@@ -115,15 +128,26 @@ export default function Tooltip({ label, placement = 'bottom', children }: Toolt
     ) {
       setAnchor(null)
     } else if (label) {
-      setAnchor(currentTarget.getBoundingClientRect())
+      const rect = currentTarget.getBoundingClientRect()
+      delayTimer.current = setTimeout(() => {
+        setAnchor(rect)
+      }, 300)
     }
   }
   const hide = (e: ReactMouseEvent<HTMLElement>): void => {
     child.props.onMouseLeave?.(e)
+    if (delayTimer.current) {
+      clearTimeout(delayTimer.current)
+      delayTimer.current = null
+    }
     setAnchor(null)
   }
   const clickHide = (e: ReactMouseEvent<HTMLElement>): void => {
     child.props.onClick?.(e)
+    if (delayTimer.current) {
+      clearTimeout(delayTimer.current)
+      delayTimer.current = null
+    }
     setAnchor(null)
   }
   const handleMouseMove = (e: ReactMouseEvent<HTMLElement>): void => {
@@ -136,12 +160,22 @@ export default function Tooltip({ label, placement = 'bottom', children }: Toolt
       (closestTooltipEl && closestTooltipEl !== currentTarget) ||
       (closestInteractive && closestInteractive !== currentTarget)
     ) {
+      if (delayTimer.current) {
+        clearTimeout(delayTimer.current)
+        delayTimer.current = null
+      }
       setAnchor(null)
     } else if (label) {
-      setAnchor(currentTarget.getBoundingClientRect())
+      if (!anchor && !delayTimer.current) {
+        const rect = currentTarget.getBoundingClientRect()
+        delayTimer.current = setTimeout(() => {
+          setAnchor(rect)
+        }, 300)
+      }
     }
   }
 
+  // eslint-disable-next-line react-hooks/refs
   const cloned = cloneElement(child, {
     onMouseEnter: show,
     onMouseLeave: hide,
