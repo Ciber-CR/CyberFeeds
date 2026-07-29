@@ -1,5 +1,22 @@
 import React, { memo, useState, useCallback } from 'react'
-import { FolderPlus, ChevronRight, ChevronDown, ChevronsUpDown, ChevronsDownUp, Plus, Upload, Download, Stethoscope, Rss, Star, RefreshCw, Pencil, Pause, Play, Trash2 } from 'lucide-react'
+import {
+  FolderPlus,
+  ChevronRight,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronsDownUp,
+  Plus,
+  Upload,
+  Download,
+  Stethoscope,
+  Rss,
+  Star,
+  RefreshCw,
+  Pencil,
+  Pause,
+  Play,
+  Trash2
+} from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useUIStore } from '../store/ui.store'
 import { FeedFavicon } from './ArticleList'
@@ -10,12 +27,28 @@ import { useTranslation } from '../hooks/useTranslation'
 import Tooltip from './Tooltip'
 
 const Sidebar = memo(function Sidebar(): JSX.Element {
-  const { feeds, folders, unreadCounts, loadAll, deleteFeed, fetchFeed, fetchFolder, togglePauseFeed, togglePauseFolder, deleteFolder } = useFeedsStore()
+  const {
+    feeds,
+    folders,
+    unreadCounts,
+    loadAll,
+    deleteFeed,
+    fetchFeed,
+    fetchFolder,
+    togglePauseFeed,
+    togglePauseFolder,
+    deleteFolder
+  } = useFeedsStore()
   const { selectedFeedId, selectFeed, openPanel } = useUIStore()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
-  const [ctx, setCtx] = React.useState<{ x: number, y: number, type: 'feed' | 'folder', id: string } | null>(null)
+  const [ctx, setCtx] = React.useState<{
+    x: number
+    y: number
+    type: 'feed' | 'folder'
+    id: string
+  } | null>(null)
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
   const { t } = useTranslation()
 
@@ -35,11 +68,11 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
   const totalUnread = Object.entries(unreadCounts)
     .filter(([k]) => k !== 'starred')
     .reduce((sum, [, count]) => sum + count, 0)
-  
+
   const totalStarred = unreadCounts['starred'] || 0
 
   const toggleFolder = useCallback((id: string) => {
-    setCollapsed(prev => {
+    setCollapsed((prev) => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
@@ -47,7 +80,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
   }, [])
 
   const expandAll = useCallback(() => setCollapsed(new Set()), [])
-  const collapseAll = useCallback(() => setCollapsed(new Set(folders.map(f => f.id))), [folders])
+  const collapseAll = useCallback(() => setCollapsed(new Set(folders.map((f) => f.id))), [folders])
 
   const toggleAll = useCallback(() => {
     if (collapsed.size > 0) expandAll()
@@ -63,7 +96,10 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     setImportMsg('')
     try {
       const result = await window.api.importOpml()
-      if (result.canceled) { setImporting(false); return }
+      if (result.canceled) {
+        setImporting(false)
+        return
+      }
       await loadAll()
       setImportMsg(`✓ ${result.added} ${t.sidebar.feedsAdded}`)
       setTimeout(() => setImportMsg(''), 3000)
@@ -74,13 +110,19 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     setImporting(false)
   }, [loadAll, t])
 
-  const sortedFolders = React.useMemo(() => [...folders].sort((a, b) => a.name.localeCompare(b.name)), [folders])
-  const sortedFeeds = React.useMemo(() => [...feeds].sort((a, b) => a.title.localeCompare(b.title)), [feeds])
+  const sortedFolders = React.useMemo(
+    () => [...folders].sort((a, b) => a.name.localeCompare(b.name)),
+    [folders]
+  )
+  const sortedFeeds = React.useMemo(
+    () => [...feeds].sort((a, b) => a.title.localeCompare(b.title)),
+    [feeds]
+  )
 
-  const unfiledFeeds = sortedFeeds.filter(f => !f.folderId || f.folderId === '')
+  const unfiledFeeds = sortedFeeds.filter((f) => !f.folderId || f.folderId === '')
 
   return (
-    <div className="sidebar" onContextMenu={e => e.preventDefault()}>
+    <div className="sidebar" onContextMenu={(e) => e.preventDefault()}>
       <div className="sidebar-scroll">
         {/* All Feeds */}
         <div
@@ -112,11 +154,11 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
         <div className="divider" />
 
         {/* Folders */}
-        {sortedFolders.map((folder, index) => (
+        {sortedFolders.map((folder) => (
           <React.Fragment key={folder.id}>
             <FolderSection
               folder={folder}
-              feeds={sortedFeeds.filter(f => f.folderId === folder.id)}
+              feeds={sortedFeeds.filter((f) => f.folderId === folder.id)}
               collapsed={collapsed.has(folder.id)}
               onToggle={toggleFolder}
               selectedFeedId={selectedFeedId}
@@ -124,18 +166,19 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               unreadCounts={unreadCounts}
               onContextMenu={(e, type, id) => {
                 e.preventDefault()
-                window.dispatchEvent(new CustomEvent('cyberfeeds:close-context-menus', { detail: 'sidebar' }))
+                window.dispatchEvent(
+                  new CustomEvent('cyberfeeds:close-context-menus', { detail: 'sidebar' })
+                )
                 setCtx({ x: e.clientX, y: e.clientY, type, id })
               }}
             />
-            {index < sortedFolders.length - 1 && <div className="folder-divider" />}
           </React.Fragment>
         ))}
 
         {/* Unfiled */}
         {unfiledFeeds.length > 0 && (
           <div style={{ marginTop: 8 }}>
-            {unfiledFeeds.map(feed => (
+            {unfiledFeeds.map((feed) => (
               <FeedItem
                 key={feed.id}
                 feed={feed}
@@ -144,7 +187,9 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 unread={unreadCounts[feed.id] || 0}
                 onContextMenu={(e, id) => {
                   e.preventDefault()
-                  window.dispatchEvent(new CustomEvent('cyberfeeds:close-context-menus', { detail: 'sidebar' }))
+                  window.dispatchEvent(
+                    new CustomEvent('cyberfeeds:close-context-menus', { detail: 'sidebar' })
+                  )
                   setCtx({ x: e.clientX, y: e.clientY, type: 'feed', id })
                 }}
               />
@@ -157,7 +202,10 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
       <div style={{ padding: '8px', borderTop: '1px solid var(--border-muted)', flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: 4 }}>
           {/* Toggle All Expand/Collapse */}
-          <Tooltip label={collapsed.size > 0 ? t.sidebar.expandAll : t.sidebar.collapseAll} placement="bottom">
+          <Tooltip
+            label={collapsed.size > 0 ? t.sidebar.expandAll : t.sidebar.collapseAll}
+            placement="bottom"
+          >
             <button
               className="add-feed-btn"
               style={{ flex: 0, padding: '6px 8px' }}
@@ -188,10 +236,11 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               onClick={handleImportOpml}
               disabled={importing}
             >
-              {importing
-                ? <div className="spinner" style={{ width: 12, height: 12 }} />
-                : <Upload size={13} />
-              }
+              {importing ? (
+                <div className="spinner" style={{ width: 12, height: 12 }} />
+              ) : (
+                <Upload size={13} />
+              )}
             </button>
           </Tooltip>
           <Tooltip label={t.sidebar.exportOpml} placement="bottom">
@@ -215,7 +264,15 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
         </div>
 
         {importMsg && (
-          <div style={{ fontSize: 11, color: 'var(--green)', textAlign: 'center', padding: '4px 0', marginTop: 2 }}>
+          <div
+            style={{
+              fontSize: 11,
+              color: 'var(--green)',
+              textAlign: 'center',
+              padding: '4px 0',
+              marginTop: 2
+            }}
+          >
             {importMsg}
           </div>
         )}
@@ -225,94 +282,134 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
         <div
           className="ctx-menu"
           style={{ left: ctx.x, top: Math.min(ctx.y, window.innerHeight - 160) }}
-          onClick={e => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
         >
           {ctx.type === 'feed' ? (
             <>
-              <div className="ctx-item" onClick={() => {
-                fetchFeed(ctx.id)
-                setCtx(null)
-              }}>
+              <div
+                className="ctx-item"
+                onClick={() => {
+                  fetchFeed(ctx.id)
+                  setCtx(null)
+                }}
+              >
                 <RefreshCw size={14} />
                 {t.sidebar.refreshFeed}
               </div>
-              <div className="ctx-item" onClick={() => {
-                openPanel('editFeed', ctx.id)
-                setCtx(null)
-              }}>
+              <div
+                className="ctx-item"
+                onClick={() => {
+                  openPanel('editFeed', ctx.id)
+                  setCtx(null)
+                }}
+              >
                 <Pencil size={14} />
                 {t.sidebar.editFeed}
               </div>
-              <div className="ctx-item" onClick={() => {
-                togglePauseFeed(ctx.id)
-                setCtx(null)
-              }}>
-                {feeds.find(f => f.id === ctx.id)?.disabled
-                  ? <><Play size={14} />{t.sidebar.resumeFeed}</>
-                  : <><Pause size={14} />{t.sidebar.pauseFeed}</>}
+              <div
+                className="ctx-item"
+                onClick={() => {
+                  togglePauseFeed(ctx.id)
+                  setCtx(null)
+                }}
+              >
+                {feeds.find((f) => f.id === ctx.id)?.disabled ? (
+                  <>
+                    <Play size={14} />
+                    {t.sidebar.resumeFeed}
+                  </>
+                ) : (
+                  <>
+                    <Pause size={14} />
+                    {t.sidebar.pauseFeed}
+                  </>
+                )}
               </div>
               <div className="ctx-divider" />
-              <div className="ctx-item danger" onClick={async () => {
-                const feed = feeds.find(f => f.id === ctx.id)
-                if (feed) {
-                  const confirmed = await confirm({
-                    title: t.sidebar.deleteFeedTitle,
-                    message: t.sidebar.deleteFeedMsg.replace('{title}', feed.title),
-                    confirmText: t.sidebar.delete,
-                    cancelText: t.sidebar.cancel,
-                    variant: 'danger'
-                  })
-                  if (confirmed) {
-                    await deleteFeed(ctx.id)
+              <div
+                className="ctx-item danger"
+                onClick={async () => {
+                  const feed = feeds.find((f) => f.id === ctx.id)
+                  if (feed) {
+                    const confirmed = await confirm({
+                      title: t.sidebar.deleteFeedTitle,
+                      message: t.sidebar.deleteFeedMsg.replace('{title}', feed.title),
+                      confirmText: t.sidebar.delete,
+                      cancelText: t.sidebar.cancel,
+                      variant: 'danger'
+                    })
+                    if (confirmed) {
+                      await deleteFeed(ctx.id)
+                    }
                   }
-                }
-                setCtx(null)
-              }}>
+                  setCtx(null)
+                }}
+              >
                 <Trash2 size={14} />
                 {t.sidebar.deleteFeed}
               </div>
             </>
           ) : (
             <>
-              <div className="ctx-item" onClick={() => {
-                fetchFolder(ctx.id)
-                setCtx(null)
-              }}>
+              <div
+                className="ctx-item"
+                onClick={() => {
+                  fetchFolder(ctx.id)
+                  setCtx(null)
+                }}
+              >
                 <RefreshCw size={14} />
                 {t.sidebar.refreshFolder}
               </div>
-              <div className="ctx-item" onClick={() => {
-                openPanel('editFolder', ctx.id)
-                setCtx(null)
-              }}>
+              <div
+                className="ctx-item"
+                onClick={() => {
+                  openPanel('editFolder', ctx.id)
+                  setCtx(null)
+                }}
+              >
                 <Pencil size={14} />
                 {t.sidebar.renameFolder}
               </div>
-              <div className="ctx-item" onClick={() => {
-                togglePauseFolder(ctx.id)
-                setCtx(null)
-              }}>
-                {feeds.filter(f => f.folderId === ctx.id)[0]?.disabled
-                  ? <><Play size={14} />{t.sidebar.resumeFolder}</>
-                  : <><Pause size={14} />{t.sidebar.pauseFolder}</>}
+              <div
+                className="ctx-item"
+                onClick={() => {
+                  togglePauseFolder(ctx.id)
+                  setCtx(null)
+                }}
+              >
+                {feeds.filter((f) => f.folderId === ctx.id)[0]?.disabled ? (
+                  <>
+                    <Play size={14} />
+                    {t.sidebar.resumeFolder}
+                  </>
+                ) : (
+                  <>
+                    <Pause size={14} />
+                    {t.sidebar.pauseFolder}
+                  </>
+                )}
               </div>
               <div className="ctx-divider" />
-              <div className="ctx-item danger" onClick={async () => {
-                const folder = folders.find(f => f.id === ctx.id)
-                if (folder) {
-                  const confirmed = await confirm({
-                    title: t.sidebar.deleteFolderTitle,
-                    message: t.sidebar.deleteFolderMsg.replace('{name}', folder.name),
-                    confirmText: t.sidebar.delete,
-                    cancelText: t.sidebar.cancel,
-                    variant: 'danger'
-                  })
-                  if (confirmed) {
-                    await deleteFolder(ctx.id)
+              <div
+                className="ctx-item danger"
+                onClick={async () => {
+                  const folder = folders.find((f) => f.id === ctx.id)
+                  if (folder) {
+                    const confirmed = await confirm({
+                      title: t.sidebar.deleteFolderTitle,
+                      message: t.sidebar.deleteFolderMsg.replace('{name}', folder.name),
+                      confirmText: t.sidebar.delete,
+                      cancelText: t.sidebar.cancel,
+                      variant: 'danger'
+                    })
+                    if (confirmed) {
+                      await deleteFolder(ctx.id)
+                    }
                   }
-                }
-                setCtx(null)
-              }}>
+                  setCtx(null)
+                }}
+              >
                 <Trash2 size={14} />
                 {t.sidebar.deleteFolder}
               </div>
@@ -347,37 +444,40 @@ interface FolderSectionProps {
 }
 
 const FolderSection = memo(function FolderSection({
-  folder, feeds, collapsed, onToggle, selectedFeedId, onSelect, unreadCounts, onContextMenu
+  folder,
+  feeds,
+  collapsed,
+  onToggle,
+  selectedFeedId,
+  onSelect,
+  unreadCounts,
+  onContextMenu
 }: FolderSectionProps) {
   const folderUnread = feeds.reduce((sum, f) => sum + (unreadCounts[f.id] || 0), 0)
 
   return (
     <div>
-      <div className="folder-header"
+      <div
+        className="folder-header"
         onClick={() => onToggle(folder.id)}
         onContextMenu={(e) => onContextMenu(e, 'folder', folder.id)}
       >
         {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-        <span className="folder-name">
-          {folder.name}
-        </span>
-        {folderUnread > 0 && (
-          <div className="cyber-badge folder-badge">
-            {folderUnread}
-          </div>
-        )}
+        <span className="folder-name">{folder.name}</span>
+        {folderUnread > 0 && <div className="cyber-badge folder-badge">{folderUnread}</div>}
       </div>
-      {!collapsed && feeds.map(feed => (
-        <FeedItem
-          key={feed.id}
-          feed={feed}
-          selected={selectedFeedId === feed.id}
-          onSelect={onSelect}
-          unread={unreadCounts[feed.id] || 0}
-          onContextMenu={(e, id) => onContextMenu(e, 'feed', id)}
-          indent
-        />
-      ))}
+      {!collapsed &&
+        feeds.map((feed) => (
+          <FeedItem
+            key={feed.id}
+            feed={feed}
+            selected={selectedFeedId === feed.id}
+            onSelect={onSelect}
+            unread={unreadCounts[feed.id] || 0}
+            onContextMenu={(e, id) => onContextMenu(e, 'feed', id)}
+            indent
+          />
+        ))}
     </div>
   )
 })
@@ -391,31 +491,49 @@ interface FeedItemProps {
   indent?: boolean
 }
 
-const FeedItem = memo(function FeedItem({ feed, selected, onSelect, onContextMenu, unread, indent }: FeedItemProps) {
-    const { t } = useTranslation()
-    return (
-      <Tooltip label={feed.title + (feed.disabled ? ` (${t.articleList.paused.toLowerCase()})` : "")} placement="right">
-        <div
-          className={`sidebar-item ${selected ? 'active' : ''} ${feed.disabled ? 'paused' : ''}`}
-          style={indent ? { paddingLeft: 24 } : undefined}
-          onClick={() => onSelect(feed.id)}
-          onContextMenu={e => onContextMenu?.(e, feed.id)}
+const FeedItem = memo(function FeedItem({
+  feed,
+  selected,
+  onSelect,
+  onContextMenu,
+  unread,
+  indent
+}: FeedItemProps) {
+  const { t } = useTranslation()
+  return (
+    <Tooltip
+      label={feed.title + (feed.disabled ? ` (${t.articleList.paused.toLowerCase()})` : '')}
+      placement="right"
+    >
+      <div
+        className={`sidebar-item ${selected ? 'active' : ''} ${feed.disabled ? 'paused' : ''}`}
+        style={indent ? { paddingLeft: 24 } : undefined}
+        onClick={() => onSelect(feed.id)}
+        onContextMenu={(e) => onContextMenu?.(e, feed.id)}
+      >
+        {/* Favicon BEFORE title, with colored letter fallback */}
+        <div style={{ opacity: feed.disabled ? 0.5 : 1 }}>
+          <FeedFavicon icon={feed.icon} title={feed.title} size={15} />
+        </div>
+        <span
+          className="item-label"
+          style={{
+            fontStyle: feed.disabled ? 'italic' : 'normal',
+            opacity: feed.disabled ? 0.6 : 1
+          }}
         >
-      {/* Favicon BEFORE title, with colored letter fallback */}
-      <div style={{ opacity: feed.disabled ? 0.5 : 1 }}>
-        <FeedFavicon icon={feed.icon} title={feed.title} size={15} />
+          {feed.title}
+        </span>
+        {unread > 0 && (
+          <div
+            className="cyber-badge"
+            style={{ fontSize: 9, padding: '1px 4px', opacity: feed.disabled ? 0.5 : 1 }}
+          >
+            {unread}
+          </div>
+        )}
       </div>
-      <span className="item-label" style={{ 
-        fontStyle: feed.disabled ? 'italic' : 'normal',
-        opacity: feed.disabled ? 0.6 : 1
-      }}>{feed.title}</span>
-      {unread > 0 && (
-        <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px', opacity: feed.disabled ? 0.5 : 1 }}>
-          {unread}
-        </div>
-      )}
-        </div>
-      </Tooltip>
+    </Tooltip>
   )
 })
 
