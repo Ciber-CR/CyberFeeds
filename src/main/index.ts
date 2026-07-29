@@ -1,7 +1,14 @@
 import { app, BrowserWindow, shell, screen, ipcMain } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
-import { initDb, getSettings, getWindowState, saveWindowState, backfillFavicons, cleanupOldArticles } from './db'
+import {
+  initDb,
+  getSettings,
+  getWindowState,
+  saveWindowState,
+  backfillFavicons,
+  cleanupOldArticles
+} from './db'
 import { startPolling, setOnNewArticles } from './polling'
 import { registerIpc, setAutoStart } from './ipc'
 import { initUpdater } from './updater'
@@ -165,14 +172,26 @@ function createMainWindow(): BrowserWindow {
 
     if (startHidden) {
       // Brief invisible show/hide initializes renderer context for tray startup
-      try { win.setOpacity(0) } catch { /* ignore */ }
+      try {
+        win.setOpacity(0)
+      } catch {
+        /* ignore */
+      }
       win.show()
       win.hide()
-      try { win.setOpacity(1) } catch { /* ignore */ }
+      try {
+        win.setOpacity(1)
+      } catch {
+        /* ignore */
+      }
       return
     }
 
-    try { win.setOpacity(0) } catch { /* ignore */ }
+    try {
+      win.setOpacity(0)
+    } catch {
+      /* ignore */
+    }
 
     // Place on the resolved startup display (keeps last-used monitor)
     try {
@@ -220,7 +239,11 @@ function createMainWindow(): BrowserWindow {
     // Two ticks: let Chromium/DWM composite the dark frame before becoming visible
     setTimeout(() => {
       if (win.isDestroyed()) return
-      try { win.setOpacity(1) } catch { /* ignore */ }
+      try {
+        win.setOpacity(1)
+      } catch {
+        /* ignore */
+      }
     }, 32)
   }
 
@@ -256,8 +279,12 @@ function createMainWindow(): BrowserWindow {
 
   win.on('move', schedulePersist)
   win.on('resize', schedulePersist)
-  win.on('maximize', () => persistMainWindowState(win))
+  win.on('maximize', () => {
+    persistMainWindowState(win)
+    win.webContents.send('window:maximized-change', true)
+  })
   win.on('unmaximize', () => {
+    win.webContents.send('window:maximized-change', false)
     // Re-clamp after unmaximize — Windows/DPI often restores oversized bounds
     setTimeout(() => {
       if (!win || win.isDestroyed() || win.isMaximized()) return
@@ -296,7 +323,7 @@ app.whenReady().then(() => {
   if (!gotTheLock) return
 
   initDb()
-  backfillFavicons()  // Assign Google S2 favicon URLs to any feeds missing icons
+  backfillFavicons() // Assign Google S2 favicon URLs to any feeds missing icons
   const settings = getSettings()
 
   registerIpc()
@@ -357,5 +384,9 @@ app.on('activate', () => {
 
 // Window controls
 ipcMain.on('window:minimize', () => mainWindow?.minimize())
-ipcMain.on('window:maximize', () => { if (mainWindow?.isMaximized()) mainWindow.unmaximize(); else mainWindow?.maximize() })
+ipcMain.on('window:maximize', () => {
+  if (mainWindow?.isMaximized()) mainWindow.unmaximize()
+  else mainWindow?.maximize()
+})
 ipcMain.on('window:close', () => mainWindow?.close())
+ipcMain.handle('window:is-maximized', () => (mainWindow ? mainWindow.isMaximized() : false))
