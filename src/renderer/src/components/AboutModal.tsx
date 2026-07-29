@@ -7,6 +7,7 @@ import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
 import { useTranslation } from '../hooks/useTranslation'
 import { useOverlayDismiss } from '../hooks/useOverlayDismiss'
+import Tooltip from './Tooltip'
 
 const REPO_URL = 'https://github.com/CyberGems/CyberFeeds'
 
@@ -125,15 +126,16 @@ export default function AboutModal(): JSX.Element {
       >
         <div className="modal-header" style={{ border: 'none', padding: '16px 16px 0', flexShrink: 0 }}>
           <div style={{ flex: 1 }} />
-          <button
-            type="button"
-            className="btn btn-ghost btn-icon"
-            onClick={handleClose}
-            title={t.about.close}
-            aria-label={t.about.close}
-          >
-            <X size={16} />
-          </button>
+          <Tooltip label={t.about.close} placement="left">
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon"
+              onClick={handleClose}
+              aria-label={t.about.close}
+            >
+              <X size={16} />
+            </button>
+          </Tooltip>
         </div>
 
         <div className="modal-body about-modal-body" style={{ textAlign: 'center', padding: '0 28px 20px', overflowY: 'auto' }}>
@@ -213,16 +215,17 @@ export default function AboutModal(): JSX.Element {
                 <span>{t.about.openFolder}</span>
               </button>
 
-              <button
-                type="button"
-                className={`btn btn-secondary about-action-btn about-diag-btn${diagCopied ? ' is-copied' : ''}`}
-                onClick={handleCopyDiagnostics}
-                disabled={!versions}
-                title={diagCopied ? t.about.diagnosticsCopied : t.about.copyDiagnostics}
-              >
-                {diagCopied ? <Check size={14} /> : <ClipboardCopy size={14} />}
-                <span>{diagCopied ? t.about.diagnosticsCopied : t.about.copyDiagnostics}</span>
-              </button>
+              <Tooltip label={diagCopied ? t.about.diagnosticsCopied : t.about.copyDiagnostics} placement="bottom">
+                <button
+                  type="button"
+                  className={`btn btn-secondary about-action-btn about-diag-btn${diagCopied ? ' is-copied' : ''}`}
+                  onClick={handleCopyDiagnostics}
+                  disabled={!versions}
+                >
+                  {diagCopied ? <Check size={14} /> : <ClipboardCopy size={14} />}
+                  <span>{diagCopied ? t.about.diagnosticsCopied : t.about.copyDiagnostics}</span>
+                </button>
+              </Tooltip>
 
               <label className="toggle about-auto-update">
                 <div
@@ -242,36 +245,39 @@ export default function AboutModal(): JSX.Element {
             © CyberGems • 2026
           </div>
           <div className="about-footer-links">
-            <button
-              type="button"
-              className="btn btn-ghost btn-icon"
-              style={{ width: 28, height: 28, color: 'inherit' }}
-              onClick={() => window.api.openExternal(REPO_URL)}
-              title={t.about.githubTooltip}
-              aria-label={t.about.githubTooltip}
-            >
-              <Github size={14} />
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-icon"
-              style={{ width: 28, height: 28, color: 'inherit' }}
-              onClick={() => window.api.openExternal(`${REPO_URL}/issues`)}
-              title={t.about.issuesTooltip}
-              aria-label={t.about.issuesTooltip}
-            >
-              <CircleDot size={14} />
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-icon"
-              style={{ width: 28, height: 28, color: 'inherit' }}
-              onClick={() => window.api.openExternal(`${REPO_URL}/releases`)}
-              title={t.about.releasesTooltip}
-              aria-label={t.about.releasesTooltip}
-            >
-              <Tag size={14} />
-            </button>
+            <Tooltip label={t.about.githubTooltip} placement="top">
+              <button
+                type="button"
+                className="btn btn-ghost btn-icon"
+                style={{ width: 28, height: 28, color: 'inherit' }}
+                onClick={() => window.api.openExternal(REPO_URL)}
+                aria-label={t.about.githubTooltip}
+              >
+                <Github size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip label={t.about.issuesTooltip} placement="top">
+              <button
+                type="button"
+                className="btn btn-ghost btn-icon"
+                style={{ width: 28, height: 28, color: 'inherit' }}
+                onClick={() => window.api.openExternal(`${REPO_URL}/issues`)}
+                aria-label={t.about.issuesTooltip}
+              >
+                <CircleDot size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip label={t.about.releasesTooltip} placement="top">
+              <button
+                type="button"
+                className="btn btn-ghost btn-icon"
+                style={{ width: 28, height: 28, color: 'inherit' }}
+                onClick={() => window.api.openExternal(`${REPO_URL}/releases`)}
+                aria-label={t.about.releasesTooltip}
+              >
+                <Tag size={14} />
+              </button>
+            </Tooltip>
           </div>
         </div>
       </div>

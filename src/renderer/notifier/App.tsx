@@ -2,6 +2,7 @@ import { useEffect, useReducer, useRef, useState, useCallback } from 'react'
 import { X, ExternalLink, ChevronDown, Bell } from 'lucide-react'
 import type { NotificationHistoryItem, NotificationSettings } from '@shared/types'
 import { translations } from '@shared/translations'
+import Tooltip from '../src/components/Tooltip'
 
 const SNOOZE_LABELS: Record<number, string> = {
   15: '15m',
@@ -45,11 +46,13 @@ interface State {
 type Action =
   | { type: 'SET_STACK'; stack: NotificationHistoryItem[]; settings: NotificationSettings; unseenCount: number }
   | { type: 'DISMISS'; id: string }
+  | { type: 'CLEAR' }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET_STACK': return { stack: action.stack, settings: action.settings, unseenCount: action.unseenCount }
     case 'DISMISS': return { ...state, stack: state.stack.filter(n => n.id !== action.id) }
+    case 'CLEAR': return { ...state, stack: [] }
     default: return state
   }
 }
@@ -95,6 +98,21 @@ export default function NotifierApp(): JSX.Element {
       if (language) setLang(language)
     })
     return unsub
+  }, [])
+
+  // When the popup window is hidden (auto-hide, dismiss-all, snooze, open-in-app,
+  // open-history, ...) the main process clears its displayStack but never sends
+  // an empty stack here (pushToWindow() early-returns on empty). The renderer
+  // would otherwise keep the previous batch painted and briefly flash it again
+  // the next time the window is shown, before the new stack arrives. Reset our
+  // local stack as soon as the window becomes hidden so the next showing always
+  // starts from a clean (transparent) state.
+  useEffect(() => {
+    const handleVisibility = (): void => {
+      if (document.visibilityState === 'hidden') dispatch({ type: 'CLEAR' })
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [])
 
   // Re-check scroll state whenever the stack changes
@@ -168,40 +186,42 @@ export default function NotifierApp(): JSX.Element {
       {/* Clear & See History — fixed at top, always accessible */}
       {state.stack.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: 4, paddingRight: Math.max(scrollbarW, 16) + 4, paddingBottom: 4, flexShrink: 0 }}>
-          <button
-            className="clear-all-btn"
-            style={{
-              marginRight: 'auto',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              backgroundColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(30,30,46,0.92)',
-              borderColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(255,255,255,0.18)',
-              color: historyHovered ? '#0d1117' : '#ccc'
-            }}
-            onMouseEnter={() => setHistoryHovered(true)}
-            onMouseLeave={() => setHistoryHovered(false)}
-            onClick={(e) => { e.stopPropagation(); window.api.openHistoryInApp() }}
-            title={t.notifier.historyTooltip}
-          >
-            <Bell size={12} style={{ flexShrink: 0 }} />
-            {t.notifier.history}
-            {state.unseenCount > 0 && (
-              <span style={{
-                fontWeight: 700,
-                color: historyHovered ? '#0d1117' : 'var(--accent, #bd93f9)'
-              }}>
-                {state.unseenCount > 99 ? '99+' : state.unseenCount}
-              </span>
-            )}
-          </button>
-          <button
-            className="clear-all-btn"
-            onClick={(e) => { e.stopPropagation(); window.api.clearAllNotifications() }}
-            title={state.stack.length > 1 ? t.notifier.closeAllTooltip : t.notifier.closeTooltip}
-          >
-            ✕ {state.stack.length > 1 ? t.notifier.closeAll : t.notifier.close}
-          </button>
+          <Tooltip label={t.notifier.historyTooltip} placement="bottom">
+            <button
+              className="clear-all-btn"
+              style={{
+                marginRight: 'auto',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                backgroundColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(30,30,46,0.92)',
+                borderColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(255,255,255,0.18)',
+                color: historyHovered ? '#0d1117' : '#ccc'
+              }}
+              onMouseEnter={() => setHistoryHovered(true)}
+              onMouseLeave={() => setHistoryHovered(false)}
+              onClick={(e) => { e.stopPropagation(); window.api.openHistoryInApp() }}
+            >
+              <Bell size={12} style={{ flexShrink: 0 }} />
+              {t.notifier.history}
+              {state.unseenCount > 0 && (
+                <span style={{
+                  fontWeight: 700,
+                  color: historyHovered ? '#0d1117' : 'var(--accent, #bd93f9)'
+                }}>
+                  {state.unseenCount > 99 ? '99+' : state.unseenCount}
+                </span>
+              )}
+            </button>
+          </Tooltip>
+          <Tooltip label={state.stack.length > 1 ? t.notifier.closeAllTooltip : t.notifier.closeTooltip} placement="bottom">
+            <button
+              className="clear-all-btn"
+              onClick={(e) => { e.stopPropagation(); window.api.clearAllNotifications() }}
+            >
+              ✕ {state.stack.length > 1 ? t.notifier.closeAll : t.notifier.close}
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -223,7 +243,8 @@ export default function NotifierApp(): JSX.Element {
         }}
       >
         {state.stack.map(item => (
-          <div key={item.id} className="notif-card" onClick={() => handleOpen(item)} title={cardOpenTooltip}>
+          <Tooltip label={cardOpenTooltip} placement="bottom">
+            <div key={item.id} className="notif-card" onClick={() => handleOpen(item)}>
             {item.thumbnail && state.settings?.showThumbnails && (
               <div className="notif-thumbnail">
                 <img
@@ -251,82 +272,94 @@ export default function NotifierApp(): JSX.Element {
                   {(item.feedName || 'F').charAt(0).toUpperCase()}
                 </span>
               )}
-              <span className="notif-feed" title={item.feedName}>{item.feedName}</span>
-              <button
-                className="notif-close"
-                onClick={e => { e.stopPropagation(); handleDismiss(item.id) }}
-                title={t.notifier.dismissTooltip}
-              >
-                <X size={12} />
-              </button>
+              <Tooltip label={item.feedName} placement="top">
+                <span className="notif-feed">{item.feedName}</span>
+              </Tooltip>
+              <Tooltip label={t.notifier.dismissTooltip} placement="bottom">
+                <button
+                  className="notif-close"
+                  onClick={e => { e.stopPropagation(); handleDismiss(item.id) }}
+                >
+                  <X size={12} />
+                </button>
+              </Tooltip>
             </div>
             <div className="notif-title">{item.title}</div>
             {item.body && <div className="notif-body" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.body}</div>}
             <div className="notif-actions" onClick={e => e.stopPropagation()}>
-              <button
-                className="notif-btn"
-                onClick={() => { window.api.markNotificationRead(item.articleId || ''); handleDismiss(item.id) }}
-                title={t.notifier.markReadTooltip}
-              >
-                {t.notifier.markRead}
-              </button>
-              <button
-                className="notif-btn"
-                onClick={() => { window.api.snoozeNotifications(snoozeMinutes) }}
-                title={snoozeTooltip}
-              >
-                {snoozeText}
-              </button>
-              {item.feedId && (
-                <button className="notif-btn" onClick={() => handleViewInApp(item)} title={t.notifier.viewTooltip}>
-                  {t.notifier.view}
+              <Tooltip label={t.notifier.markReadTooltip} placement="bottom">
+                <button
+                  className="notif-btn"
+                  onClick={() => { window.api.markNotificationRead(item.articleId || ''); handleDismiss(item.id) }}
+                >
+                  {t.notifier.markRead}
                 </button>
+              </Tooltip>
+              <Tooltip label={snoozeTooltip} placement="bottom">
+                <button
+                  className="notif-btn"
+                  onClick={() => { window.api.snoozeNotifications(snoozeMinutes) }}
+                >
+                  {snoozeText}
+                </button>
+              </Tooltip>
+              {item.feedId && (
+                <Tooltip label={t.notifier.viewTooltip} placement="bottom">
+                  <button className="notif-btn" onClick={() => handleViewInApp(item)}>
+                    {t.notifier.view}
+                  </button>
+                </Tooltip>
               )}
               {item.link && (
-                <button className="notif-btn" onClick={() => handleOpenInBrowser(item)} title={t.notifier.openTooltip}>
-                  <ExternalLink size={10} style={{ display: 'inline', marginRight: 2 }} />
-                  {t.notifier.open}
-                </button>
+                <Tooltip label={t.notifier.openTooltip} placement="bottom">
+                  <button className="notif-btn" onClick={() => handleOpenInBrowser(item)}>
+                    <ExternalLink size={10} style={{ display: 'inline', marginRight: 2 }} />
+                    {t.notifier.open}
+                  </button>
+                </Tooltip>
               )}
-              <span
-                className="notif-time"
-                title={t.notifier.receivedAt.replace('{time}', formatAbsoluteTime(item.createdAt, lang))}
-              >
-                {formatReceivedAt(item.createdAt, t)}
-              </span>
+              <Tooltip label={t.notifier.receivedAt.replace('{time}', formatAbsoluteTime(item.createdAt, lang))} placement="bottom">
+                <span
+                  className="notif-time"
+                >
+                  {formatReceivedAt(item.createdAt, t)}
+                </span>
+              </Tooltip>
             </div>
-          </div>
+            </div>
+          </Tooltip>
         ))}
       </div>
       {/* "More" floating indicator */}
       {showMoreIndicator && (
-        <div
-          onClick={scrollToBottom}
-          title={t.notifier.moreTooltip}
-          style={{
-            position: 'absolute',
-            bottom: 8,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'rgba(0, 170, 255, 0.65)',
-            border: '1px solid rgba(0, 170, 255, 0.5)',
-            borderRadius: 12,
-            padding: '3px 12px',
-            fontSize: 10,
-            color: '#ffffff',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            zIndex: 10,
-            backdropFilter: 'blur(8px)',
-            transition: 'opacity 0.2s',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
-          }}
-        >
-          <ChevronDown size={10} />
-          {overflowCount} {t.notifier.more}
-        </div>
+        <Tooltip label={t.notifier.moreTooltip} placement="bottom">
+          <div
+            onClick={scrollToBottom}
+            style={{
+              position: 'absolute',
+              bottom: 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(0, 170, 255, 0.65)',
+              border: '1px solid rgba(0, 170, 255, 0.5)',
+              borderRadius: 12,
+              padding: '3px 12px',
+              fontSize: 10,
+              color: '#ffffff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              zIndex: 10,
+              backdropFilter: 'blur(8px)',
+              transition: 'opacity 0.2s',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+            }}
+          >
+            <ChevronDown size={10} />
+            {overflowCount} {t.notifier.more}
+          </div>
+        </Tooltip>
       )}
     </div>
   )

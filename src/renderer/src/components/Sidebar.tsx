@@ -7,6 +7,7 @@ import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import type { Feed, Folder } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
+import Tooltip from './Tooltip'
 
 const Sidebar = memo(function Sidebar(): JSX.Element {
   const { feeds, folders, unreadCounts, loadAll, deleteFeed, fetchFeed, fetchFolder, togglePauseFeed, togglePauseFolder, deleteFolder } = useFeedsStore()
@@ -156,56 +157,61 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
       <div style={{ padding: '8px', borderTop: '1px solid var(--border-muted)', flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: 4 }}>
           {/* Toggle All Expand/Collapse */}
-          <button
-            className="add-feed-btn"
-            style={{ flex: 0, padding: '6px 8px' }}
-            onClick={toggleAll}
-            title={collapsed.size > 0 ? t.sidebar.expandAll : t.sidebar.collapseAll}
-          >
-            {collapsed.size > 0 ? <ChevronsUpDown size={13} /> : <ChevronsDownUp size={13} />}
-          </button>
+          <Tooltip label={collapsed.size > 0 ? t.sidebar.expandAll : t.sidebar.collapseAll} placement="bottom">
+            <button
+              className="add-feed-btn"
+              style={{ flex: 0, padding: '6px 8px' }}
+              onClick={toggleAll}
+            >
+              {collapsed.size > 0 ? <ChevronsUpDown size={13} /> : <ChevronsDownUp size={13} />}
+            </button>
+          </Tooltip>
 
-          <button
-            className="add-feed-btn"
-            style={{ flex: 0, padding: '6px 8px' }}
-            onClick={handleAddFolder}
-            title={t.sidebar.newFolder}
-          >
-            <FolderPlus size={13} />
-          </button>
+          <Tooltip label={t.sidebar.newFolder} placement="bottom">
+            <button
+              className="add-feed-btn"
+              style={{ flex: 0, padding: '6px 8px' }}
+              onClick={handleAddFolder}
+            >
+              <FolderPlus size={13} />
+            </button>
+          </Tooltip>
 
           <button className="add-feed-btn" style={{ flex: 1 }} onClick={() => openPanel('addFeed')}>
             <Plus size={13} />
             {t.sidebar.addFeed}
           </button>
-          <button
-            className="add-feed-btn"
-            style={{ flex: 0, padding: '6px 8px' }}
-            onClick={handleImportOpml}
-            disabled={importing}
-            title={t.sidebar.importOpml}
-          >
-            {importing
-              ? <div className="spinner" style={{ width: 12, height: 12 }} />
-              : <Upload size={13} />
-            }
-          </button>
-          <button
-            className="add-feed-btn"
-            style={{ flex: 0, padding: '6px 8px' }}
-            onClick={() => window.api.exportOpml()}
-            title={t.sidebar.exportOpml}
-          >
-            <Download size={13} />
-          </button>
-          <button
-            className="add-feed-btn"
-            style={{ flex: 0, padding: '6px 8px' }}
-            onClick={() => openPanel('doctor')}
-            title={t.sidebar.feedsDoctor}
-          >
-            <Stethoscope size={13} />
-          </button>
+          <Tooltip label={t.sidebar.importOpml} placement="bottom">
+            <button
+              className="add-feed-btn"
+              style={{ flex: 0, padding: '6px 8px' }}
+              onClick={handleImportOpml}
+              disabled={importing}
+            >
+              {importing
+                ? <div className="spinner" style={{ width: 12, height: 12 }} />
+                : <Upload size={13} />
+              }
+            </button>
+          </Tooltip>
+          <Tooltip label={t.sidebar.exportOpml} placement="bottom">
+            <button
+              className="add-feed-btn"
+              style={{ flex: 0, padding: '6px 8px' }}
+              onClick={() => window.api.exportOpml()}
+            >
+              <Download size={13} />
+            </button>
+          </Tooltip>
+          <Tooltip label={t.sidebar.feedsDoctor} placement="bottom">
+            <button
+              className="add-feed-btn"
+              style={{ flex: 0, padding: '6px 8px' }}
+              onClick={() => openPanel('doctor')}
+            >
+              <Stethoscope size={13} />
+            </button>
+          </Tooltip>
         </div>
 
         {importMsg && (
@@ -388,13 +394,13 @@ interface FeedItemProps {
 const FeedItem = memo(function FeedItem({ feed, selected, onSelect, onContextMenu, unread, indent }: FeedItemProps) {
     const { t } = useTranslation()
     return (
-      <div
-        className={`sidebar-item ${selected ? 'active' : ''} ${feed.disabled ? 'paused' : ''}`}
-        style={indent ? { paddingLeft: 24 } : undefined}
-        onClick={() => onSelect(feed.id)}
-        onContextMenu={e => onContextMenu?.(e, feed.id)}
-        title={feed.title + (feed.disabled ? ` (${t.articleList.paused.toLowerCase()})` : '')}
-      >
+      <Tooltip label={feed.title + (feed.disabled ? ` (${t.articleList.paused.toLowerCase()})` : "")} placement="right">
+        <div
+          className={`sidebar-item ${selected ? 'active' : ''} ${feed.disabled ? 'paused' : ''}`}
+          style={indent ? { paddingLeft: 24 } : undefined}
+          onClick={() => onSelect(feed.id)}
+          onContextMenu={e => onContextMenu?.(e, feed.id)}
+        >
       {/* Favicon BEFORE title, with colored letter fallback */}
       <div style={{ opacity: feed.disabled ? 0.5 : 1 }}>
         <FeedFavicon icon={feed.icon} title={feed.title} size={15} />
@@ -408,7 +414,8 @@ const FeedItem = memo(function FeedItem({ feed, selected, onSelect, onContextMen
           {unread}
         </div>
       )}
-    </div>
+        </div>
+      </Tooltip>
   )
 })
 
