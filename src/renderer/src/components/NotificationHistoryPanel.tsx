@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
-import { X, Bell, Trash2 } from 'lucide-react'
+import { X, Bell, Trash2, ExternalLink } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
+import { useArticlesStore } from '../store/articles.store'
 import type { NotificationHistoryItem } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import Tooltip from './Tooltip'
 
-function timeAgo(ts: number, t: any): string {
+import { translations } from '@shared/translations'
+
+function timeAgo(ts: number, t: typeof translations.en): string {
   const d = (Date.now() - ts) / 1000
   const formatTimeAgo = (val: number, str: string): string =>
     str.includes('{num}') ? str.replace('{num}', String(val)) : `${val}${str}`
@@ -17,14 +20,22 @@ function timeAgo(ts: number, t: any): string {
   return formatTimeAgo(Math.round(d / 86400), t.articleList.timeAgo.dAgo)
 }
 
+function formatAbsoluteTime(ts: number, locale: string): string {
+  return new Date(ts).toLocaleString(locale === 'es' ? 'es' : undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  })
+}
+
 let lastCheckedBackup: number | null = null
 
 export default function NotificationHistoryPanel(): JSX.Element {
   const { closePanel, selectArticle, selectFeed } = useUIStore()
   const { settings } = useSettingsStore()
+  const { markRead } = useArticlesStore()
   const [history, setHistory] = useState<NotificationHistoryItem[]>([])
   const [lastCheckedTime, setLastCheckedTime] = useState(0)
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   useEffect(() => {
     window.api.getNotificationHistory().then(setHistory)
@@ -60,12 +71,12 @@ export default function NotificationHistoryPanel(): JSX.Element {
   const renderItem = (item: NotificationHistoryItem, isNew: boolean): JSX.Element => (
     <div
       key={item.id}
+      className="notif-card"
       style={{
-        padding: '10px 0',
-        borderBottom: '1px solid var(--border-muted)',
-        cursor: 'pointer',
         opacity: isNew ? 1 : 0.65,
-        transition: 'opacity 0.2s'
+        cursor: 'pointer',
+        transition: 'opacity 0.2s, border-color 0.15s',
+        marginBottom: 8
       }}
       onClick={() => {
         if (settings.notifications.openBehavior === 'browser') {
@@ -77,12 +88,30 @@ export default function NotificationHistoryPanel(): JSX.Element {
         }
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+      {item.thumbnail && settings.showArticleThumbnails && (
+        <div className="notif-thumbnail">
+          <img
+            src={item.thumbnail}
+            alt=""
+            loading="lazy"
+            onError={(e) => {
+              ;(e.target as HTMLImageElement).parentElement!.style.display = 'none'
+            }}
+          />
+        </div>
+      )}
+      <div className="notif-header">
         {item.icon ? (
           <img
             src={item.icon}
             alt=""
-            style={{ width: 14, height: 14, borderRadius: 3, objectFit: 'contain', flexShrink: 0 }}
+            style={{
+              width: 15,
+              height: 15,
+              borderRadius: 3,
+              objectFit: 'contain',
+              flexShrink: 0
+            }}
             onError={(e) => {
               ;(e.target as HTMLImageElement).style.display = 'none'
             }}
@@ -90,14 +119,14 @@ export default function NotificationHistoryPanel(): JSX.Element {
         ) : (
           <span
             style={{
-              width: 14,
-              height: 14,
+              width: 15,
+              height: 15,
               borderRadius: 3,
               background: 'var(--accent)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 8,
+              fontSize: 9,
               fontWeight: 700,
               color: '#0d1117',
               flexShrink: 0
@@ -106,28 +135,76 @@ export default function NotificationHistoryPanel(): JSX.Element {
             {(item.feedName || 'F').charAt(0).toUpperCase()}
           </span>
         )}
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: isNew ? 600 : 500,
-            color: isNew ? 'var(--accent)' : 'var(--text-secondary)'
-          }}
-        >
-          {item.feedName}
-        </span>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
-          {timeAgo(item.createdAt, t)}
-        </span>
+        <div style={{ flex: 1, minWidth: 0, display: 'inline-flex' }}>
+          <Tooltip label={item.feedName} placement="top">
+            <span className="notif-feed" style={{ flex: '0 1 auto' }}>
+              {item.feedName}
+            </span>
+          </Tooltip>
+        </div>
       </div>
-      <div
-        style={{
-          fontSize: 15,
-          color: isNew ? 'var(--text-primary)' : 'var(--text-secondary)',
-          fontWeight: isNew ? 600 : 400,
-          lineHeight: 1.4
-        }}
-      >
-        {item.title}
+      <div className="notif-content-wrap">
+        <div className="notif-title" style={{ fontSize: 13, fontWeight: 600 }}>
+          {item.title}
+        </div>
+        {item.body && (
+          <div
+            className="notif-body"
+            style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              marginTop: 2
+            }}
+          >
+            {item.body}
+          </div>
+        )}
+      </div>
+      <div className="notif-actions" onClick={(e) => e.stopPropagation()}>
+        {item.articleId && (
+          <Tooltip label={t.notifier.markReadTooltip} placement="bottom">
+            <button
+              className="notif-btn"
+              onClick={() => {
+                markRead(item.articleId!, true)
+              }}
+            >
+              {t.notifier.markRead}
+            </button>
+          </Tooltip>
+        )}
+        {item.feedId && (
+          <Tooltip label={t.notifier.viewTooltip} placement="bottom">
+            <button
+              className="notif-btn"
+              onClick={() => {
+                if (item.feedId) selectFeed(item.feedId)
+                if (item.articleId) selectArticle(item.articleId)
+                closePanel()
+              }}
+            >
+              {t.notifier.view}
+            </button>
+          </Tooltip>
+        )}
+        {item.link && (
+          <Tooltip label={t.notifier.openTooltip} placement="bottom">
+            <button className="notif-btn" onClick={() => window.api.openExternal(item.link)}>
+              <ExternalLink size={10} style={{ display: 'inline', marginRight: 2 }} />
+              {t.notifier.open}
+            </button>
+          </Tooltip>
+        )}
+        <Tooltip
+          label={t.notifier.receivedAt.replace(
+            '{time}',
+            formatAbsoluteTime(item.createdAt, language)
+          )}
+          placement="bottom"
+        >
+          <span className="notif-time">{timeAgo(item.createdAt, t)}</span>
+        </Tooltip>
       </div>
     </div>
   )
