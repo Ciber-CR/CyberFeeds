@@ -437,9 +437,9 @@ export const translations = {
       yesterday: 'Ayer',
       timeAgo: {
         justNow: 'hace un momento',
-        mAgo: 'm atrás',
-        hAgo: 'h atrás',
-        dAgo: 'd atrás'
+        mAgo: 'Hace {num}m',
+        hAgo: 'Hace {num}h',
+        dAgo: 'Hace {num}d'
       },
       contextMenu: {
         markAsRead: 'Marcar como leído',

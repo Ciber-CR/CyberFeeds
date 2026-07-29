@@ -8,10 +8,13 @@ import Tooltip from './Tooltip'
 
 function timeAgo(ts: number, t: any): string {
   const d = (Date.now() - ts) / 1000
+  const formatTimeAgo = (val: number, str: string): string =>
+    str.includes('{num}') ? str.replace('{num}', String(val)) : `${val}${str}`
+
   if (d < 60) return t.articleList.timeAgo.justNow
-  if (d < 3600) return `${Math.round(d / 60)}${t.articleList.timeAgo.mAgo}`
-  if (d < 86400) return `${Math.round(d / 3600)}${t.articleList.timeAgo.hAgo}`
-  return `${Math.round(d / 86400)}${t.articleList.timeAgo.dAgo}`
+  if (d < 3600) return formatTimeAgo(Math.round(d / 60), t.articleList.timeAgo.mAgo)
+  if (d < 86400) return formatTimeAgo(Math.round(d / 3600), t.articleList.timeAgo.hAgo)
+  return formatTimeAgo(Math.round(d / 86400), t.articleList.timeAgo.dAgo)
 }
 
 let lastCheckedBackup: number | null = null
@@ -25,13 +28,13 @@ export default function NotificationHistoryPanel(): JSX.Element {
 
   useEffect(() => {
     window.api.getNotificationHistory().then(setHistory)
-    
+
     const now = Date.now()
     const rawChecked = localStorage.getItem('lastCheckedNotificationsTime')
     const prevChecked = Number(rawChecked || 0)
-    
+
     let referenceTime = prevChecked
-    if (rawChecked && (now - prevChecked < 5000) && lastCheckedBackup !== null) {
+    if (rawChecked && now - prevChecked < 5000 && lastCheckedBackup !== null) {
       referenceTime = lastCheckedBackup
     } else {
       lastCheckedBackup = prevChecked
@@ -51,8 +54,8 @@ export default function NotificationHistoryPanel(): JSX.Element {
   }
 
   // Partition into new and seen notifications
-  const newNotifications = history.filter(item => item.createdAt > lastCheckedTime)
-  const seenNotifications = history.filter(item => item.createdAt <= lastCheckedTime)
+  const newNotifications = history.filter((item) => item.createdAt > lastCheckedTime)
+  const seenNotifications = history.filter((item) => item.createdAt <= lastCheckedTime)
 
   const renderItem = (item: NotificationHistoryItem, isNew: boolean): JSX.Element => (
     <div
@@ -80,34 +83,50 @@ export default function NotificationHistoryPanel(): JSX.Element {
             src={item.icon}
             alt=""
             style={{ width: 14, height: 14, borderRadius: 3, objectFit: 'contain', flexShrink: 0 }}
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+            onError={(e) => {
+              ;(e.target as HTMLImageElement).style.display = 'none'
+            }}
           />
         ) : (
-          <span style={{
-            width: 14, height: 14, borderRadius: 3, background: 'var(--accent)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 8, fontWeight: 700, color: '#0d1117', flexShrink: 0
-          }}>
+          <span
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: 3,
+              background: 'var(--accent)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 8,
+              fontWeight: 700,
+              color: '#0d1117',
+              flexShrink: 0
+            }}
+          >
             {(item.feedName || 'F').charAt(0).toUpperCase()}
           </span>
         )}
-        <span style={{
-          fontSize: 12,
-          fontWeight: isNew ? 600 : 500,
-          color: isNew ? 'var(--accent)' : 'var(--text-secondary)'
-        }}>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: isNew ? 600 : 500,
+            color: isNew ? 'var(--accent)' : 'var(--text-secondary)'
+          }}
+        >
           {item.feedName}
         </span>
         <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
           {timeAgo(item.createdAt, t)}
         </span>
       </div>
-      <div style={{
-        fontSize: 15,
-        color: isNew ? 'var(--text-primary)' : 'var(--text-secondary)',
-        fontWeight: isNew ? 600 : 400,
-        lineHeight: 1.4
-      }}>
+      <div
+        style={{
+          fontSize: 15,
+          color: isNew ? 'var(--text-primary)' : 'var(--text-secondary)',
+          fontWeight: isNew ? 600 : 400,
+          lineHeight: 1.4
+        }}
+      >
         {item.title}
       </div>
     </div>
@@ -126,9 +145,13 @@ export default function NotificationHistoryPanel(): JSX.Element {
           )}
         </h2>
         <Tooltip label={t.notificationHistory.clearAll} placement="bottom">
-          <button className="btn btn-ghost btn-icon" onClick={handleClear}><Trash2 size={14} /></button>
+          <button className="btn btn-ghost btn-icon" onClick={handleClear}>
+            <Trash2 size={14} />
+          </button>
         </Tooltip>
-        <button className="btn btn-ghost btn-icon" onClick={closePanel}><X size={15} /></button>
+        <button className="btn btn-ghost btn-icon" onClick={closePanel}>
+          <X size={15} />
+        </button>
       </div>
       <div className="panel-body">
         {history.length === 0 ? (
@@ -137,25 +160,27 @@ export default function NotificationHistoryPanel(): JSX.Element {
           </div>
         ) : (
           <>
-            {newNotifications.map(item => renderItem(item, true))}
+            {newNotifications.map((item) => renderItem(item, true))}
             {newNotifications.length > 0 && seenNotifications.length > 0 && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                margin: '16px 0 12px',
-                fontSize: 10,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                color: 'var(--text-muted)',
-                letterSpacing: '0.05em'
-              }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  margin: '16px 0 12px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  color: 'var(--text-muted)',
+                  letterSpacing: '0.05em'
+                }}
+              >
                 <div style={{ height: 1, flex: 1, background: 'var(--border-muted)' }} />
                 {t.notificationHistory.alreadySeen}
                 <div style={{ height: 1, flex: 1, background: 'var(--border-muted)' }} />
               </div>
             )}
-            {seenNotifications.map(item => renderItem(item, false))}
+            {seenNotifications.map((item) => renderItem(item, false))}
           </>
         )}
       </div>

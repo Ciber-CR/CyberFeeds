@@ -208,7 +208,7 @@ export default function Tooltip({ label, placement = 'bottom', children }: Toolt
                 background: 'rgba(15, 15, 20, 0.97)',
                 backdropFilter: 'blur(10px)',
                 border: '1px solid var(--border)',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5), 0 0 10px var(--accent-glow)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4), 0 0 4px var(--accent-glow)',
                 borderRadius: 8,
                 padding: '6px 10px',
                 color: 'rgba(255, 255, 255, 0.95)',

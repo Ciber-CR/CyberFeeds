@@ -24,8 +24,12 @@ function formatReceivedAt(ts: number, t: typeof translations.en): string {
   const now = new Date()
   const diffMs = now.getTime() - d.getTime()
   const diffH = diffMs / 3600000
-  if (diffH < 1) return `${Math.max(1, Math.round(diffMs / 60000))}${t.articleList.timeAgo.mAgo}`
-  if (diffH < 24) return `${Math.round(diffH)}${t.articleList.timeAgo.hAgo}`
+  const formatTimeAgo = (val: number, str: string): string =>
+    str.includes('{num}') ? str.replace('{num}', String(val)) : `${val}${str}`
+
+  if (diffH < 1)
+    return formatTimeAgo(Math.max(1, Math.round(diffMs / 60000)), t.articleList.timeAgo.mAgo)
+  if (diffH < 24) return formatTimeAgo(Math.round(diffH), t.articleList.timeAgo.hAgo)
   if (diffH < 48) return t.articleList.yesterday
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
