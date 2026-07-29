@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react'
+import { Bell, X } from 'lucide-react'
 import { useFeedsStore } from './store/feeds.store'
 import { useArticlesStore } from './store/articles.store'
 import { useUIStore } from './store/ui.store'
@@ -21,14 +22,24 @@ import AboutModal from './components/AboutModal'
 import DoctorPanel from './components/DoctorPanel'
 import Tooltip from './components/Tooltip'
 
+type UpdateStatus =
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'not-available'; version: string }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string }
+
 export default function App(): JSX.Element {
   const { loadAll, refreshUnreadCounts } = useFeedsStore()
   const { load, refresh } = useArticlesStore()
-  const { selectedFeedId, selectedArticleId, activePanel, layout, unreadOnly, search, closePanel } = useUIStore()
+  const { selectedFeedId, selectedArticleId, activePanel, layout, unreadOnly, search, closePanel } =
+    useUIStore()
   const { load: loadSettings, settings } = useSettingsStore()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const dismissInbox = useOverlayDismiss(closePanel)
   const dismissHistory = useOverlayDismiss(closePanel)
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
 
   // ── Resize hooks — MUST be at top level, before any conditionals ──────────
   const [sidebarDragging, setSidebarDragging] = useState(false)
@@ -46,8 +57,8 @@ export default function App(): JSX.Element {
     const lastChecked = Number(localStorage.getItem('lastCheckedNotificationsTime') || 0)
     // Seed main-process DB so the notifier badge computes the same unseen count.
     window.api.markNotificationsChecked(lastChecked)
-    window.api.getNotificationHistory().then(history => {
-      const unseen = history.filter(h => h.createdAt > lastChecked).length
+    window.api.getNotificationHistory().then((history) => {
+      const unseen = history.filter((h) => h.createdAt > lastChecked).length
       useUIStore.setState({ unseenNotificationsCount: unseen })
     })
   }, [])
@@ -57,14 +68,27 @@ export default function App(): JSX.Element {
     if (settings.layout) useUIStore.setState({ layout: settings.layout })
     if (settings.unreadOnly) useUIStore.setState({ unreadOnly: settings.unreadOnly })
     if (settings.sidebarFontSize) {
-      document.documentElement.style.setProperty('--sidebar-font-size', `${settings.sidebarFontSize}px`)
+      document.documentElement.style.setProperty(
+        '--sidebar-font-size',
+        `${settings.sidebarFontSize}px`
+      )
     }
     if (settings.listFontSize) {
       document.documentElement.style.setProperty('--list-font-size', `${settings.listFontSize}px`)
     }
     document.documentElement.setAttribute('data-theme', settings.theme || 'dark')
-    try { localStorage.setItem('cyberfeeds-theme', settings.theme || 'dark') } catch { /* ignore */ }
-  }, [settings.layout, settings.unreadOnly, settings.sidebarFontSize, settings.listFontSize, settings.theme])
+    try {
+      localStorage.setItem('cyberfeeds-theme', settings.theme || 'dark')
+    } catch {
+      /* ignore */
+    }
+  }, [
+    settings.layout,
+    settings.unreadOnly,
+    settings.sidebarFontSize,
+    settings.listFontSize,
+    settings.theme
+  ])
 
   // React to feed/filter changes
   useEffect(() => {
@@ -91,7 +115,11 @@ export default function App(): JSX.Element {
   // Listen for open article requests (e.g. from notifier click)
   useEffect(() => {
     const unsub = window.api.onOpenArticle((feedId, articleId) => {
-      useUIStore.setState({ selectedFeedId: feedId, selectedArticleId: articleId || null, activePanel: null })
+      useUIStore.setState({
+        selectedFeedId: feedId,
+        selectedArticleId: articleId || null,
+        activePanel: null
+      })
     })
     return unsub
   }, [])
@@ -113,6 +141,17 @@ export default function App(): JSX.Element {
       }
     })
     return unsub
+  }, [])
+
+  // Listen for background auto-update status to show visual toast
+  useEffect(() => {
+    const off = window.api.onUpdateStatus((s) => {
+      const status = s as UpdateStatus
+      if (status.state === 'available' || status.state === 'downloaded') {
+        setUpdateStatus(status)
+      }
+    })
+    return off
   }, [])
 
   // Listen for opening notification history from the notifier sub-app
@@ -146,9 +185,12 @@ export default function App(): JSX.Element {
   }, [])
 
   // Keyboard shortcuts
-  const handleKey = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && activePanel) closePanel()
-  }, [activePanel])
+  const handleKey = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && activePanel) closePanel()
+    },
+    [activePanel]
+  )
 
   useEffect(() => {
     window.addEventListener('keydown', handleKey)
@@ -156,25 +198,31 @@ export default function App(): JSX.Element {
   }, [handleKey])
 
   // Drag handlers (track active state for .active class on handle)
-  const handleSidebarDrag = useCallback((e: React.MouseEvent) => {
-    setSidebarDragging(true)
-    startSidebarDrag(e)
-    const onUp = (): void => {
-      setSidebarDragging(false)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mouseup', onUp)
-  }, [startSidebarDrag])
+  const handleSidebarDrag = useCallback(
+    (e: React.MouseEvent) => {
+      setSidebarDragging(true)
+      startSidebarDrag(e)
+      const onUp = (): void => {
+        setSidebarDragging(false)
+        window.removeEventListener('mouseup', onUp)
+      }
+      window.addEventListener('mouseup', onUp)
+    },
+    [startSidebarDrag]
+  )
 
-  const handleListDrag = useCallback((e: React.MouseEvent) => {
-    setListDragging(true)
-    startListDrag(e)
-    const onUp = (): void => {
-      setListDragging(false)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mouseup', onUp)
-  }, [startListDrag])
+  const handleListDrag = useCallback(
+    (e: React.MouseEvent) => {
+      setListDragging(true)
+      startListDrag(e)
+      const onUp = (): void => {
+        setListDragging(false)
+        window.removeEventListener('mouseup', onUp)
+      }
+      window.addEventListener('mouseup', onUp)
+    },
+    [startListDrag]
+  )
 
   const showArticleList = layout !== 'one-panel'
   const showSidebar = layout === 'three-panel'
@@ -228,6 +276,99 @@ export default function App(): JSX.Element {
       {activePanel === 'editFolder' && <EditFolderModal />}
       {activePanel === 'about' && <AboutModal />}
       {activePanel === 'doctor' && <DoctorPanel />}
+
+      {/* Toast Notification for Updates */}
+      {updateStatus && (
+        <div
+          className="cyber-toast"
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            zIndex: 9999,
+            background: 'linear-gradient(135deg, var(--bg-1), var(--bg-0))',
+            border: '1px solid var(--accent)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4), 0 0 12px var(--accent-subtle)',
+            borderRadius: 'var(--radius)',
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            maxWidth: 360,
+            animation: 'slideUp 0.3s ease'
+          }}
+        >
+          <Bell size={18} color="var(--accent)" style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: 'var(--text-primary)' }}>
+            {updateStatus.state === 'available' ? (
+              <div>
+                <strong style={{ fontWeight: 600 }}>{t.about.statuses.available}</strong>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                  Version {updateStatus.version}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <strong style={{ fontWeight: 600 }}>{t.about.statuses.downloaded}</strong>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--text-accent)',
+                    marginTop: 2,
+                    fontWeight: 500
+                  }}
+                >
+                  {language === 'es'
+                    ? 'Haz clic para reiniciar e instalar'
+                    : 'Click to restart and install'}
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+            {updateStatus.state === 'available' ? (
+              <button
+                className="btn btn-primary"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                onClick={async () => {
+                  await window.api.downloadUpdate()
+                }}
+              >
+                {t.about.downloadBtn}
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                onClick={() => {
+                  window.api.installUpdate()
+                }}
+              >
+                {language === 'es' ? 'Reiniciar' : 'Restart'}
+              </button>
+            )}
+            <button
+              className="btn btn-ghost btn-icon"
+              style={{ width: 22, height: 22 }}
+              onClick={() => setUpdateStatus(null)}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
