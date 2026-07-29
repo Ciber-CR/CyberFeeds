@@ -910,6 +910,101 @@ body {
   color: var(--text-muted);
   margin-bottom: 10px;
 }
+/* Daily Digest styling (InboxPanel) */
+.digest-card {
+  background: color-mix(in srgb, var(--bg-2) 65%, transparent);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.digest-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-muted));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.digest-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-muted);
+  padding-bottom: 6px;
+}
+.digest-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.digest-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+  position: relative;
+}
+.digest-item:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+.digest-item-content {
+  flex: 1;
+  min-width: 0;
+}
+.digest-item-title {
+  font-size: 13px;
+  line-height: 1.4;
+  transition: color 0.15s;
+}
+.digest-item:hover .digest-item-title {
+  color: var(--accent);
+}
+.digest-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+.digest-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.digest-item:hover .digest-item-actions {
+  opacity: 1;
+}
+.digest-action-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.15s, background-color 0.15s, color 0.15s;
+}
+.digest-action-btn:hover {
+  transform: scale(1.15);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+.digest-action-btn.active {
+  color: var(--accent);
+}
 
 /* Settings — vertical nav (CyberTray-style) */
 .panel.settings-panel {
