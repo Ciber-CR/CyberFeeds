@@ -636,7 +636,7 @@ const ArticleItem = memo(
   }: ArticleItemProps) {
     const { markRead, starArticle } = useArticlesStore()
     const { settings } = useSettingsStore()
-    const { t } = useTranslation()
+    const { t, language } = useTranslation()
 
     const handleClick = useCallback(() => {
       onSelect(article.id)
@@ -650,6 +650,12 @@ const ArticleItem = memo(
       },
       [article.id, article.starred]
     )
+
+    const absoluteTime = new Date(article.pubDate).toLocaleString(
+      language === 'es' ? 'es-ES' : 'en-US',
+      { dateStyle: 'medium', timeStyle: 'short' }
+    )
+    const dateTooltipLabel = t.notifier.receivedAt.replace('{time}', absoluteTime)
 
     return (
       <div
@@ -682,23 +688,18 @@ const ArticleItem = memo(
           <span className="article-title" style={{ flex: 1 }}>
             {article.title}
           </span>
-          <button
-            onClick={handleStar}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              flexShrink: 0,
-              marginTop: 1
-            }}
+          <Tooltip
+            label={article.starred ? t.articleViewer.unstar : t.articleViewer.star}
+            placement="bottom"
           >
-            <Star
-              size={13}
-              fill={article.starred ? 'var(--star)' : 'none'}
-              color={article.starred ? 'var(--star)' : 'var(--text-muted)'}
-            />
-          </button>
+            <button onClick={handleStar} className="article-item-star">
+              <Star
+                size={13}
+                fill={article.starred ? 'var(--star)' : 'none'}
+                color={article.starred ? 'var(--star)' : 'var(--text-muted)'}
+              />
+            </button>
+          </Tooltip>
         </div>
 
         {/* Snippet */}
@@ -707,7 +708,9 @@ const ArticleItem = memo(
         {/* Meta: unread dot + feed name + date */}
         <div className="article-meta">
           {!article.read ? (
-            <div className="unread-dot" style={{ flexShrink: 0 }} />
+            <Tooltip label={t.articleList.unread} placement="bottom">
+              <div className="unread-dot" style={{ flexShrink: 0 }} />
+            </Tooltip>
           ) : (
             <div style={{ width: 6, height: 6, flexShrink: 0 }} />
           )}
@@ -722,7 +725,9 @@ const ArticleItem = memo(
             {article.feedTitle}
           </span>
           <span>·</span>
-          <span>{formatDate(article.pubDate, t)}</span>
+          <Tooltip label={dateTooltipLabel} placement="bottom">
+            <span>{formatDate(article.pubDate, t)}</span>
+          </Tooltip>
           {article.author && (
             <>
               <span>·</span>
