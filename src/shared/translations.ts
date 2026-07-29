@@ -58,6 +58,7 @@ export const translations = {
       moreBelow: 'more below',
       backToTop: 'Back to top',
       yesterday: 'Yesterday',
+      unread: 'Unread',
       timeAgo: {
         justNow: 'just now',
         mAgo: 'm ago',
@@ -435,6 +436,7 @@ export const translations = {
       moreBelow: 'más abajo',
       backToTop: 'Volver al inicio',
       yesterday: 'Ayer',
+      unread: 'Sin leer',
       timeAgo: {
         justNow: 'hace un momento',
         mAgo: 'Hace {num}m',
