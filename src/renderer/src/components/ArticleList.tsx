@@ -706,8 +706,11 @@ const ArticleItem = memo(
 
         {/* Meta: unread dot + feed name + date */}
         <div className="article-meta">
-          {!article.read && <div className="unread-dot" style={{ flexShrink: 0 }} />}
-          {article.read && <div style={{ width: 6, height: 6, flexShrink: 0 }} />}
+          {!article.read ? (
+            <div className="unread-dot" style={{ flexShrink: 0 }} />
+          ) : (
+            <div style={{ width: 6, height: 6, flexShrink: 0 }} />
+          )}
           <span
             style={{
               maxWidth: 90,
