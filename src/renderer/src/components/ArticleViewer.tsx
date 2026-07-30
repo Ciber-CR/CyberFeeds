@@ -116,7 +116,13 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
         if (!active) return
         setLoading(false)
         if (result?.html) {
-          setFullHtml(result.html)
+          const textOnly = result.html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+          const minLength = Math.max(120, (article.snippet || '').length)
+          if (textOnly.length >= minLength) {
+            setFullHtml(result.html)
+          } else {
+            console.log('Extracted content is too short, falling back to original')
+          }
         }
       })
       .catch((err) => {

@@ -4,7 +4,6 @@ import {
   Inbox,
   Bell,
   Settings,
-  RefreshCw,
   Minus,
   Maximize2,
   Minimize2,
@@ -13,14 +12,12 @@ import {
   Info
 } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
-import { useFeedsStore } from '../store/feeds.store'
 import { useSettingsStore } from '../store/settings.store'
 import { useTranslation } from '../hooks/useTranslation'
 import Tooltip from './Tooltip'
 
 const TopBar = memo(function TopBar(): JSX.Element {
-  const { openPanel, setLayout, layout, isFetching, unseenNotificationsCount } = useUIStore()
-  const { fetchAll } = useFeedsStore()
+  const { openPanel, setLayout, layout, unseenNotificationsCount } = useUIStore()
   const { settings } = useSettingsStore()
   const { t } = useTranslation()
   const [maximized, setMaximized] = useState(false)
@@ -30,12 +27,6 @@ const TopBar = memo(function TopBar(): JSX.Element {
     const cleanup = window.api.onMaximizedChange(setMaximized)
     return cleanup
   }, [])
-
-  const handleFetchAll = async (): Promise<void> => {
-    useUIStore.setState({ isFetching: true })
-    await fetchAll()
-    setTimeout(() => useUIStore.setState({ isFetching: false }), 1000)
-  }
 
   const cycleLayout = (): void => {
     const layouts: Array<'three-panel' | 'two-panel' | 'one-panel'> = [
@@ -98,19 +89,6 @@ const TopBar = memo(function TopBar(): JSX.Element {
       <Tooltip label={t.topBar.toggleLayout} placement="bottom">
         <button className="btn btn-ghost btn-icon no-drag" onClick={cycleLayout}>
           <LayoutTemplate size={15} />
-        </button>
-      </Tooltip>
-      <Tooltip label={t.topBar.refreshAll} placement="bottom">
-        <button
-          className="btn btn-ghost btn-icon no-drag"
-          onClick={handleFetchAll}
-          disabled={isFetching}
-        >
-          <RefreshCw
-            size={15}
-            className={isFetching ? 'spin-icon' : ''}
-            style={isFetching ? { animation: 'spin 0.7s linear infinite' } : {}}
-          />
         </button>
       </Tooltip>
       <Tooltip label={t.topBar.settings} placement="bottom">
