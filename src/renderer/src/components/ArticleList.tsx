@@ -12,7 +12,8 @@ import {
   Image,
   ExternalLink,
   Trash2,
-  CheckCheck
+  CheckCheck,
+  RefreshCw
 } from 'lucide-react'
 import { useArticlesStore } from '../store/articles.store'
 import { useUIStore } from '../store/ui.store'
@@ -188,16 +189,23 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     search,
     selectArticle,
     setUnreadOnly,
-    setSearch
+    setSearch,
+    isFetching
   } = useUIStore()
   const [ctx, setCtx] = React.useState<{ x: number; y: number; id: string } | null>(null)
-  const { feeds, unreadCounts } = useFeedsStore()
+  const { feeds, unreadCounts, fetchAll } = useFeedsStore()
   const { settings, togglePolling } = useSettingsStore()
   const { t, language } = useTranslation()
   const parentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const prevSelectedId = useRef<string | null>(null)
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
+
+  const handleFetchAll = useCallback(async (): Promise<void> => {
+    useUIStore.setState({ isFetching: true })
+    await fetchAll()
+    setTimeout(() => useUIStore.setState({ isFetching: false }), 1000)
+  }, [fetchAll])
 
   // Auto-remove read articles from "Unread Only" view when moving to next
   useEffect(() => {
@@ -391,16 +399,18 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               height: 24
             }}
           >
-            <span
-              style={{
-                fontSize: 9,
-                fontWeight: 700,
-                color: settings.pollingEnabled ? 'var(--accent)' : 'var(--text-muted)',
-                opacity: 0.8
-              }}
-            >
-              {settings.pollingEnabled ? t.articleList.monitoring : t.articleList.paused}
-            </span>
+            {!settings.pollingEnabled && (
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  opacity: 0.8
+                }}
+              >
+                {t.articleList.paused}
+              </span>
+            )}
             <span
               style={{
                 width: 7,
@@ -417,6 +427,25 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           </div>
         </Tooltip>
 
+        <Tooltip label={t.topBar.refreshAll} placement="bottom">
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={handleFetchAll}
+            disabled={isFetching}
+            style={{
+              flexShrink: 0,
+              width: 24,
+              height: 24
+            }}
+          >
+            <RefreshCw
+              size={14}
+              className={isFetching ? 'spin-icon' : ''}
+              style={isFetching ? { animation: 'spin 0.7s linear infinite' } : {}}
+            />
+          </button>
+        </Tooltip>
+
         <Tooltip
           label={unreadOnly ? t.articleList.showAll : t.articleList.unreadOnly}
           placement="bottom"
@@ -426,6 +455,8 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
             onClick={() => setUnreadOnly(!unreadOnly)}
             style={{
               color: unreadOnly ? 'var(--accent)' : undefined,
+              background: unreadOnly ? 'var(--accent-subtle)' : undefined,
+              border: unreadOnly ? '1px solid color-mix(in srgb, var(--accent) 35%, transparent)' : '1px solid transparent',
               flexShrink: 0,
               width: 24,
               height: 24

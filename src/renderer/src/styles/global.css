@@ -377,7 +377,7 @@ body {
   font-size: 13px;
   cursor: pointer;
   transition: all 0.15s;
-  margin: 4px 0;
+  margin: 0;
 }
 .add-feed-btn:hover {
   border-color: var(--accent);
@@ -859,6 +859,7 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   z-index: 100;
   display: flex;
   justify-content: flex-end;
@@ -1437,6 +1438,7 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   z-index: 200;
   display: flex;
   align-items: center;
