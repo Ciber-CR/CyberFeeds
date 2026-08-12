@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react'
 import {
-  X, Rss, Github, Folder, RefreshCw, Download, CheckCircle2,
+  X, Github, Folder, RefreshCw, Download, CheckCircle2,
   CircleDot, Tag, ClipboardCopy, Check
 } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
@@ -8,6 +8,8 @@ import { useSettingsStore } from '../store/settings.store'
 import { useTranslation } from '../hooks/useTranslation'
 import { useOverlayDismiss } from '../hooks/useOverlayDismiss'
 import Tooltip from './Tooltip'
+
+import logoPng from '../../../../resources/icon.png'
 
 const REPO_URL = 'https://github.com/CyberGems/CyberFeeds'
 
@@ -157,7 +159,7 @@ export default function AboutModal(): JSX.Element {
               border: '1px solid var(--accent)',
               boxShadow: '0 0 18px color-mix(in srgb, var(--accent) 25%, transparent)'
             }}>
-              <Rss size={36} color="var(--accent)" />
+              <img src={logoPng} alt="CyberFeeds" style={{ width: 44, height: 44, objectFit: 'contain' }} />
             </div>
           </div>
 

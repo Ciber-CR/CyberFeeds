@@ -1,6 +1,6 @@
 import { memo, useState, useEffect } from 'react'
+import logoPng from '../../../../resources/icon.png'
 import {
-  Rss,
   Inbox,
   Bell,
   Settings,
@@ -41,7 +41,7 @@ const TopBar = memo(function TopBar(): JSX.Element {
   return (
     <div className="topbar">
       <div className="topbar-brand">
-        <Rss size={16} />
+        <img src={logoPng} alt="CyberFeeds" style={{ width: 14, height: 14, objectFit: 'contain', marginRight: 0 }} />
         <span>CyberFeeds</span>
       </div>
       <div className="topbar-drag" />
