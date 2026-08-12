@@ -140,8 +140,8 @@ export default function AboutModal(): JSX.Element {
           </Tooltip>
         </div>
 
-        <div className="modal-body about-modal-body" style={{ textAlign: 'center', padding: '0 28px 20px', overflowY: 'auto' }}>
-          <div style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 16px' }}>
+        <div className="modal-body about-modal-body" style={{ textAlign: 'center', padding: '16px 28px 20px', overflowY: 'auto' }}>
+          <div style={{ position: 'relative', width: 72, height: 72, margin: '8px auto 16px' }}>
             <div style={{
               position: 'absolute', inset: -4,
               background: 'var(--accent-subtle)',
