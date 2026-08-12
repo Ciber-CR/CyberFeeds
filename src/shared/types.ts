@@ -74,6 +74,7 @@ export interface AppSettings {
   notifications: NotificationSettings
   pollingEnabled: boolean
   shortcuts: KeyboardShortcuts
+  autoFetchFullContent: boolean
 }
 
 export interface NotificationSettings {
@@ -185,5 +186,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     notifications: { enabled: false, accelerator: '', global: false },
     settings: { enabled: false, accelerator: '', global: false },
     fetch: { enabled: false, accelerator: '', global: false }
-  }
+  },
+  autoFetchFullContent: true
 }

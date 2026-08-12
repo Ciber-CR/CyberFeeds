@@ -572,16 +572,21 @@ export function registerIpc(): void {
         }
       )
 
-      template.push(
-        { type: 'separator' },
-        { role: 'copy', label: t.copy, enabled: !!hasSelection }
-      )
-    } else {
-      template.push({ role: 'copy', label: t.copy, enabled: !!hasSelection })
+      if (hasSelection) {
+        template.push(
+          { type: 'separator' },
+          { role: 'copy', label: t.copy }
+        )
+      }
+    } else if (hasSelection) {
+      template.push({ role: 'copy', label: t.copy })
+    }
+
+    if (template.length > 0) {
+      template.push({ type: 'separator' })
     }
 
     template.push(
-      { type: 'separator' },
       { role: 'selectAll', label: t.selectAll }
     )
     const menu = Menu.buildFromTemplate(template)
