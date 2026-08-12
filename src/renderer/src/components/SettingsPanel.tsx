@@ -183,8 +183,13 @@ function HotkeyRecorder({ actionKey, value, onChange, shortcuts, t }: HotkeyReco
   )
 }
 
-export default function SettingsPanel(): JSX.Element {
-  const { closePanel, openPanel } = useUIStore()
+interface SettingsPanelProps {
+  onClose?: () => void
+}
+
+export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Element {
+  const { closePanel: storeClosePanel, openPanel } = useUIStore()
+  const closePanel = onClose || storeClosePanel
   const { settings, save } = useSettingsStore()
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
   const { alert, alertState, handleClose } = useAlert()

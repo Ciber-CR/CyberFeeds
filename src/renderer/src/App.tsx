@@ -39,7 +39,17 @@ export default function App(): JSX.Element {
   const { t, language } = useTranslation()
   const dismissInbox = useOverlayDismiss(closePanel)
   const dismissHistory = useOverlayDismiss(closePanel)
-  const dismissSettings = useOverlayDismiss(closePanel)
+  
+  const [isSettingsClosing, setIsSettingsClosing] = useState(false)
+  const handleCloseSettings = useCallback(() => {
+    setIsSettingsClosing(true)
+    setTimeout(() => {
+      closePanel()
+      setIsSettingsClosing(false)
+    }, 200)
+  }, [closePanel])
+  const dismissSettings = useOverlayDismiss(handleCloseSettings)
+  
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
 
   // ── Resize hooks — MUST be at top level, before any conditionals ──────────
@@ -196,9 +206,15 @@ export default function App(): JSX.Element {
   // Keyboard shortcuts
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && activePanel) closePanel()
+      if (e.key === 'Escape' && activePanel) {
+        if (activePanel === 'settings') {
+          handleCloseSettings()
+        } else {
+          closePanel()
+        }
+      }
     },
-    [activePanel]
+    [activePanel, handleCloseSettings, closePanel]
   )
 
   useEffect(() => {
@@ -264,9 +280,9 @@ export default function App(): JSX.Element {
       </div>
 
       {/* Panels */}
-      {activePanel === 'settings' && (
-        <div className="panel-overlay" {...dismissSettings}>
-          <SettingsPanel />
+      {(activePanel === 'settings' || isSettingsClosing) && (
+        <div className={`panel-overlay ${isSettingsClosing ? 'closing' : ''}`} {...dismissSettings}>
+          <SettingsPanel onClose={handleCloseSettings} />
         </div>
       )}
       {activePanel === 'inbox' && (
