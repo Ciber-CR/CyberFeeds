@@ -734,6 +734,11 @@ body {
   border-radius: var(--radius);
   margin: 1em 0;
   display: block;
+  cursor: default;
+}
+.reader-featured-image,
+.reader-featured-image img {
+  cursor: default;
 }
 .reader-body a {
   color: var(--accent);
