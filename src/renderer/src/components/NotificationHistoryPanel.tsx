@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, Bell, Trash2, ExternalLink } from 'lucide-react'
+import { X, Bell, Trash2, ExternalLink, Check, Eye } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
 import { useArticlesStore } from '../store/articles.store'
@@ -166,10 +166,12 @@ export default function NotificationHistoryPanel(): JSX.Element {
           <Tooltip label={t.notifier.markReadTooltip} placement="bottom">
             <button
               className="notif-btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
               onClick={() => {
                 markRead(item.articleId!, true)
               }}
             >
+              <Check size={11} />
               {t.notifier.markRead}
             </button>
           </Tooltip>
@@ -178,20 +180,26 @@ export default function NotificationHistoryPanel(): JSX.Element {
           <Tooltip label={t.notifier.viewTooltip} placement="bottom">
             <button
               className="notif-btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
               onClick={() => {
                 if (item.feedId) selectFeed(item.feedId)
                 if (item.articleId) selectArticle(item.articleId)
                 closePanel()
               }}
             >
+              <Eye size={11} />
               {t.notifier.view}
             </button>
           </Tooltip>
         )}
         {item.link && (
           <Tooltip label={t.notifier.openTooltip} placement="bottom">
-            <button className="notif-btn" onClick={() => window.api.openExternal(item.link)}>
-              <ExternalLink size={10} style={{ display: 'inline', marginRight: 2 }} />
+            <button
+              className="notif-btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              onClick={() => window.api.openExternal(item.link)}
+            >
+              <ExternalLink size={11} />
               {t.notifier.open}
             </button>
           </Tooltip>

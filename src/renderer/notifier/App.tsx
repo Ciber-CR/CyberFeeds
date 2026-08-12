@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState, useCallback } from 'react'
-import { X, ExternalLink, ChevronDown, Bell } from 'lucide-react'
+import { X, ExternalLink, ChevronDown, Bell, Clock, Check, Eye } from 'lucide-react'
 import type { NotificationHistoryItem, NotificationSettings } from '@shared/types'
 import { translations } from '@shared/translations'
 import Tooltip from '../src/components/Tooltip'
@@ -223,7 +223,6 @@ export default function NotifierApp(): JSX.Element {
             <button
               className="clear-all-btn"
               style={{
-                marginRight: 'auto',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 5,
@@ -252,18 +251,33 @@ export default function NotifierApp(): JSX.Element {
               )}
             </button>
           </Tooltip>
+          <Tooltip label={snoozeTooltip} placement="bottom">
+            <button
+              className="clear-all-btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+              onClick={(e) => {
+                e.stopPropagation()
+                window.api.snoozeNotifications(snoozeMinutes)
+              }}
+            >
+              <Clock size={12} style={{ flexShrink: 0 }} />
+              {snoozeText}
+            </button>
+          </Tooltip>
           <Tooltip
             label={state.stack.length > 1 ? t.notifier.closeAllTooltip : t.notifier.closeTooltip}
             placement="bottom"
           >
             <button
               className="clear-all-btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
               onClick={(e) => {
                 e.stopPropagation()
                 window.api.clearAllNotifications()
               }}
             >
-              ✕ {state.stack.length > 1 ? t.notifier.closeAll : t.notifier.close}
+              <X size={12} style={{ flexShrink: 0 }} />
+              {state.stack.length > 1 ? t.notifier.closeAll : t.notifier.close}
             </button>
           </Tooltip>
         </div>
@@ -371,33 +385,36 @@ export default function NotifierApp(): JSX.Element {
               <Tooltip label={t.notifier.markReadTooltip} placement="bottom">
                 <button
                   className="notif-btn"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   onClick={() => {
                     window.api.markNotificationRead(item.articleId || '')
                     handleDismiss(item.id)
                   }}
                 >
+                  <Check size={11} />
                   {t.notifier.markRead}
-                </button>
-              </Tooltip>
-              <Tooltip label={snoozeTooltip} placement="bottom">
-                <button
-                  className="notif-btn"
-                  onClick={() => window.api.snoozeNotifications(snoozeMinutes)}
-                >
-                  {snoozeText}
                 </button>
               </Tooltip>
               {item.feedId && (
                 <Tooltip label={t.notifier.viewTooltip} placement="bottom">
-                  <button className="notif-btn" onClick={() => handleViewInApp(item)}>
+                  <button
+                    className="notif-btn"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                    onClick={() => handleViewInApp(item)}
+                  >
+                    <Eye size={11} />
                     {t.notifier.view}
                   </button>
                 </Tooltip>
               )}
               {item.link && (
                 <Tooltip label={t.notifier.openTooltip} placement="bottom">
-                  <button className="notif-btn" onClick={() => handleOpenInBrowser(item)}>
-                    <ExternalLink size={10} style={{ display: 'inline', marginRight: 2 }} />
+                  <button
+                    className="notif-btn"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                    onClick={() => handleOpenInBrowser(item)}
+                  >
+                    <ExternalLink size={11} />
                     {t.notifier.open}
                   </button>
                 </Tooltip>
