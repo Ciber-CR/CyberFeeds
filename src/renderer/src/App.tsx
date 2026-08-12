@@ -39,6 +39,7 @@ export default function App(): JSX.Element {
   const { t, language } = useTranslation()
   const dismissInbox = useOverlayDismiss(closePanel)
   const dismissHistory = useOverlayDismiss(closePanel)
+  const dismissSettings = useOverlayDismiss(closePanel)
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
 
   // ── Resize hooks — MUST be at top level, before any conditionals ──────────
@@ -264,7 +265,7 @@ export default function App(): JSX.Element {
 
       {/* Panels */}
       {activePanel === 'settings' && (
-        <div className="panel-overlay">
+        <div className="panel-overlay" {...dismissSettings}>
           <SettingsPanel />
         </div>
       )}

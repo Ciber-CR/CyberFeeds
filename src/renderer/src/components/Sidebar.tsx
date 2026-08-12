@@ -26,6 +26,8 @@ import type { Feed, Folder } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import Tooltip from './Tooltip'
 
+const formatNum = (val: number): string => String(val).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
 const Sidebar = memo(function Sidebar(): JSX.Element {
   const {
     feeds,
@@ -133,7 +135,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           <span className="item-label">{t.sidebar.allFeeds}</span>
           {totalUnread > 0 && (
             <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
-              {totalUnread}
+              {formatNum(totalUnread)}
             </div>
           )}
         </div>
@@ -146,7 +148,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           <span className="item-label">{t.sidebar.favorites}</span>
           {totalStarred > 0 && (
             <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
-              {totalStarred}
+              {formatNum(totalStarred)}
             </div>
           )}
         </div>
@@ -464,7 +466,7 @@ const FolderSection = memo(function FolderSection({
       >
         {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
         <span className="folder-name">{folder.name}</span>
-        {folderUnread > 0 && <div className="cyber-badge folder-badge">{folderUnread}</div>}
+        {folderUnread > 0 && <div className="cyber-badge folder-badge">{formatNum(folderUnread)}</div>}
       </div>
       {!collapsed &&
         feeds.map((feed) => (
@@ -529,7 +531,7 @@ const FeedItem = memo(function FeedItem({
             className="cyber-badge"
             style={{ fontSize: 9, padding: '1px 4px', opacity: feed.disabled ? 0.5 : 1 }}
           >
-            {unread}
+            {formatNum(unread)}
           </div>
         )}
       </div>
