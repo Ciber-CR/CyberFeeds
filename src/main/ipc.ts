@@ -188,10 +188,17 @@ export function registerIpc(): void {
     return folder
   })
 
-  ipcMain.handle('settings:togglePolling', () => {
+  ipcMain.handle('settings:togglePolling', (event) => {
     const settings = db.getSettings()
     const pollingEnabled = !settings.pollingEnabled
     db.saveSettings({ ...settings, pollingEnabled })
+    rebuildTrayMenu()
+    // Notify all renderer windows (the sender already refreshes, but this
+    // keeps the same event-driven pattern the tray toggle uses).
+    const win = event.sender ? BrowserWindow.fromWebContents(event.sender) : null
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('settings:pollingToggled', pollingEnabled)
+    }
     return { ok: true, pollingEnabled }
   })
 
