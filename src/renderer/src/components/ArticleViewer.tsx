@@ -399,8 +399,16 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
               linkUrl = a.href
             }
           }
+          // Detect right-click on an image
+          let imageUrl = ''
+          const img = target.tagName === 'IMG'
+            ? (target as HTMLImageElement)
+            : target.querySelector('img') || target.closest('.reader-featured-image')?.querySelector('img')
+          if (img && (img as HTMLImageElement).src) {
+            imageUrl = (img as HTMLImageElement).src
+          }
           const hasSelection = !!window.getSelection()?.toString()
-          window.api.showReadOnlyContextMenu(linkUrl, hasSelection)
+          window.api.showReadOnlyContextMenu(linkUrl, hasSelection, imageUrl)
         }}
       >
         <div className="reader-wrap" style={{ maxWidth: settings.readingMaxWidth || 720 }}>

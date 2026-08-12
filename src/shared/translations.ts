@@ -372,6 +372,7 @@ export const translations = {
       webviewCtx: {
         openLink: 'Open Link',
         copyLinkAddress: 'Copy Link Address',
+        copyImage: 'Copy Image',
         copy: 'Copy',
         selectAll: 'Select All',
         undo: 'Undo',
@@ -759,6 +760,7 @@ export const translations = {
       webviewCtx: {
         openLink: 'Abrir enlace',
         copyLinkAddress: 'Copiar dirección del enlace',
+        copyImage: 'Copiar imagen',
         copy: 'Copiar',
         selectAll: 'Seleccionar todo',
         undo: 'Deshacer',

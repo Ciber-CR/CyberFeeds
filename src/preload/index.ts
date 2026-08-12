@@ -66,7 +66,7 @@ const api = {
   exportBackup: () => ipcRenderer.invoke('app:exportBackup'),
   importBackup: () => ipcRenderer.invoke('app:importBackup'),
   showInputContextMenu: () => ipcRenderer.invoke('showInputContextMenu'),
-  showReadOnlyContextMenu: (linkUrl?: string, hasSelection?: boolean) => ipcRenderer.invoke('showReadOnlyContextMenu', linkUrl, hasSelection),
+  showReadOnlyContextMenu: (linkUrl?: string, hasSelection?: boolean, imageUrl?: string) => ipcRenderer.invoke('showReadOnlyContextMenu', linkUrl, hasSelection, imageUrl),
   openDataFolder: () => ipcRenderer.invoke('app:openDataFolder'),
   scanFeeds: () => ipcRenderer.invoke('app:scanFeeds'),
 
