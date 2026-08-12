@@ -162,6 +162,21 @@ function extractThumbnail(item: any): string | undefined {
   return undefined
 }
 
+function getRedditGuid(text: string): string | null {
+  if (!text) return null
+  // Match t1_..., t3_..., etc. (Reddit fullnames)
+  const fullnameMatch = text.match(/\b(t[1-8]_[a-z0-9]+)\b/i)
+  if (fullnameMatch) {
+    return fullnameMatch[1].toLowerCase()
+  }
+  // Match comment/post ID in URL/permalink
+  const commentMatch = text.match(/\/comments\/([a-z0-9]+)/i)
+  if (commentMatch) {
+    return `t3_${commentMatch[1].toLowerCase()}`
+  }
+  return null
+}
+
 /** Fetch from Reddit's JSON API and convert to feed items */
 async function fetchRedditJson(feedId: string, jsonUrl: string): Promise<FeedResult> {
   const lastFetched = Date.now()
@@ -175,7 +190,8 @@ async function fetchRedditJson(feedId: string, jsonUrl: string): Promise<FeedRes
 
   const articles: ParsedArticle[] = posts.map((post: any) => {
     const d = post.data
-    const guid = d.permalink || d.url || d.id
+    const rawGuid = d.name || (d.id ? `t3_${d.id}` : '') || d.permalink || d.url
+    const guid = getRedditGuid(rawGuid) || rawGuid
     const id = makeId(feedId, guid)
     const pubDate = d.created ? Math.floor(d.created * 1000) : lastFetched
 
@@ -222,7 +238,8 @@ async function fetchRedditWithFallbacks(feedId: string, url: string): Promise<Fe
       const feed = await parser.parseString(text)
       const lastFetched = Date.now()
       const articles: ParsedArticle[] = (feed.items || []).slice(0, 100).map(item => {
-        const guid = item.guid || item.link || item.title || String(Math.random())
+        const rawGuid = item.guid || item.id || item.link || item.title || String(Math.random())
+        const guid = getRedditGuid(rawGuid) || rawGuid
         const id = makeId(feedId, guid)
         const rawContent = item['content:encoded'] || item.content || item.contentSnippet || ''
         const rawSnippet = item.contentSnippet || cleanHtml(rawContent)
