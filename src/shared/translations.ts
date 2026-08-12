@@ -364,6 +364,8 @@ export const translations = {
         notifications: 'Notifications',
         settings: 'Configuration...',
         fetchNow: 'Fetch Now',
+        pauseFeeds: 'Pause feeds',
+        resumeFeeds: 'Resume feeds',
         quit: 'Exit'
       },
       webviewCtx: {
@@ -748,6 +750,8 @@ export const translations = {
         notifications: 'Notificaciones',
         settings: 'Configuración...',
         fetchNow: 'Buscar ahora',
+        pauseFeeds: 'Pausar feeds',
+        resumeFeeds: 'Reactivar feeds',
         quit: 'Salir'
       },
       webviewCtx: {

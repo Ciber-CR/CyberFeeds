@@ -96,6 +96,11 @@ const api = {
     ipcRenderer.on('app:openHistory', handler)
     return () => { ipcRenderer.removeListener('app:openHistory', handler) }
   },
+  onPollingToggled: (cb: (pollingEnabled: boolean) => void) => {
+    const handler = (_: unknown, pollingEnabled: boolean) => cb(pollingEnabled)
+    ipcRenderer.on('settings:pollingToggled', handler)
+    return () => { ipcRenderer.removeListener('settings:pollingToggled', handler) }
+  },
 
   // Updates
   checkForUpdates: () => ipcRenderer.invoke('update:check'),

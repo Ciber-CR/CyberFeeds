@@ -13,7 +13,9 @@ import {
   ExternalLink,
   Trash2,
   CheckCheck,
-  RefreshCw
+  RefreshCw,
+  Pause,
+  Play
 } from 'lucide-react'
 import { useArticlesStore } from '../store/articles.store'
 import { useUIStore } from '../store/ui.store'
@@ -380,16 +382,14 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         <Tooltip
           label={
             language === 'es'
-              ? `Sondeo: ${settings.pollingEnabled ? 'ENCENDIDO' : 'APAGADO'} | Sin leer: ${unreadDisplayCount} | Total: ${totalCount} | Clic para alternar`
-              : `Polling: ${settings.pollingEnabled ? 'ON' : 'OFF'} | Unread: ${unreadDisplayCount} | Total: ${totalCount} | Click to toggle`
+              ? `Sondeo: ${settings.pollingEnabled ? 'ENCENDIDO' : 'APAGADO'} | Sin leer: ${unreadDisplayCount} | Total: ${totalCount}`
+              : `Polling: ${settings.pollingEnabled ? 'ON' : 'OFF'} | Unread: ${unreadDisplayCount} | Total: ${totalCount}`
           }
           placement="bottom"
         >
           <div
             className="cyber-badge no-brackets"
-            onClick={() => togglePolling()}
             style={{
-              cursor: 'pointer',
               userSelect: 'none',
               display: 'flex',
               alignItems: 'center',
@@ -443,6 +443,27 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               className={isFetching ? 'spin-icon' : ''}
               style={isFetching ? { animation: 'spin 0.7s linear infinite' } : {}}
             />
+          </button>
+        </Tooltip>
+
+        <Tooltip
+          label={
+            settings.pollingEnabled
+              ? (language === 'es' ? 'Pausar feeds y notificaciones' : 'Pause feeds and notifications')
+              : (language === 'es' ? 'Reactivar feeds y notificaciones' : 'Reactivate feeds and notifications')
+          }
+          placement="bottom"
+        >
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={() => togglePolling()}
+            style={{
+              flexShrink: 0,
+              width: 24,
+              height: 24
+            }}
+          >
+            {settings.pollingEnabled ? <Pause size={14} /> : <Play size={14} />}
           </button>
         </Tooltip>
 

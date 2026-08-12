@@ -141,6 +141,8 @@ function buildMenu(): void {
   const iconNotifications = nativeImage.createFromPath(path.join(iconsDir, 'notifications.png'))
   const iconSettings = nativeImage.createFromPath(path.join(iconsDir, 'settings.png'))
   const iconFetch = nativeImage.createFromPath(path.join(iconsDir, 'fetch.png'))
+  const iconPause = nativeImage.createFromPath(path.join(iconsDir, 'pause-blue.svg'))
+  const iconPlay = nativeImage.createFromPath(path.join(iconsDir, 'play-green.svg'))
   const iconQuit = nativeImage.createFromPath(path.join(iconsDir, 'quit.png'))
 
   const isVisible = _mainWindow && !_mainWindow.isDestroyed() && _mainWindow.isVisible()
@@ -175,6 +177,19 @@ function buildMenu(): void {
       icon: iconFetch,
       accelerator: shortcuts.fetch.enabled ? shortcuts.fetch.accelerator : undefined,
       click: () => { pollFeeds() }
+    },
+    {
+      label: settings.pollingEnabled ? t.pauseFeeds : t.resumeFeeds,
+      icon: settings.pollingEnabled ? iconPause : iconPlay,
+      click: () => {
+        const current = db.getSettings()
+        const pollingEnabled = !current.pollingEnabled
+        db.saveSettings({ ...current, pollingEnabled })
+        buildMenu()
+        if (_mainWindow && !_mainWindow.isDestroyed()) {
+          _mainWindow.webContents.send('settings:pollingToggled', pollingEnabled)
+        }
+      }
     },
     {
       label: t.notifications,
