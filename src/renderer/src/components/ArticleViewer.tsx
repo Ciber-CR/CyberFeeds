@@ -435,6 +435,26 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
             <span>{formatFullDate(article.pubDate, language)}</span>
           </div>
 
+          {article.thumbnail && settings.showArticleThumbnails && (
+            <div
+              className="reader-featured-image"
+              style={{
+                margin: '20px 0',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                maxHeight: 380,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                border: '1px solid var(--border)'
+              }}
+            >
+              <img
+                src={article.thumbnail}
+                alt={article.title}
+                style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
+              />
+            </div>
+          )}
+
           {showSummary && summary && (
             <div
               style={{
