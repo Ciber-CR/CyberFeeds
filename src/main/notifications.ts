@@ -2,6 +2,7 @@ import { BrowserWindow, screen, ipcMain, shell, app } from 'electron'
 import path from 'path'
 import url from 'url'
 import fs from 'fs'
+import { exec } from 'child_process'
 import { is } from '@electron-toolkit/utils'
 import * as db from './db'
 import { restoreMainWindow } from './index'
@@ -291,7 +292,104 @@ function playNotificationSound(s: NotificationSettings): void {
   }
 }
 
-export function showNotification(item: NotificationHistoryItem): void {
+const scriptPath = path.join(app.getPath('userData'), 'detect-fullscreen.ps1')
+const queuedNotifications: NotificationHistoryItem[] = []
+let queueCheckInterval: ReturnType<typeof setInterval> | null = null
+
+function ensureScriptFile(): void {
+  const scriptContent = `Add-Type -AssemblyName System.Windows.Forms
+$code = @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32 {
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetShellWindow();
+    [DllImport("user32.dll")]
+    public static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+    public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+}
+"@
+Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
+$fg = [Win32]::GetForegroundWindow()
+$shell = [Win32]::GetShellWindow()
+if ($fg -ne [IntPtr]::Zero -and $fg -ne $shell) {
+    $rect = New-Object Win32+RECT
+    if ([Win32]::GetWindowRect($fg, [ref]$rect)) {
+        $width = $rect.Right - $rect.Left
+        $height = $rect.Bottom - $rect.Top
+        $screen = [System.Windows.Forms.Screen]::FromHandle($fg)
+        if ($width -ge $screen.Bounds.Width -and $height -ge $screen.Bounds.Height) {
+            $style = [Win32]::GetWindowLong($fg, -16)
+            if (($style -band 0x00C00000) -eq 0) {
+                Write-Output "true"
+                exit
+            }
+        }
+    }
+}
+Write-Output "false"
+`
+  try {
+    fs.writeFileSync(scriptPath, scriptContent, 'utf-8')
+  } catch (err) {
+    console.error('[Notifier] Failed to write fullscreen detection script:', err)
+  }
+}
+
+function isAnyAppFullscreen(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (process.platform !== 'win32') {
+      resolve(false)
+      return
+    }
+    ensureScriptFile()
+    exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"`, (err, stdout) => {
+      if (err) {
+        console.error('[Notifier] Fullscreen check error:', err)
+        resolve(false)
+        return
+      }
+      resolve(stdout.trim().toLowerCase() === 'true')
+    })
+  })
+}
+
+function startQueueChecker(): void {
+  if (queueCheckInterval) return
+
+  queueCheckInterval = setInterval(async () => {
+    if (queuedNotifications.length === 0) {
+      stopQueueChecker()
+      return
+    }
+
+    const isFullscreen = await isAnyAppFullscreen()
+    if (!isFullscreen) {
+      console.log(`[Notifier] Screen no longer in fullscreen. Flushing ${queuedNotifications.length} queued notifications.`)
+      const itemsToPresent = [...queuedNotifications]
+      queuedNotifications.length = 0
+      stopQueueChecker()
+
+      for (const item of itemsToPresent) {
+        void presentInPopup(item)
+      }
+    }
+  }, 10_000)
+}
+
+function stopQueueChecker(): void {
+  if (queueCheckInterval) {
+    clearInterval(queueCheckInterval)
+    queueCheckInterval = null
+  }
+}
+
+export async function showNotification(item: NotificationHistoryItem): Promise<void> {
   console.log(`[Notifier] showNotification triggered for: ${item.title}`)
   if (!settings.enabled) {
     console.warn('[Notifier] Notification suppressed: notifications are disabled')
@@ -323,6 +421,16 @@ export function showNotification(item: NotificationHistoryItem): void {
   const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow)
   if (mainWin) {
     mainWin.webContents.send('notifications:new', item)
+  }
+
+  if (settings.disableOnFullscreen) {
+    const isFullscreen = await isAnyAppFullscreen()
+    if (isFullscreen) {
+      console.log(`[Notifier] Suppressing popup: full screen detected. Queuing notification: ${item.title}`)
+      queuedNotifications.push(item)
+      startQueueChecker()
+      return
+    }
   }
 
   void presentInPopup(item)

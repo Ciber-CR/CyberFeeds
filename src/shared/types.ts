@@ -99,6 +99,7 @@ export interface NotificationSettings {
   openBehavior: 'browser' | 'app'
   showThumbnails: boolean
   preloadImages: boolean
+  disableOnFullscreen: boolean
 }
 
 export interface WindowState {
@@ -171,7 +172,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     snoozeMinutes: 30,
     openBehavior: 'app',
     showThumbnails: true,
-    preloadImages: true
+    preloadImages: true,
+    disableOnFullscreen: true
   },
   pollingEnabled: true,
   shortcuts: {
