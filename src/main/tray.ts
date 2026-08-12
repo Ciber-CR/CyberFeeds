@@ -18,7 +18,7 @@ export function createTray(mainWindow: BrowserWindow): Tray {
   buildMenu()
   registerGlobalShortcuts()
 
-  tray.setToolTip('CyberFeeds')
+  tray.setToolTip(`CyberFeeds v${app.getVersion()}`)
 
   tray.on('click', () => {
     const win = _mainWindow
