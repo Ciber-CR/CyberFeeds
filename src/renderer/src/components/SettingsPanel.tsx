@@ -613,6 +613,16 @@ export default function SettingsPanel(): JSX.Element {
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.showThumbnails}</span>
               </label>
 
+              <label className="toggle" style={{ marginBottom: 14 }}>
+                <div
+                  className={`toggle-track ${local.notifications.disableOnFullscreen ? 'on' : ''}`}
+                  onClick={() => updateNotif({ disableOnFullscreen: !local.notifications.disableOnFullscreen })}
+                >
+                  <div className="toggle-thumb" />
+                </div>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.disableOnFullscreen}</span>
+              </label>
+
               <div className="form-group">
                 <label className="form-label">{t.settings.notifications.openBehavior}</label>
                 <div className="open-behavior-picker">
