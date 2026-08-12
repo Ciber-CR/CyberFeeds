@@ -162,6 +162,14 @@ export default function App(): JSX.Element {
     return unsub
   }, [])
 
+  // Listen for polling toggled requests from tray context menu
+  useEffect(() => {
+    const unsub = window.api.onPollingToggled((pollingEnabled) => {
+      useSettingsStore.getState().update({ pollingEnabled })
+    })
+    return unsub
+  }, [])
+
   // Native text context menu for editable fields (modals, settings, search, etc.)
   useEffect(() => {
     const isEditableTextField = (target: EventTarget | null): boolean => {
