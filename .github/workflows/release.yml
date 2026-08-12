@@ -37,6 +37,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
+          draft: true
           fail_on_unmatched_files: true
           files: |
             dist/*.exe
