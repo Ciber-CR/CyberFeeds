@@ -69,6 +69,7 @@ function resolveStartupBounds(raw: WindowState): ReturnType<typeof clampWindowBo
 function persistMainWindowState(win: BrowserWindow): void {
   if (win.isDestroyed()) return
   try {
+    if (!win.isVisible() || win.isMinimized()) return
     if (typeof win.isFullScreen === 'function' && win.isFullScreen()) return
 
     const maximized = win.isMaximized()
