@@ -148,19 +148,17 @@ export default function AboutModal(): JSX.Element {
               borderRadius: '50%',
               filter: 'blur(12px)'
             }} />
-            <div style={{
-              position: 'relative',
-              width: 72, height: 72,
-              background: 'var(--bg-2)',
-              borderRadius: 18,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid var(--accent)',
-              boxShadow: '0 0 18px color-mix(in srgb, var(--accent) 25%, transparent)'
-            }}>
-              <img src={logoPng} alt="CyberFeeds" style={{ width: 44, height: 44, objectFit: 'contain' }} />
-            </div>
+            <img
+              src={logoPng}
+              alt="CyberFeeds"
+              style={{
+                position: 'relative',
+                width: 72,
+                height: 72,
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 50%, transparent))'
+              }}
+            />
           </div>
 
           <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 4 }}>
