@@ -3,7 +3,6 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   Star,
   Search,
-  Filter,
   ChevronDown,
   ArrowUp,
   Circle,
@@ -172,6 +171,8 @@ const FeedFavicon = memo(function FeedFavicon({
     />
   )
 })
+
+const formatNum = (val: number): string => String(val).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 
 const ArticleList = memo(function ArticleList(): JSX.Element {
   const {
@@ -380,37 +381,26 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         </div>
 
         <Tooltip
-          label={
-            language === 'es'
-              ? `Sondeo: ${settings.pollingEnabled ? 'ENCENDIDO' : 'APAGADO'} | Sin leer: ${unreadDisplayCount} | Total: ${totalCount}`
-              : `Polling: ${settings.pollingEnabled ? 'ON' : 'OFF'} | Unread: ${unreadDisplayCount} | Total: ${totalCount}`
-          }
+          label={unreadOnly ? t.articleList.showAll : t.articleList.unreadOnly}
           placement="bottom"
         >
           <div
             className="cyber-badge no-brackets"
+            onClick={() => setUnreadOnly(!unreadOnly)}
             style={{
+              cursor: 'pointer',
               userSelect: 'none',
               display: 'flex',
               alignItems: 'center',
               flexShrink: 0,
               gap: 8,
               padding: '3px 8px',
-              height: 24
+              height: 24,
+              color: unreadOnly ? 'var(--accent)' : undefined,
+              background: unreadOnly ? 'var(--accent-subtle)' : undefined,
+              border: unreadOnly ? '1px solid color-mix(in srgb, var(--accent) 35%, transparent)' : '1px solid transparent'
             }}
           >
-            {!settings.pollingEnabled && (
-              <span
-                style={{
-                  fontSize: 9,
-                  fontWeight: 700,
-                  color: 'var(--text-muted)',
-                  opacity: 0.8
-                }}
-              >
-                {t.articleList.paused}
-              </span>
-            )}
             <span
               style={{
                 width: 7,
@@ -422,7 +412,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               }}
             />
             <span style={{ opacity: 0.8, marginLeft: 4 }}>
-              [{unreadOnly ? unreadDisplayCount : `${unreadDisplayCount} / ${totalCount}`}]
+              [{unreadOnly ? formatNum(unreadDisplayCount) : `${formatNum(unreadDisplayCount)} / ${formatNum(totalCount)}`}]
             </span>
           </div>
         </Tooltip>
@@ -463,27 +453,11 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               height: 24
             }}
           >
-            {settings.pollingEnabled ? <Pause size={14} /> : <Play size={14} />}
-          </button>
-        </Tooltip>
-
-        <Tooltip
-          label={unreadOnly ? t.articleList.showAll : t.articleList.unreadOnly}
-          placement="bottom"
-        >
-          <button
-            className="btn btn-ghost btn-icon"
-            onClick={() => setUnreadOnly(!unreadOnly)}
-            style={{
-              color: unreadOnly ? 'var(--accent)' : undefined,
-              background: unreadOnly ? 'var(--accent-subtle)' : undefined,
-              border: unreadOnly ? '1px solid color-mix(in srgb, var(--accent) 35%, transparent)' : '1px solid transparent',
-              flexShrink: 0,
-              width: 24,
-              height: 24
-            }}
-          >
-            <Filter size={14} />
+            {settings.pollingEnabled ? (
+              <Pause size={14} />
+            ) : (
+              <Play size={14} style={{ color: '#50fa7b' }} />
+            )}
           </button>
         </Tooltip>
       </div>

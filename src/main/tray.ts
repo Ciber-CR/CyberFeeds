@@ -141,8 +141,8 @@ function buildMenu(): void {
   const iconNotifications = nativeImage.createFromPath(path.join(iconsDir, 'notifications.png'))
   const iconSettings = nativeImage.createFromPath(path.join(iconsDir, 'settings.png'))
   const iconFetch = nativeImage.createFromPath(path.join(iconsDir, 'fetch.png'))
-  const iconPause = nativeImage.createFromPath(path.join(iconsDir, 'pause-blue.svg'))
-  const iconPlay = nativeImage.createFromPath(path.join(iconsDir, 'play-green.svg'))
+  const iconPause = nativeImage.createFromPath(path.join(iconsDir, 'pause-blue.png'))
+  const iconPlay = nativeImage.createFromPath(path.join(iconsDir, 'play-green.png'))
   const iconQuit = nativeImage.createFromPath(path.join(iconsDir, 'quit.png'))
 
   const isVisible = _mainWindow && !_mainWindow.isDestroyed() && _mainWindow.isVisible()
