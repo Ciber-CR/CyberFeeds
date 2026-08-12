@@ -519,13 +519,25 @@ export function registerIpc(): void {
     }
     try {
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 10000)
-      const res = await fetch(imageUrl, { signal: controller.signal })
+      const timeout = setTimeout(() => controller.abort(), 15000)
+      const res = await fetch(imageUrl, {
+        signal: controller.signal,
+        redirect: 'follow',
+        headers: {
+          'User-Agent': `CyberFeeds/${app.getVersion()} (Windows NT; RSS Reader)`,
+          'Accept': 'image/*,*/*;q=0.8'
+        }
+      })
       clearTimeout(timeout)
       if (!res.ok) return { ok: false, error: `http-${res.status}` }
       const buf = Buffer.from(await res.arrayBuffer())
-      const image = nativeImage.createFromBuffer(buf)
-      if (image.isEmpty()) return { ok: false, error: 'empty-image' }
+      // Try nativeImage first; it handles PNG, JPEG, GIF, BMP, and some WebP.
+      let image = nativeImage.createFromBuffer(buf)
+      if (image.isEmpty()) {
+        // Attempt to interpret via content-type hint — nativeImage may need
+        // a format-specific re-encode. For now report the failure.
+        return { ok: false, error: 'empty-image' }
+      }
       clipboard.writeImage(image)
       return { ok: true }
     } catch (err) {
@@ -549,7 +561,7 @@ export function registerIpc(): void {
     menu.popup()
   })
 
-  ipcMain.handle('showReadOnlyContextMenu', (_, linkUrl?: string, hasSelection?: boolean) => {
+  ipcMain.handle('showReadOnlyContextMenu', (_, linkUrl?: string, hasSelection?: boolean, imageUrl?: string) => {
     const lang = db.getSettings().language || 'en'
     const t = translations[lang].mainProcess.webviewCtx
     const template: MenuItemConstructorOptions[] = []
@@ -587,6 +599,35 @@ export function registerIpc(): void {
       }
     } else if (hasSelection) {
       template.push({ role: 'copy', label: t.copy })
+    }
+
+    // "Copy image" option when right-clicking on an <img>
+    if (imageUrl) {
+      if (template.length > 0) template.push({ type: 'separator' })
+      template.push({
+        label: t.copyImage,
+        click: async () => {
+          try {
+            const controller = new AbortController()
+            const timeout = setTimeout(() => controller.abort(), 15000)
+            const res = await fetch(imageUrl, {
+              signal: controller.signal,
+              redirect: 'follow',
+              headers: {
+                'User-Agent': `CyberFeeds/${app.getVersion()} (Windows NT; RSS Reader)`,
+                'Accept': 'image/*,*/*;q=0.8'
+              }
+            })
+            clearTimeout(timeout)
+            if (!res.ok) return
+            const buf = Buffer.from(await res.arrayBuffer())
+            const image = nativeImage.createFromBuffer(buf)
+            if (!image.isEmpty()) clipboard.writeImage(image)
+          } catch (err) {
+            console.error('[CopyImage] Failed:', err)
+          }
+        }
+      })
     }
 
     if (template.length > 0) {
