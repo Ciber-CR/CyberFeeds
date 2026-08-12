@@ -172,6 +172,7 @@ export default function NotifierApp(): JSX.Element {
   const handleOpenInBrowser = (item: NotificationHistoryItem): void => {
     if (item.link) {
       window.api.openExternal(item.link)
+      handleDismiss(item.id)
     }
   }
 
