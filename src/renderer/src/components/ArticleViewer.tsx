@@ -1,6 +1,6 @@
 import { memo, useState, useEffect, useCallback, useRef } from 'react'
 import DOMPurify from 'dompurify'
-import { ExternalLink, Star, FileText, Rss, Share2, Check, ArrowUp } from 'lucide-react'
+import { ExternalLink, Star, FileText, Rss, Share2, Check, ArrowUp, BookOpen } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useArticlesStore } from '../store/articles.store'
 import { useSettingsStore } from '../store/settings.store'
@@ -100,12 +100,43 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
     }
   }, [articles])
 
+  const fetchFullContent = useCallback(() => {
+    if (!article) return
+    setLoading(true)
+    setFullHtml(null)
+
+    window.api
+      .fetchArticleContent(article.id)
+      .then((result) => {
+        setLoading(false)
+        if (result?.html) {
+          const textOnly = result.html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+          const minLength = Math.max(120, (article.snippet || '').length)
+          if (textOnly.length >= minLength) {
+            setFullHtml(result.html)
+          } else {
+            console.log('Extracted content is too short, falling back to original')
+          }
+        }
+      })
+      .catch((err) => {
+        setLoading(false)
+        console.error('Failed to fetch full article content:', err)
+      })
+  }, [article])
+
   // Automatically fetch full article content when article changes
   useEffect(() => {
     if (!article) {
       setFullHtml(null)
       return
     }
+
+    if (!settings.autoFetchFullContent) {
+      setFullHtml(null)
+      return
+    }
+
     let active = true
     setLoading(true)
     setFullHtml(null)
@@ -134,7 +165,7 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
     return () => {
       active = false
     }
-  }, [article?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [article?.id, settings.autoFetchFullContent])
 
   const handleContentScroll = useCallback(() => {
     if (scrollRaf.current != null) return
@@ -248,6 +279,19 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
             <span className="viewer-toolbar-label">{t.articleViewer.summary}</span>
           </button>
         </Tooltip>
+        <Tooltip label={t.articleViewer.autoFetchTooltip} placement="bottom">
+          <button
+            className="btn btn-ghost has-label"
+            style={{
+              fontSize: 12,
+              color: settings.autoFetchFullContent ? 'var(--accent)' : 'inherit'
+            }}
+            onClick={() => update({ autoFetchFullContent: !settings.autoFetchFullContent })}
+          >
+            <BookOpen size={13} />
+            <span className="viewer-toolbar-label">{t.articleViewer.autoFetch}</span>
+          </button>
+        </Tooltip>
         {loading && (
           <div
             className="viewer-toolbar-loading"
@@ -332,6 +376,14 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
         className="viewer-content"
         ref={contentRef}
         onScroll={handleContentScroll}
+        onMouseDown={(e) => {
+          if (e.button === 2) {
+            const selection = window.getSelection()
+            if (selection && selection.toString()) {
+              e.preventDefault()
+            }
+          }
+        }}
         onContextMenu={(e) => {
           e.preventDefault()
           window.dispatchEvent(
@@ -360,6 +412,8 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
                   e.preventDefault()
                   window.api.openExternal(article.link)
                 }}
+                onMouseOver={() => setHoveredLink(article.link)}
+                onMouseLeave={() => setHoveredLink(null)}
                 style={{ color: 'inherit', textDecoration: 'none' }}
               >
                 {article.title}
@@ -440,6 +494,28 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
             }}
             onMouseLeave={() => setHoveredLink(null)}
           />
+          {!fullHtml && !loading && (
+            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+              <button
+                className="btn btn-ghost has-label"
+                onClick={fetchFullContent}
+                style={{
+                  fontSize: 13,
+                  padding: '8px 16px',
+                  background: 'var(--accent-subtle)',
+                  border: '1px solid var(--accent)',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  borderRadius: 'var(--radius)'
+                }}
+              >
+                <FileText size={14} />
+                {t.articleViewer.loadFull}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
