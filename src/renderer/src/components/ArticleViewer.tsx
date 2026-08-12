@@ -435,7 +435,7 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
             <span>{formatFullDate(article.pubDate, language)}</span>
           </div>
 
-          {article.thumbnail && settings.showArticleThumbnails && (
+          {article.thumbnail && settings.showArticleThumbnails && (!!fullHtml || !article.content || !article.content.includes(article.thumbnail)) && (
             <div
               className="reader-featured-image"
               style={{
