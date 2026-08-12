@@ -1934,7 +1934,7 @@ body {
 }
 .notif-btn {
   font-size: 11px;
-  padding: 3px 10px;
+  padding: 5px 10px;
   border-radius: 3px;
   border: 1px solid var(--border);
   background: var(--bg-2);
