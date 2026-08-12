@@ -41,7 +41,7 @@ const TopBar = memo(function TopBar(): JSX.Element {
   return (
     <div className="topbar">
       <div className="topbar-brand">
-        <img src={logoPng} alt="CyberFeeds" style={{ width: 14, height: 14, objectFit: 'contain', marginRight: 0 }} />
+        <img src={logoPng} alt="CyberFeeds" style={{ width: 16, height: 16, objectFit: 'contain', marginRight: 6 }} />
         <span>CyberFeeds</span>
       </div>
       <div className="topbar-drag" />
