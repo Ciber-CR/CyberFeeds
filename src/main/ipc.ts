@@ -1,4 +1,4 @@
-import { ipcMain, shell, dialog, screen, Menu, MenuItemConstructorOptions, BrowserWindow, clipboard, nativeImage } from 'electron'
+import { ipcMain, shell, dialog, screen, Menu, MenuItemConstructorOptions, BrowserWindow, clipboard, nativeImage, net } from 'electron'
 import crypto from 'crypto'
 import path from 'path'
 import fs from 'fs'
@@ -513,31 +513,43 @@ export function registerIpc(): void {
   })
 
   // ─── Clipboard: copy remote image to clipboard ──────────────────────────
-  ipcMain.handle('clipboard:copyImage', async (_, imageUrl?: string | null) => {
-    if (!imageUrl || typeof imageUrl !== 'string') {
-      return { ok: false, error: 'no-image' }
-    }
+
+  // Shared helper: fetch an image URL via Chromium's network stack (net.fetch)
+  // which shares session/cache with the renderer — no redundant re-downloads.
+  async function fetchImageToClipboard(imageUrl: string): Promise<{ ok: boolean; error?: string }> {
     try {
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 15000)
-      const res = await fetch(imageUrl, {
-        signal: controller.signal,
-        redirect: 'follow',
-        headers: {
-          'User-Agent': `CyberFeeds/${app.getVersion()} (Windows NT; RSS Reader)`,
-          'Accept': 'image/*,*/*;q=0.8'
-        }
+      const timeout = setTimeout(() => controller.abort(), 12000)
+      const res = await net.fetch(imageUrl, {
+        signal: controller.signal as any,
+        cache: 'default',
+        redirect: 'follow'
       })
       clearTimeout(timeout)
       if (!res.ok) return { ok: false, error: `http-${res.status}` }
       const buf = Buffer.from(await res.arrayBuffer())
-      // Try nativeImage first; it handles PNG, JPEG, GIF, BMP, and some WebP.
-      let image = nativeImage.createFromBuffer(buf)
-      if (image.isEmpty()) {
-        // Attempt to interpret via content-type hint — nativeImage may need
-        // a format-specific re-encode. For now report the failure.
-        return { ok: false, error: 'empty-image' }
-      }
+      const image = nativeImage.createFromBuffer(buf)
+      if (image.isEmpty()) return { ok: false, error: 'empty-image' }
+      clipboard.writeImage(image)
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: String(err) }
+    }
+  }
+
+  ipcMain.handle('clipboard:copyImage', async (_, imageUrl?: string | null) => {
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      return { ok: false, error: 'no-image' }
+    }
+    return fetchImageToClipboard(imageUrl)
+  })
+
+  // Accept raw image bytes from the renderer (already fetched via browser cache)
+  ipcMain.handle('clipboard:writeImageBuffer', async (_, buffer: ArrayBuffer) => {
+    try {
+      const buf = Buffer.from(buffer)
+      const image = nativeImage.createFromBuffer(buf)
+      if (image.isEmpty()) return { ok: false, error: 'empty-image' }
       clipboard.writeImage(image)
       return { ok: true }
     } catch (err) {
@@ -606,26 +618,10 @@ export function registerIpc(): void {
       if (template.length > 0) template.push({ type: 'separator' })
       template.push({
         label: t.copyImage,
-        click: async () => {
-          try {
-            const controller = new AbortController()
-            const timeout = setTimeout(() => controller.abort(), 15000)
-            const res = await fetch(imageUrl, {
-              signal: controller.signal,
-              redirect: 'follow',
-              headers: {
-                'User-Agent': `CyberFeeds/${app.getVersion()} (Windows NT; RSS Reader)`,
-                'Accept': 'image/*,*/*;q=0.8'
-              }
-            })
-            clearTimeout(timeout)
-            if (!res.ok) return
-            const buf = Buffer.from(await res.arrayBuffer())
-            const image = nativeImage.createFromBuffer(buf)
-            if (!image.isEmpty()) clipboard.writeImage(image)
-          } catch (err) {
+        click: () => {
+          fetchImageToClipboard(imageUrl).catch((err) =>
             console.error('[CopyImage] Failed:', err)
-          }
+          )
         }
       })
     }
