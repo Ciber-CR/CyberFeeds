@@ -1,4 +1,4 @@
-import { ipcMain, shell, dialog, screen, Menu, MenuItemConstructorOptions, BrowserWindow, clipboard, nativeImage, net } from 'electron'
+import { ipcMain, shell, dialog, screen, Menu, MenuItemConstructorOptions, BrowserWindow, clipboard, nativeImage, net, Session, WebContents } from 'electron'
 import crypto from 'crypto'
 import path from 'path'
 import fs from 'fs'
@@ -512,20 +512,22 @@ export function registerIpc(): void {
     return result.filePaths[0]
   })
 
-  // ─── Clipboard: copy remote image to clipboard ──────────────────────────
+  // ─── Clipboard: copy image to clipboard ─────────────────────────────────
 
-  // Shared helper: fetch an image URL via Chromium's network stack (net.fetch)
-  // which shares session/cache with the renderer — no redundant re-downloads.
-  async function fetchImageToClipboard(imageUrl: string): Promise<{ ok: boolean; error?: string }> {
+  // Network fallback: Chromium session fetch (same HTTP cache as <img> tags).
+  async function fetchImageToClipboard(
+    imageUrl: string,
+    ses?: Session
+  ): Promise<{ ok: boolean; error?: string }> {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000)
     try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 12000)
-      const res = await net.fetch(imageUrl, {
-        signal: controller.signal as any,
-        cache: 'default',
-        redirect: 'follow'
-      })
-      clearTimeout(timeout)
+      const init = {
+        signal: controller.signal,
+        cache: 'force-cache' as RequestCache,
+        redirect: 'follow' as RequestRedirect
+      }
+      const res = ses ? await ses.fetch(imageUrl, init) : await net.fetch(imageUrl, init as any)
       if (!res.ok) return { ok: false, error: `http-${res.status}` }
       const buf = Buffer.from(await res.arrayBuffer())
       const image = nativeImage.createFromBuffer(buf)
@@ -534,14 +536,59 @@ export function registerIpc(): void {
       return { ok: true }
     } catch (err) {
       return { ok: false, error: String(err) }
+    } finally {
+      clearTimeout(timeout)
     }
   }
 
-  ipcMain.handle('clipboard:copyImage', async (_, imageUrl?: string | null) => {
+  // Fast path: Chromium copyImageAt copies the original decoded image at a
+  // viewport point (same as Chrome's "Copy Image") — no re-download.
+  function copyImageAtPoint(wc: WebContents, x: number, y: number): { ok: boolean; error?: string } {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return { ok: false, error: 'bad-point' }
+    wc.copyImageAt(Math.round(x), Math.round(y))
+    return { ok: true }
+  }
+
+  // Prefer a loaded <img> in `scopeSelector`, else session-cached fetch.
+  async function copyImageFromPage(
+    wc: WebContents,
+    imageUrl: string,
+    scopeSelector?: string
+  ): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const point = await wc.executeJavaScript(
+        `(() => {
+          const url = ${JSON.stringify(imageUrl)};
+          const root = ${scopeSelector ? `document.querySelector(${JSON.stringify(scopeSelector)}) || document` : 'document'};
+          const imgs = root.querySelectorAll('img');
+          for (const img of imgs) {
+            if (img.src !== url && img.currentSrc !== url) continue;
+            if (!img.complete || img.naturalWidth === 0) continue;
+            const r = img.getBoundingClientRect();
+            if (r.width < 2 || r.height < 2) continue;
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+          }
+          return null;
+        })()`
+      )
+      if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+        return copyImageAtPoint(wc, point.x, point.y)
+      }
+    } catch (err) {
+      console.error('[CopyImage] DOM lookup failed:', err)
+    }
+    return fetchImageToClipboard(imageUrl, wc.session)
+  }
+
+  ipcMain.handle('clipboard:copyImage', async (event, imageUrl?: string | null) => {
     if (!imageUrl || typeof imageUrl !== 'string') {
       return { ok: false, error: 'no-image' }
     }
-    return fetchImageToClipboard(imageUrl)
+    return fetchImageToClipboard(imageUrl, event.sender.session)
+  })
+
+  ipcMain.handle('clipboard:copyImageAt', (event, x: number, y: number) => {
+    return copyImageAtPoint(event.sender, x, y)
   })
 
   // Accept raw image bytes from the renderer (already fetched via browser cache)
@@ -573,9 +620,10 @@ export function registerIpc(): void {
     menu.popup()
   })
 
-  ipcMain.handle('showReadOnlyContextMenu', (_, linkUrl?: string, hasSelection?: boolean, imageUrl?: string) => {
+  ipcMain.handle('showReadOnlyContextMenu', (event, linkUrl?: string, hasSelection?: boolean, imageUrl?: string) => {
     const lang = db.getSettings().language || 'en'
     const t = translations[lang].mainProcess.webviewCtx
+    const wc = event.sender
     const template: MenuItemConstructorOptions[] = []
 
     if (linkUrl) {
@@ -619,7 +667,7 @@ export function registerIpc(): void {
       template.push({
         label: t.copyImage,
         click: () => {
-          fetchImageToClipboard(imageUrl).catch((err) =>
+          copyImageFromPage(wc, imageUrl, '.viewer-content').catch((err) =>
             console.error('[CopyImage] Failed:', err)
           )
         }
