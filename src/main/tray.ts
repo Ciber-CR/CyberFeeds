@@ -173,8 +173,13 @@ function buildMenu(): void {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: `CyberFeeds v${version}`,
-      enabled: false,
-      icon: nativeImage.createEmpty()
+      icon: nativeImage.createEmpty(),
+      click: () => {
+        const win = _mainWindow
+        if (!win || win.isDestroyed()) return
+        restoreMainWindow()
+        win.webContents.send('app:openAbout')
+      }
     },
     { type: 'separator' },
     {
