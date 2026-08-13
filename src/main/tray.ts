@@ -1,4 +1,4 @@
-import { Tray, Menu, app, BrowserWindow, nativeImage, globalShortcut } from 'electron'
+import { Tray, Menu, app, BrowserWindow, nativeImage, globalShortcut, screen } from 'electron'
 import path from 'path'
 import { pollFeeds } from './polling'
 import { restoreMainWindow } from './index'
@@ -10,9 +10,28 @@ let tray: Tray | null = null
 let _mainWindow: BrowserWindow | null = null
 let registeredGlobalShortcuts: string[] = []
 
+function loadTrayImage(): Electron.NativeImage {
+  const resourcesDir = path.join(__dirname, '../../resources')
+  // Windows tray is 16 logical px; use physical px so HiDPI is not an upscaled 16x16.
+  const px = Math.max(16, Math.round(16 * screen.getPrimaryDisplay().scaleFactor))
+
+  const hiRes = nativeImage.createFromPath(path.join(resourcesDir, 'icon.png'))
+  if (!hiRes.isEmpty()) {
+    return hiRes.resize({ width: px, height: px, quality: 'best' })
+  }
+
+  const trayPng = nativeImage.createFromPath(path.join(resourcesDir, 'tray.png'))
+  if (!trayPng.isEmpty()) {
+    const { width } = trayPng.getSize()
+    if (width === px) return trayPng
+    return trayPng.resize({ width: px, height: px, quality: 'best' })
+  }
+
+  return nativeImage.createFromPath(path.join(resourcesDir, 'icon.ico'))
+}
+
 export function createTray(mainWindow: BrowserWindow): Tray {
-  const iconPath = path.join(__dirname, '../../resources/tray.png')
-  tray = new Tray(iconPath)
+  tray = new Tray(loadTrayImage())
   _mainWindow = mainWindow
 
   buildMenu()
