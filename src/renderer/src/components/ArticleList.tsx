@@ -25,6 +25,7 @@ import ConfirmDialog from './ConfirmDialog'
 import type { Article } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import Tooltip from './Tooltip'
+import { copyArticleImage, featuredThumbImg } from '../lib/copyImage'
 
 function formatDate(ts: number, t: any): string {
   const d = new Date(ts)
@@ -560,13 +561,14 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                     <Link2 size={14} />
                     {t.articleList.contextMenu.copyLink}
                   </div>
-                  {getArticleImage(article) && (
+                  {article.thumbnail && settings.showArticleThumbnails && (
                     <div
                       className="ctx-item"
-                      onClick={async () => {
-                        const img = getArticleImage(article)
-                        if (img) await window.api.copyImageToClipboard(img)
+                      onClick={() => {
+                        const articleId = article.id
+                        const url = article.thumbnail
                         setCtx(null)
+                        void copyArticleImage({ img: featuredThumbImg(articleId), url })
                       }}
                     >
                       <Image size={14} />
@@ -699,6 +701,7 @@ const ArticleItem = memo(
         ref={measureRef}
         data-index={dataIndex}
         className={`article-item ${selected ? 'active' : ''} ${article.read ? 'read' : ''}`}
+        data-article-id={article.id}
         onClick={handleClick}
         onContextMenu={(e) => onContextMenu(e, article.id)}
         style={style}
@@ -794,13 +797,3 @@ const ArticleItem = memo(
 
 export { FeedFavicon }
 export default ArticleList
-
-// Resolve the best copyable image for an article: prefer the feed thumbnail,
-// otherwise fall back to the first <img> found inside the article content.
-function getArticleImage(article: Article): string | null {
-  if (article.thumbnail && typeof article.thumbnail === 'string') {
-    return article.thumbnail
-  }
-  const match = /<img[^>]+src=["']([^"']+)["']/i.exec(article.content || '')
-  return match ? match[1] : null
-}
