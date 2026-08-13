@@ -604,6 +604,18 @@ export function registerIpc(): void {
     }
   })
 
+  function openInConfiguredBrowser(url: string): void {
+    const settings = db.getSettings()
+    if (settings.customBrowserPath) {
+      const { execFile } = require('child_process')
+      execFile(settings.customBrowserPath, [url], (err) => {
+        if (err) console.error('Failed to open custom browser:', err)
+      })
+    } else {
+      shell.openExternal(url)
+    }
+  }
+
   // ─── Native Context Menu ─────────────────────────────────────────────────
   ipcMain.handle('showInputContextMenu', () => {
     const lang = db.getSettings().language || 'en'
@@ -620,32 +632,23 @@ export function registerIpc(): void {
     menu.popup()
   })
 
-  ipcMain.handle('showReadOnlyContextMenu', (event, linkUrl?: string, hasSelection?: boolean, imageUrl?: string) => {
+  ipcMain.handle('showReadOnlyContextMenu', (event, linkUrl?: string, selectedText?: string, imageUrl?: string) => {
     const lang = db.getSettings().language || 'en'
     const t = translations[lang].mainProcess.webviewCtx
     const wc = event.sender
     const template: MenuItemConstructorOptions[] = []
+    const query = typeof selectedText === 'string' ? selectedText.trim() : ''
+    const hasSelection = query.length > 0
 
     if (linkUrl) {
       template.push(
         {
           label: t.openLink,
-          click: () => {
-            const settings = db.getSettings()
-            if (settings.customBrowserPath) {
-              const { execFile } = require('child_process')
-              execFile(settings.customBrowserPath, [linkUrl], (err) => {
-                if (err) console.error('Failed to open custom browser:', err)
-              })
-            } else {
-              shell.openExternal(linkUrl)
-            }
-          }
+          click: () => openInConfiguredBrowser(linkUrl)
         },
         {
           label: t.copyLinkAddress,
           click: () => {
-            const { clipboard } = require('electron')
             clipboard.writeText(linkUrl)
           }
         }
@@ -659,6 +662,16 @@ export function registerIpc(): void {
       }
     } else if (hasSelection) {
       template.push({ role: 'copy', label: t.copy })
+    }
+
+    if (hasSelection) {
+      template.push({
+        label: t.searchGoogle,
+        click: () => {
+          const q = encodeURIComponent(query.slice(0, 500))
+          openInConfiguredBrowser(`https://www.google.com/search?q=${q}`)
+        }
+      })
     }
 
     // "Copy image" option when right-clicking on an <img>
