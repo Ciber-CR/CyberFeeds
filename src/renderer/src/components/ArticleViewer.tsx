@@ -407,8 +407,8 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
           if (img && (img as HTMLImageElement).src) {
             imageUrl = (img as HTMLImageElement).src
           }
-          const hasSelection = !!window.getSelection()?.toString()
-          window.api.showReadOnlyContextMenu(linkUrl, hasSelection, imageUrl)
+          const selectedText = window.getSelection()?.toString() ?? ''
+          window.api.showReadOnlyContextMenu(linkUrl, selectedText, imageUrl)
         }}
       >
         <div className="reader-wrap" style={{ maxWidth: settings.readingMaxWidth || 720 }}>

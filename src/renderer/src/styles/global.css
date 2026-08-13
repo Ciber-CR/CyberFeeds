@@ -2061,28 +2061,14 @@ body {
 .ctx-item:hover svg {
   color: var(--accent);
 }
-.ctx-item.danger {
-  color: var(--red);
-}
 .ctx-item.danger svg {
   color: var(--red);
 }
 .ctx-item.danger:hover {
   background: color-mix(in srgb, var(--red) 12%, transparent);
-  color: var(--red);
 }
 .ctx-item.danger:hover svg {
   color: var(--red);
-}
-.ctx-danger-row {
-  display: flex;
-  gap: 4px;
-}
-.ctx-item.icon-only {
-  flex: 1;
-  justify-content: center;
-  padding: 0;
-  min-width: 36px;
 }
 .ctx-divider {
   height: 1px;
