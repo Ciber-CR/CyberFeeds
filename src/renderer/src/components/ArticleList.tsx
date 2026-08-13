@@ -601,39 +601,47 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                 {t.articleList.contextMenu.markAllAsRead}
               </div>
               <div className="ctx-divider" />
-              {article && (
-                <div
-                  className="ctx-item danger"
-                  onClick={() => {
-                    deleteArticle(article.id)
-                    setCtx(null)
-                  }}
-                >
-                  <Trash2 size={14} />
-                  {t.articleList.contextMenu.deleteArticle}
-                </div>
-              )}
-              <div
-                className="ctx-item danger"
-                onClick={async () => {
-                  const confirmed = await confirm({
-                    title: t.articleList.dialogs.deleteAllTitle,
-                    message: t.articleList.dialogs.deleteAllMsg,
-                    confirmText: t.articleList.dialogs.deleteAllBtn,
-                    cancelText: t.sidebar.cancel,
-                    variant: 'danger'
-                  })
-                  if (confirmed) {
-                    const ids = articles.map((a) => a.id)
-                    if (ids.length > 0) {
-                      useArticlesStore.getState().deleteMultiple(ids)
-                    }
-                  }
-                  setCtx(null)
-                }}
-              >
-                <Trash2 size={14} />
-                {t.articleList.contextMenu.deleteAllArticles}
+              <div className="ctx-danger-row">
+                {article && (
+                  <Tooltip label={t.articleList.contextMenu.deleteArticle} placement="bottom">
+                    <div
+                      className="ctx-item danger icon-only"
+                      role="button"
+                      aria-label={t.articleList.contextMenu.deleteArticle}
+                      onClick={() => {
+                        deleteArticle(article.id)
+                        setCtx(null)
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </div>
+                  </Tooltip>
+                )}
+                <Tooltip label={t.articleList.contextMenu.deleteAllArticles} placement="bottom">
+                  <div
+                    className="ctx-item danger icon-only"
+                    role="button"
+                    aria-label={t.articleList.contextMenu.deleteAllArticles}
+                    onClick={async () => {
+                      const confirmed = await confirm({
+                        title: t.articleList.dialogs.deleteAllTitle,
+                        message: t.articleList.dialogs.deleteAllMsg,
+                        confirmText: t.articleList.dialogs.deleteAllBtn,
+                        cancelText: t.sidebar.cancel,
+                        variant: 'danger'
+                      })
+                      if (confirmed) {
+                        const ids = articles.map((a) => a.id)
+                        if (ids.length > 0) {
+                          useArticlesStore.getState().deleteMultiple(ids)
+                        }
+                      }
+                      setCtx(null)
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </div>
+                </Tooltip>
               </div>
             </div>
           )
