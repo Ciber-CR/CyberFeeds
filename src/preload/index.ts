@@ -88,6 +88,11 @@ const api = {
     ipcRenderer.on('app:openSettings', handler)
     return () => { ipcRenderer.removeListener('app:openSettings', handler) }
   },
+  onOpenAbout: (cb: () => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('app:openAbout', handler)
+    return () => { ipcRenderer.removeListener('app:openAbout', handler) }
+  },
   onNewNotification: (cb: (item: any) => void) => {
     const handler = (_: unknown, item: any) => cb(item)
     ipcRenderer.on('notifications:new', handler)

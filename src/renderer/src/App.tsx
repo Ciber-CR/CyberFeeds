@@ -143,6 +143,14 @@ export default function App(): JSX.Element {
     return unsub
   }, [])
 
+  // Listen for open about requests (e.g. from tray branding, like CyberViewer)
+  useEffect(() => {
+    const unsub = window.api.onOpenAbout(() => {
+      useUIStore.setState({ activePanel: 'about' })
+    })
+    return unsub
+  }, [])
+
   // Listen for real-time notifications to update unseen badge count
   useEffect(() => {
     const unsub = window.api.onNewNotification(() => {
