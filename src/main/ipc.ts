@@ -249,6 +249,21 @@ export function registerIpc(): void {
     return { ok: true }
   })
 
+  ipcMain.handle('articles:markAllFilteredRead', (_, starredOnly?: boolean) => {
+    db.markAllFilteredRead(Boolean(starredOnly))
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:deleteAllActive', (_, starredOnly?: boolean) => {
+    db.deleteAllActiveArticles(Boolean(starredOnly))
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:unstarAll', () => {
+    db.unstarAllArticles()
+    return { ok: true }
+  })
+
   ipcMain.handle('articles:star', (_, id: string, starred: boolean) => {
     db.starArticle(id, starred)
     return { ok: true }
@@ -271,6 +286,11 @@ export function registerIpc(): void {
 
   ipcMain.handle('articles:restoreMultiple', (_, ids: string[]) => {
     db.restoreArticles(ids)
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:restoreAllTrash', () => {
+    db.restoreAllTrash()
     return { ok: true }
   })
 

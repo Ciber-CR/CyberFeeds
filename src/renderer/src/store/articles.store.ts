@@ -23,11 +23,15 @@ interface ArticlesState {
   loadMore: () => Promise<void>
   markRead: (id: string, read: boolean) => Promise<void>
   markAllRead: (feedId?: string) => Promise<void>
+  markAllFilteredRead: (starredOnly?: boolean) => Promise<void>
   markMultipleRead: (ids: string[], read: boolean) => Promise<void>
   starArticle: (id: string, starred: boolean) => Promise<void>
   deleteArticle: (id: string) => Promise<void>
   deleteMultiple: (ids: string[]) => Promise<void>
+  deleteAllActiveArticles: (starredOnly?: boolean) => Promise<void>
+  unstarAllArticles: () => Promise<void>
   restoreArticle: (id: string) => Promise<void>
+  restoreAllTrash: () => Promise<void>
   purgeArticle: (id: string) => Promise<void>
   emptyTrash: () => Promise<void>
   removeArticleFromList: (id: string) => void
@@ -77,6 +81,12 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
     useFeedsStore.getState().refreshUnreadCounts()
   },
 
+  markAllFilteredRead: async (starredOnly = false) => {
+    await window.api.markAllFilteredRead(starredOnly)
+    await get().refresh()
+    useFeedsStore.getState().refreshUnreadCounts()
+  },
+
   starArticle: async (id, starred) => {
     if (get().articles.find(a => a.id === id)?.deletedAt) return
     set(s => ({ articles: s.articles.map(a => a.id === id ? { ...a, starred: starred ? 1 : 0 } : a) }))
@@ -120,6 +130,18 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
     useFeedsStore.getState().refreshUnreadCounts()
   },
 
+  deleteAllActiveArticles: async (starredOnly = false) => {
+    await window.api.deleteAllActiveArticles(starredOnly)
+    await get().refresh()
+    useFeedsStore.getState().refreshUnreadCounts()
+  },
+
+  unstarAllArticles: async () => {
+    await window.api.unstarAllArticles()
+    await get().refresh()
+    useFeedsStore.getState().refreshUnreadCounts()
+  },
+
   restoreArticle: async (id) => {
     set(s => {
       if (!s.articles.some(a => a.id === id)) return s
@@ -129,6 +151,18 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
       }
     })
     await window.api.restoreArticle(id)
+    useFeedsStore.getState().refreshUnreadCounts()
+  },
+
+  restoreAllTrash: async () => {
+    const wasViewingTrash = Boolean(get().currentQuery.trashOnly)
+    if (wasViewingTrash) {
+      set({ articles: [], totalCount: 0 })
+    }
+    await window.api.restoreAllTrash()
+    if (!wasViewingTrash) {
+      await get().refresh()
+    }
     useFeedsStore.getState().refreshUnreadCounts()
   },
 
@@ -145,7 +179,9 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
   },
 
   emptyTrash: async () => {
-    set({ articles: [], totalCount: 0 })
+    if (get().currentQuery.trashOnly) {
+      set({ articles: [], totalCount: 0 })
+    }
     await window.api.emptyTrash()
     useFeedsStore.getState().refreshUnreadCounts()
   },
@@ -161,6 +197,6 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
   refresh: async () => {
     const { currentQuery } = get()
     if (Object.keys(currentQuery).length === 0) return
-    get().load(currentQuery)
+    await get().load(currentQuery)
   }
 }))
