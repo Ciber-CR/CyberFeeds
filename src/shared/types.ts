@@ -52,7 +52,7 @@ export interface NotificationHistoryItem {
 
 export interface AppSettings {
   theme: 'dark' | 'light' | 'dracula' | 'nord' | 'hacker' | 'monokai'
-  layout: 'three-panel' | 'two-panel' | 'one-panel'
+  layout: 'three-panel' | 'two-panel' | 'one-panel' | 'horizontal-split'
   language: 'en' | 'es'
   pollingInterval: number
   autoStart: boolean

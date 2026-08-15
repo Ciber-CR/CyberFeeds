@@ -211,7 +211,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
   }, [local])
 
   useEffect(() => {
-    window.api.getDisplays().then((raw: any[]) => {
+    window.api.getDisplays().then((raw: DisplayInfo[]) => {
       setDisplays(raw.map(d => ({
         id: d.id,
         label: d.label,
@@ -540,6 +540,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                   <option value="three-panel">{t.settings.general.layouts.threePanel}</option>
                   <option value="two-panel">{t.settings.general.layouts.twoPanel}</option>
                   <option value="one-panel">{t.settings.general.layouts.onePanel}</option>
+                  <option value="horizontal-split">{t.settings.general.layouts.horizontalSplit}</option>
                 </select>
                 <label className="toggle" style={{ marginTop: 12, marginBottom: 0 }}>
                   <div

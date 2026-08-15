@@ -5,6 +5,7 @@ import { useArticlesStore } from './store/articles.store'
 import { useUIStore } from './store/ui.store'
 import { useSettingsStore } from './store/settings.store'
 import { useColumnResize } from './hooks/useColumnResize'
+import { useRowResize } from './hooks/useRowResize'
 import { useOverlayDismiss } from './hooks/useOverlayDismiss'
 import { useTranslation } from './hooks/useTranslation'
 import TopBar from './components/TopBar'
@@ -63,8 +64,10 @@ export default function App(): JSX.Element {
   // ── Resize hooks — MUST be at top level, before any conditionals ──────────
   const [sidebarDragging, setSidebarDragging] = useState(false)
   const [listDragging, setListDragging] = useState(false)
+  const [listRowDragging, setListRowDragging] = useState(false)
   const { startDrag: startSidebarDrag } = useColumnResize('sidebar', 220, 140, 480)
   const { startDrag: startListDrag } = useColumnResize('articleList', 320, 180, 620)
+  const { startDrag: startListRowDrag } = useRowResize('articleList', 320, 160, 600)
 
   // Bootstrap
   useEffect(() => {
@@ -280,8 +283,22 @@ export default function App(): JSX.Element {
     [startListDrag]
   )
 
+  const handleListRowDrag = useCallback(
+    (e: React.MouseEvent) => {
+      setListRowDragging(true)
+      startListRowDrag(e)
+      const onUp = (): void => {
+        setListRowDragging(false)
+        window.removeEventListener('mouseup', onUp)
+      }
+      window.addEventListener('mouseup', onUp)
+    },
+    [startListRowDrag]
+  )
+
   const showArticleList = layout !== 'one-panel'
-  const showSidebar = layout === 'three-panel'
+  const showSidebar = layout === 'three-panel' || layout === 'horizontal-split'
+  const isHorizontalSplit = layout === 'horizontal-split'
 
   return (
     <div id="root">
@@ -296,13 +313,18 @@ export default function App(): JSX.Element {
             />
           </Tooltip>
         )}
-        <div className="main-area">
+        <div className={`main-area${isHorizontalSplit ? ' horizontal-split' : ''}`}>
           {showArticleList && <ArticleList />}
           {showArticleList && (
-            <Tooltip label={t.common.resizeArticleList} placement="right">
+            <Tooltip
+              label={
+                isHorizontalSplit ? t.common.resizeArticleListVertical : t.common.resizeArticleList
+              }
+              placement={isHorizontalSplit ? 'bottom' : 'right'}
+            >
               <div
-                className={`resize-handle${listDragging ? ' active' : ''}`}
-                onMouseDown={handleListDrag}
+                className={`resize-handle${isHorizontalSplit ? ' resize-handle-horizontal' : ''}${(isHorizontalSplit ? listRowDragging : listDragging) ? ' active' : ''}`}
+                onMouseDown={isHorizontalSplit ? handleListRowDrag : handleListDrag}
               />
             </Tooltip>
           )}

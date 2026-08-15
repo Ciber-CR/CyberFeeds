@@ -11,7 +11,7 @@ interface UIState {
   unseenNotificationsCount: number
   unreadOnly: boolean
   search: string
-  layout: 'three-panel' | 'two-panel' | 'one-panel'
+  layout: 'three-panel' | 'two-panel' | 'one-panel' | 'horizontal-split'
   isFetching: boolean
   pendingFeedId: string | null
 
@@ -21,7 +21,7 @@ interface UIState {
   closePanel: () => void
   setUnreadOnly: (v: boolean) => void
   setSearch: (v: string) => void
-  setLayout: (v: 'three-panel' | 'two-panel' | 'one-panel') => void
+  setLayout: (v: 'three-panel' | 'two-panel' | 'one-panel' | 'horizontal-split') => void
   setFetching: (v: boolean) => void
   setPendingFeedId: (id: string | null) => void
 }
