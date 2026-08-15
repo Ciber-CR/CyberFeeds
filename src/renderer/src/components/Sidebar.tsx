@@ -232,7 +232,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           <Trash2 size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
           <span className="item-label">{t.sidebar.trash}</span>
           {trashCount > 0 && (
-            <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
+            <div className="cyber-badge trash-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
               {formatNum(trashCount)}
             </div>
           )}
