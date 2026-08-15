@@ -3,7 +3,8 @@ export const translations = {
     common: {
       close: 'Close',
       resizeSidebar: 'Drag to resize sidebar',
-      resizeArticleList: 'Drag to resize article list'
+      resizeArticleList: 'Drag to resize article list',
+      resizeArticleListVertical: 'Drag to resize article list height'
     },
     topBar: {
       inboxToday: 'Inbox Today',
@@ -167,7 +168,8 @@ export const translations = {
         layouts: {
           threePanel: 'Three Panel',
           twoPanel: 'Two Panel',
-          onePanel: 'One Panel'
+          onePanel: 'One Panel',
+          horizontalSplit: 'List above / reader below'
         },
         startWithWindows: 'Start with Windows',
         startMinimized: 'Start minimized to tray',
@@ -415,7 +417,8 @@ export const translations = {
     common: {
       close: 'Cerrar',
       resizeSidebar: 'Arrastra para redimensionar la barra lateral',
-      resizeArticleList: 'Arrastra para redimensionar la lista de artículos'
+      resizeArticleList: 'Arrastra para redimensionar la lista de artículos',
+      resizeArticleListVertical: 'Arrastra para cambiar la altura de la lista de artículos'
     },
     topBar: {
       inboxToday: 'Bandeja de entrada de hoy',
@@ -582,7 +585,8 @@ export const translations = {
         layouts: {
           threePanel: 'Tres paneles',
           twoPanel: 'Dos paneles',
-          onePanel: 'Un panel'
+          onePanel: 'Un panel',
+          horizontalSplit: 'Lista arriba / lector abajo'
         },
         startWithWindows: 'Iniciar con Windows',
         startMinimized: 'Iniciar minimizado en la bandeja',

@@ -29,6 +29,8 @@
   /* Panel widths — overridden by useColumnResize CSS vars */
   --col-sidebar: 220px;
   --col-articleList: 320px;
+  /* Horizontal split list height — overridden by useRowResize */
+  --row-articleList: 320px;
   /* Panel font sizes — overridden by settings */
   --sidebar-font-size: 13px;
   --list-font-size: 13px;
@@ -180,6 +182,10 @@ body {
   display: flex;
   overflow: hidden;
   min-width: 0;
+}
+.main-area.horizontal-split {
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* ─── Topbar ────────────────────────────────────────────────────────────── */
@@ -423,6 +429,16 @@ body {
   background: var(--bg-0);
   overflow: hidden;
   font-size: var(--list-font-size);
+}
+.horizontal-split .article-list-pane {
+  width: 100%;
+  min-width: 0;
+  height: var(--row-articleList);
+  max-height: calc(100% - 180px);
+  min-height: 160px;
+  border-right: none;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .article-list-header {
   display: flex;
@@ -738,6 +754,10 @@ body {
   background: var(--bg-0);
   min-width: 250px;
   position: relative;
+}
+.horizontal-split .article-viewer {
+  min-width: 0;
+  min-height: 0;
 }
 .viewer-toolbar {
   display: flex;
@@ -1714,6 +1734,11 @@ body {
 .resize-handle:hover,
 .resize-handle.active {
   background: var(--accent);
+}
+.resize-handle-horizontal {
+  width: auto;
+  height: 4px;
+  cursor: row-resize;
 }
 
 /* ─── Misc ──────────────────────────────────────────────────────────────── */

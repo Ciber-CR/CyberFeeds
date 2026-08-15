@@ -18,7 +18,7 @@ import Tooltip from './Tooltip'
 
 const TopBar = memo(function TopBar(): JSX.Element {
   const { openPanel, setLayout, layout, unseenNotificationsCount } = useUIStore()
-  const { settings } = useSettingsStore()
+  const { settings, update } = useSettingsStore()
   const { t } = useTranslation()
   const [maximized, setMaximized] = useState(false)
 
@@ -29,13 +29,15 @@ const TopBar = memo(function TopBar(): JSX.Element {
   }, [])
 
   const cycleLayout = (): void => {
-    const layouts: Array<'three-panel' | 'two-panel' | 'one-panel'> = [
+    const layouts: Array<'three-panel' | 'two-panel' | 'one-panel' | 'horizontal-split'> = [
       'three-panel',
       'two-panel',
-      'one-panel'
+      'one-panel',
+      'horizontal-split'
     ]
     const next = layouts[(layouts.indexOf(layout) + 1) % layouts.length]
     setLayout(next)
+    update({ layout: next })
   }
 
   return (
