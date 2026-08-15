@@ -44,6 +44,58 @@ function makeSummary(title: string, content: string): string {
   )
 }
 
+function normalizeImageUrl(value: string, baseUrl: string): URL | null {
+  try {
+    const url = new URL(value.trim(), baseUrl)
+    url.hash = ''
+    return url
+  } catch {
+    return null
+  }
+}
+
+function imageUrlsMatch(left: string, right: string, baseUrl: string): boolean {
+  const leftUrl = normalizeImageUrl(left, baseUrl)
+  const rightUrl = normalizeImageUrl(right, baseUrl)
+  if (!leftUrl || !rightUrl) return false
+  if (leftUrl.href === rightUrl.href) return true
+
+  // Treat a URL with or without a transformation query as the same source image.
+  return (
+    leftUrl.origin === rightUrl.origin &&
+    leftUrl.pathname === rightUrl.pathname &&
+    (!leftUrl.search || !rightUrl.search)
+  )
+}
+
+function removeDuplicateFeaturedImage(html: string, thumbnail: string, baseUrl: string): string {
+  if (!html || !thumbnail) return html
+
+  const document = new DOMParser().parseFromString(html, 'text/html')
+  Array.from(document.querySelectorAll('img')).forEach((image) => {
+    const sources = [
+      image.getAttribute('src'),
+      image.getAttribute('data-src'),
+      image.getAttribute('data-lazy-src'),
+      image.getAttribute('data-original'),
+      ...(image.getAttribute('srcset') || image.getAttribute('data-srcset') || '')
+        .split(',')
+        .map((candidate) => candidate.trim().split(/\s+/)[0])
+    ].filter((source): source is string => Boolean(source))
+
+    if (!sources.some((source) => imageUrlsMatch(source, thumbnail, baseUrl))) return
+
+    const figure = image.closest('figure')
+    if (figure && figure.querySelectorAll('img').length === 1 && !figure.textContent?.trim()) {
+      figure.remove()
+    } else {
+      image.remove()
+    }
+  })
+
+  return document.body.innerHTML
+}
+
 const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
   const { selectedArticleId } = useUIStore()
   const { articles, starArticle } = useArticlesStore()
@@ -212,7 +264,10 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
   }
 
   const rawHtml = fullHtml || article.content || `<p>${article.snippet}</p>`
-  const safeHtml = DOMPurify.sanitize(rawHtml, {
+  const bodyHtml = article.thumbnail
+    ? removeDuplicateFeaturedImage(rawHtml, article.thumbnail, article.link)
+    : rawHtml
+  const safeHtml = DOMPurify.sanitize(bodyHtml, {
     ALLOWED_TAGS: [
       'p',
       'h1',
@@ -445,14 +500,12 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
             <span>{formatFullDate(article.pubDate, language)}</span>
           </div>
 
-          {article.thumbnail && settings.showArticleThumbnails && (!!fullHtml || !article.content || !article.content.includes(article.thumbnail)) && (
+          {article.thumbnail && settings.showArticleThumbnails && (
             <div
               className="reader-featured-image"
               style={{
                 margin: '20px 0',
                 borderRadius: '8px',
-                overflow: 'hidden',
-                maxHeight: 380,
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                 border: '1px solid var(--border)'
               }}
@@ -460,7 +513,6 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
               <img
                 src={article.thumbnail}
                 alt={article.title}
-                style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
               />
             </div>
           )}
