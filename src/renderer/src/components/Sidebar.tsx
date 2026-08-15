@@ -27,6 +27,14 @@ import { useTranslation } from '../hooks/useTranslation'
 import Tooltip from './Tooltip'
 
 const formatNum = (val: number): string => String(val).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+const MIN_REFRESH_INDICATOR_MS = 700
+
+async function waitForMinimumRefreshTime(startedAt: number): Promise<void> {
+  const remaining = MIN_REFRESH_INDICATOR_MS - (Date.now() - startedAt)
+  if (remaining > 0) {
+    await new Promise<void>((resolve) => setTimeout(resolve, remaining))
+  }
+}
 
 const Sidebar = memo(function Sidebar(): JSX.Element {
   const {
@@ -45,6 +53,8 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
+  const [refreshingFeedIds, setRefreshingFeedIds] = useState<Set<string>>(new Set())
+  const [refreshingFolderIds, setRefreshingFolderIds] = useState<Set<string>>(new Set())
   const [ctx, setCtx] = React.useState<{
     x: number
     y: number
@@ -112,6 +122,36 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     setImporting(false)
   }, [loadAll, t])
 
+  const handleRefreshFeed = useCallback(async (id: string) => {
+    const startedAt = Date.now()
+    setRefreshingFeedIds((prev) => new Set(prev).add(id))
+    try {
+      await fetchFeed(id)
+    } finally {
+      await waitForMinimumRefreshTime(startedAt)
+      setRefreshingFeedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [fetchFeed])
+
+  const handleRefreshFolder = useCallback(async (id: string) => {
+    const startedAt = Date.now()
+    setRefreshingFolderIds((prev) => new Set(prev).add(id))
+    try {
+      await fetchFolder(id)
+    } finally {
+      await waitForMinimumRefreshTime(startedAt)
+      setRefreshingFolderIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [fetchFolder])
+
   const sortedFolders = React.useMemo(
     () => [...folders].sort((a, b) => a.name.localeCompare(b.name)),
     [folders]
@@ -164,6 +204,10 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               collapsed={collapsed.has(folder.id)}
               onToggle={toggleFolder}
               selectedFeedId={selectedFeedId}
+              contextActive={ctx?.type === 'folder' && ctx.id === folder.id}
+              contextFeedId={ctx?.type === 'feed' ? ctx.id : null}
+              refreshingFolder={refreshingFolderIds.has(folder.id)}
+              refreshingFeedIds={refreshingFeedIds}
               onSelect={selectFeed}
               unreadCounts={unreadCounts}
               onContextMenu={(e, type, id) => {
@@ -185,6 +229,8 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 key={feed.id}
                 feed={feed}
                 selected={selectedFeedId === feed.id}
+                contextActive={ctx?.type === 'feed' && ctx.id === feed.id}
+                refreshing={refreshingFeedIds.has(feed.id)}
                 onSelect={selectFeed}
                 unread={unreadCounts[feed.id] || 0}
                 onContextMenu={(e, id) => {
@@ -291,7 +337,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               <div
                 className="ctx-item"
                 onClick={() => {
-                  fetchFeed(ctx.id)
+                  void handleRefreshFeed(ctx.id)
                   setCtx(null)
                 }}
               >
@@ -356,7 +402,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               <div
                 className="ctx-item"
                 onClick={() => {
-                  fetchFolder(ctx.id)
+                  void handleRefreshFolder(ctx.id)
                   setCtx(null)
                 }}
               >
@@ -440,6 +486,10 @@ interface FolderSectionProps {
   collapsed: boolean
   onToggle: (id: string) => void
   selectedFeedId: string | null
+  contextActive: boolean
+  contextFeedId: string | null
+  refreshingFolder: boolean
+  refreshingFeedIds: Set<string>
   onSelect: (id: string | null) => void
   unreadCounts: Record<string, number>
   onContextMenu: (e: React.MouseEvent, type: 'feed' | 'folder', id: string) => void
@@ -451,6 +501,10 @@ const FolderSection = memo(function FolderSection({
   collapsed,
   onToggle,
   selectedFeedId,
+  contextActive,
+  contextFeedId,
+  refreshingFolder,
+  refreshingFeedIds,
   onSelect,
   unreadCounts,
   onContextMenu
@@ -460,11 +514,17 @@ const FolderSection = memo(function FolderSection({
   return (
     <div>
       <div
-        className="folder-header"
+        className={`folder-header ${contextActive ? 'context-active' : ''}`}
         onClick={() => onToggle(folder.id)}
         onContextMenu={(e) => onContextMenu(e, 'folder', folder.id)}
       >
-        {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+        {refreshingFolder ? (
+          <RefreshCw className="feed-refresh-icon" size={14} />
+        ) : collapsed ? (
+          <ChevronRight size={14} />
+        ) : (
+          <ChevronDown size={14} />
+        )}
         <span className="folder-name">{folder.name}</span>
         {folderUnread > 0 && <div className="cyber-badge folder-badge">{formatNum(folderUnread)}</div>}
       </div>
@@ -474,6 +534,8 @@ const FolderSection = memo(function FolderSection({
             key={feed.id}
             feed={feed}
             selected={selectedFeedId === feed.id}
+            contextActive={contextFeedId === feed.id}
+            refreshing={refreshingFolder || refreshingFeedIds.has(feed.id)}
             onSelect={onSelect}
             unread={unreadCounts[feed.id] || 0}
             onContextMenu={(e, id) => onContextMenu(e, 'feed', id)}
@@ -487,6 +549,8 @@ const FolderSection = memo(function FolderSection({
 interface FeedItemProps {
   feed: Feed
   selected: boolean
+  contextActive: boolean
+  refreshing: boolean
   onSelect: (id: string) => void
   onContextMenu?: (e: React.MouseEvent, feedId: string) => void
   unread: number
@@ -496,6 +560,8 @@ interface FeedItemProps {
 const FeedItem = memo(function FeedItem({
   feed,
   selected,
+  contextActive,
+  refreshing,
   onSelect,
   onContextMenu,
   unread,
@@ -508,14 +574,18 @@ const FeedItem = memo(function FeedItem({
       placement="right"
     >
       <div
-        className={`sidebar-item ${selected ? 'active' : ''} ${feed.disabled ? 'paused' : ''}`}
+        className={`sidebar-item ${selected ? 'active' : ''} ${contextActive ? 'context-active' : ''} ${feed.disabled ? 'paused' : ''}`}
         style={indent ? { paddingLeft: 24 } : undefined}
         onClick={() => onSelect(feed.id)}
         onContextMenu={(e) => onContextMenu?.(e, feed.id)}
       >
         {/* Favicon BEFORE title, with colored letter fallback */}
         <div style={{ opacity: feed.disabled ? 0.5 : 1 }}>
-          <FeedFavicon icon={feed.icon} title={feed.title} size={15} />
+          {refreshing ? (
+            <RefreshCw className="feed-refresh-icon" size={15} />
+          ) : (
+            <FeedFavicon icon={feed.icon} title={feed.title} size={15} />
+          )}
         </div>
         <span
           className="item-label"

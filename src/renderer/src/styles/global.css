@@ -285,7 +285,17 @@ body {
 }
 .sidebar-item.active {
   background: var(--accent-subtle);
-  color: var(--accent);
+  color: var(--text-primary);
+}
+.sidebar-item.active .item-label {
+  font-weight: 600;
+}
+.sidebar-item.context-active {
+  background: var(--bg-2);
+  color: var(--text-primary);
+}
+.sidebar-item.active.context-active {
+  background: var(--accent-subtle);
 }
 .sidebar-item .item-icon {
   width: 16px;
@@ -293,6 +303,11 @@ body {
   object-fit: contain;
   border-radius: 3px;
   flex-shrink: 0;
+}
+.feed-refresh-icon {
+  color: #EF8021;
+  flex-shrink: 0;
+  animation: spin 0.7s linear infinite;
 }
 .sidebar-item .item-label {
   flex: 1;
@@ -360,6 +375,10 @@ body {
 }
 .folder-header:hover {
   color: var(--accent);
+}
+.folder-header.context-active {
+  background: var(--bg-2);
+  color: var(--text-primary);
 }
 .folder-header .folder-name {
   flex: 1;
@@ -439,6 +458,82 @@ body {
   overflow-y: auto;
   position: relative;
   overflow-anchor: none;
+}
+.feed-loading-state {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 24px;
+  color: var(--text-secondary);
+}
+.feed-loading-orbit {
+  width: 42px;
+  height: 42px;
+  position: relative;
+  border: 2px solid var(--border-muted);
+  border-top-color: #EF8021;
+  border-right-color: rgba(239, 128, 33, 0.42);
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(239, 128, 33, 0.12);
+  animation: feed-loading-spin 0.9s linear infinite;
+}
+.feed-loading-orbit-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  top: 3px;
+  left: 50%;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #EF8021;
+  box-shadow: 0 0 10px rgba(239, 128, 33, 0.75);
+}
+.feed-loading-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.feed-loading-skeletons {
+  width: min(220px, 80%);
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+.feed-loading-skeletons span {
+  display: block;
+  height: 6px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-2) 20%,
+    var(--bg-3) 45%,
+    var(--bg-2) 70%
+  );
+  background-size: 240% 100%;
+  animation: feed-loading-shimmer 1.5s ease-in-out infinite;
+}
+.feed-loading-skeletons span:nth-child(2) {
+  width: 84%;
+}
+.feed-loading-skeletons span:nth-child(3) {
+  width: 62%;
+}
+@keyframes feed-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes feed-loading-shimmer {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -80% 0;
+  }
 }
 .article-virtual-inner {
   width: 100%;

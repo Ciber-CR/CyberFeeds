@@ -13,6 +13,7 @@ interface UIState {
   search: string
   layout: 'three-panel' | 'two-panel' | 'one-panel'
   isFetching: boolean
+  pendingFeedId: string | null
 
   selectFeed: (id: string | null) => void
   selectArticle: (id: string | null) => void
@@ -22,6 +23,7 @@ interface UIState {
   setSearch: (v: string) => void
   setLayout: (v: 'three-panel' | 'two-panel' | 'one-panel') => void
   setFetching: (v: boolean) => void
+  setPendingFeedId: (id: string | null) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -35,8 +37,9 @@ export const useUIStore = create<UIState>((set) => ({
   search: '',
   layout: 'three-panel',
   isFetching: false,
+  pendingFeedId: null,
 
-  selectFeed: (id) => set({ selectedFeedId: id, selectedArticleId: null, search: '' }),
+  selectFeed: (id) => set({ selectedFeedId: id, selectedArticleId: null, search: '', pendingFeedId: null }),
   selectArticle: (id) => set({ selectedArticleId: id }),
   openPanel: (panel, id) => set(() => ({
     activePanel: panel,
@@ -47,5 +50,6 @@ export const useUIStore = create<UIState>((set) => ({
   setUnreadOnly: (v) => set({ unreadOnly: v }),
   setSearch: (v) => set({ search: v }),
   setLayout: (v) => set({ layout: v }),
-  setFetching: (v) => set({ isFetching: v })
+  setFetching: (v) => set({ isFetching: v }),
+  setPendingFeedId: (id) => set({ pendingFeedId: id })
 }))
