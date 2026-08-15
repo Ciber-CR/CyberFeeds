@@ -131,7 +131,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           className={`sidebar-item ${selectedFeedId === null ? 'active' : ''}`}
           onClick={() => selectFeed(null)}
         >
-          <Rss size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <Rss size={15} style={{ color: '#EF8021', flexShrink: 0 }} />
           <span className="item-label">{t.sidebar.allFeeds}</span>
           {totalUnread > 0 && (
             <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
