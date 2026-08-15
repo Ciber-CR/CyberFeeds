@@ -19,7 +19,8 @@ export const translations = {
       minimizeToTray: 'Minimize to tray'
     },
     sidebar: {
-      allFeeds: 'All Feeds',
+      allFeeds: 'All Articles',
+      unreadArticles: 'Unread articles',
       favorites: 'Favorites',
       expandAll: 'Expand All',
       collapseAll: 'Collapse All',
@@ -46,11 +47,15 @@ export const translations = {
       deleteFolderMsg:
         'Are you sure you want to delete folder "{name}"? Feeds inside will be unfiled.',
       cancel: 'Cancel',
-      delete: 'Delete'
+      delete: 'Delete',
+      unreadCount: 'unread',
+      readCountOne: 'read',
+      readCountMany: 'read'
     },
     articleList: {
       favorites: 'Favorites',
-      allFeeds: 'All Feeds',
+      allFeeds: 'All Articles',
+      unreadArticles: 'Unread articles',
       monitoring: 'MONITORING',
       paused: 'PAUSED',
       unreadOnly: 'Unread only',
@@ -405,7 +410,8 @@ export const translations = {
       minimizeToTray: 'Ocultar a la bandeja'
     },
     sidebar: {
-      allFeeds: 'Todos los feeds',
+      allFeeds: 'Todos los artículos',
+      unreadArticles: 'Artículos sin leer',
       favorites: 'Favoritos',
       expandAll: 'Expandir todo',
       collapseAll: 'Contraer todo',
@@ -433,11 +439,15 @@ export const translations = {
       deleteFolderMsg:
         '¿Estás seguro de que deseas eliminar la carpeta "{name}"? Los feeds que contiene quedarán sin clasificar.',
       cancel: 'Cancelar',
-      delete: 'Eliminar'
+      delete: 'Eliminar',
+      unreadCount: 'sin leer',
+      readCountOne: 'leído',
+      readCountMany: 'leídos'
     },
     articleList: {
       favorites: 'Favoritos',
-      allFeeds: 'Todos los feeds',
+      allFeeds: 'Todos los artículos',
+      unreadArticles: 'Artículos sin leer',
       monitoring: 'MONITOREANDO',
       paused: 'PAUSADO',
       unreadOnly: 'Solo no leídos',

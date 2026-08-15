@@ -15,7 +15,7 @@ interface UIState {
   isFetching: boolean
   pendingFeedId: string | null
 
-  selectFeed: (id: string | null) => void
+  selectFeed: (id: string | null, options?: { unreadOnly?: boolean }) => void
   selectArticle: (id: string | null) => void
   openPanel: (panel: Panel, id?: string) => void
   closePanel: () => void
@@ -39,7 +39,14 @@ export const useUIStore = create<UIState>((set) => ({
   isFetching: false,
   pendingFeedId: null,
 
-  selectFeed: (id) => set({ selectedFeedId: id, selectedArticleId: null, search: '', pendingFeedId: null }),
+  selectFeed: (id, options) =>
+    set({
+      selectedFeedId: id,
+      selectedArticleId: null,
+      search: '',
+      pendingFeedId: null,
+      ...(options?.unreadOnly !== undefined ? { unreadOnly: options.unreadOnly } : {})
+    }),
   selectArticle: (id) => set({ selectedArticleId: id }),
   openPanel: (panel, id) => set(() => ({
     activePanel: panel,

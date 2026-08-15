@@ -259,14 +259,38 @@ export function getArticleCount(query: Omit<ArticleQuery, 'limit' | 'offset'> = 
   return ((db.prepare(sql).get(...params) as { c: number }).c)
 }
 
-export function getUnreadCountByFeed(): Record<string, number> {
-  const rows = db.prepare('SELECT feedId, COUNT(*) as c FROM articles WHERE read=0 GROUP BY feedId').all() as { feedId: string; c: number }[]
-  const result = Object.fromEntries(rows.map(r => [r.feedId, r.c]))
-  
+export interface FeedArticleCounts {
+  unread: Record<string, number>
+  total: Record<string, number>
+  starred: number
+  all: number
+}
+
+export function getUnreadCountByFeed(): FeedArticleCounts {
+  const rows = db.prepare(`
+    SELECT feedId,
+           COUNT(*) as total,
+           SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END) as unread
+    FROM articles
+    GROUP BY feedId
+  `).all() as { feedId: string; total: number; unread: number }[]
+
+  const unread: Record<string, number> = {}
+  const total: Record<string, number> = {}
+  for (const row of rows) {
+    unread[row.feedId] = row.unread
+    total[row.feedId] = row.total
+  }
+
   const starredRow = db.prepare('SELECT COUNT(*) as c FROM articles WHERE starred=1').get() as { c: number }
-  result['starred'] = starredRow.c
-  
-  return result
+  const allRow = db.prepare('SELECT COUNT(*) as c FROM articles').get() as { c: number }
+
+  return {
+    unread,
+    total,
+    starred: starredRow.c,
+    all: allRow.c
+  }
 }
 
 export function insertArticles(articles: Omit<Article, 'feedTitle' | 'feedIcon'>[]): Omit<Article, 'feedTitle' | 'feedIcon'>[] {

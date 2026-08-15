@@ -79,11 +79,14 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
   },
 
   deleteArticle: async (id) => {
+    set(s => {
+      if (!s.articles.some(a => a.id === id)) return s
+      return {
+        articles: s.articles.filter(a => a.id !== id),
+        totalCount: Math.max(0, s.totalCount - 1)
+      }
+    })
     await window.api.deleteArticle(id)
-    set(s => ({
-      articles: s.articles.filter(a => a.id !== id),
-      totalCount: Math.max(0, s.totalCount - 1)
-    }))
     useFeedsStore.getState().refreshUnreadCounts()
   },
 
