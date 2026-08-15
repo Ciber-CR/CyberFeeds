@@ -611,6 +611,14 @@ body {
   background: var(--accent-subtle);
   border-left: 2px solid var(--accent);
 }
+.article-item.context-active {
+  background: var(--bg-1);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.article-item.active.context-active {
+  background: var(--accent-subtle);
+  box-shadow: none;
+}
 .article-item.read .article-title {
   color: var(--text-secondary);
   font-weight: 400;

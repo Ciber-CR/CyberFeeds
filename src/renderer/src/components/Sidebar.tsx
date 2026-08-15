@@ -10,6 +10,7 @@ import {
   Download,
   Stethoscope,
   Rss,
+  CircleDot,
   Star,
   RefreshCw,
   Pencil,
@@ -27,6 +28,17 @@ import { useTranslation } from '../hooks/useTranslation'
 import Tooltip from './Tooltip'
 
 const formatNum = (val: number): string => String(val).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
+function formatCountBreakdown(
+  unread: number,
+  total: number,
+  t: { sidebar: { unreadCount: string; readCountOne: string; readCountMany: string } }
+): string {
+  const read = Math.max(0, total - unread)
+  const readWord = read === 1 ? t.sidebar.readCountOne : t.sidebar.readCountMany
+  return `${formatNum(unread)} ${t.sidebar.unreadCount} ⋅ ${formatNum(read)} ${readWord}`
+}
+
 const MIN_REFRESH_INDICATOR_MS = 700
 
 async function waitForMinimumRefreshTime(startedAt: number): Promise<void> {
@@ -41,6 +53,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     feeds,
     folders,
     unreadCounts,
+    articleCounts,
     loadAll,
     deleteFeed,
     fetchFeed,
@@ -49,7 +62,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     togglePauseFolder,
     deleteFolder
   } = useFeedsStore()
-  const { selectedFeedId, selectFeed, openPanel } = useUIStore()
+  const { selectedFeedId, unreadOnly, selectFeed, openPanel } = useUIStore()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
@@ -77,8 +90,9 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     }
   }, [])
 
+  const totalAll = unreadCounts['all'] || 0
   const totalUnread = Object.entries(unreadCounts)
-    .filter(([k]) => k !== 'starred')
+    .filter(([k]) => k !== 'starred' && k !== 'all')
     .reduce((sum, [, count]) => sum + count, 0)
 
   const totalStarred = unreadCounts['starred'] || 0
@@ -166,17 +180,34 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
   return (
     <div className="sidebar" onContextMenu={(e) => e.preventDefault()}>
       <div className="sidebar-scroll">
-        {/* All Feeds */}
+        {/* All Articles */}
         <div
-          className={`sidebar-item ${selectedFeedId === null ? 'active' : ''}`}
-          onClick={() => selectFeed(null)}
+          className={`sidebar-item ${selectedFeedId === null && !unreadOnly ? 'active' : ''}`}
+          onClick={() => selectFeed(null, { unreadOnly: false })}
         >
           <Rss size={15} style={{ color: '#EF8021', flexShrink: 0 }} />
           <span className="item-label">{t.sidebar.allFeeds}</span>
+          {totalAll > 0 && (
+            <Tooltip label={formatCountBreakdown(totalUnread, totalAll, t)} placement="right">
+              <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
+                {formatNum(totalAll)}
+              </div>
+            </Tooltip>
+          )}
+        </div>
+
+        <div
+          className={`sidebar-item ${selectedFeedId === null && unreadOnly ? 'active' : ''}`}
+          onClick={() => selectFeed(null, { unreadOnly: true })}
+        >
+          <CircleDot size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <span className="item-label">{t.sidebar.unreadArticles}</span>
           {totalUnread > 0 && (
-            <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
-              {formatNum(totalUnread)}
-            </div>
+            <Tooltip label={formatCountBreakdown(totalUnread, totalAll, t)} placement="right">
+              <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
+                {formatNum(totalUnread)}
+              </div>
+            </Tooltip>
           )}
         </div>
 
@@ -210,6 +241,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
               refreshingFeedIds={refreshingFeedIds}
               onSelect={selectFeed}
               unreadCounts={unreadCounts}
+              articleCounts={articleCounts}
               onContextMenu={(e, type, id) => {
                 e.preventDefault()
                 window.dispatchEvent(
@@ -233,6 +265,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                 refreshing={refreshingFeedIds.has(feed.id)}
                 onSelect={selectFeed}
                 unread={unreadCounts[feed.id] || 0}
+                total={articleCounts[feed.id] || 0}
                 onContextMenu={(e, id) => {
                   e.preventDefault()
                   window.dispatchEvent(
@@ -492,6 +525,7 @@ interface FolderSectionProps {
   refreshingFeedIds: Set<string>
   onSelect: (id: string | null) => void
   unreadCounts: Record<string, number>
+  articleCounts: Record<string, number>
   onContextMenu: (e: React.MouseEvent, type: 'feed' | 'folder', id: string) => void
 }
 
@@ -507,9 +541,12 @@ const FolderSection = memo(function FolderSection({
   refreshingFeedIds,
   onSelect,
   unreadCounts,
+  articleCounts,
   onContextMenu
 }: FolderSectionProps) {
+  const { t } = useTranslation()
   const folderUnread = feeds.reduce((sum, f) => sum + (unreadCounts[f.id] || 0), 0)
+  const folderTotal = feeds.reduce((sum, f) => sum + (articleCounts[f.id] || 0), 0)
 
   return (
     <div>
@@ -526,7 +563,11 @@ const FolderSection = memo(function FolderSection({
           <ChevronDown size={14} />
         )}
         <span className="folder-name">{folder.name}</span>
-        {folderUnread > 0 && <div className="cyber-badge folder-badge">{formatNum(folderUnread)}</div>}
+        {folderUnread > 0 && (
+          <Tooltip label={formatCountBreakdown(folderUnread, folderTotal, t)} placement="right">
+            <div className="cyber-badge folder-badge">{formatNum(folderUnread)}</div>
+          </Tooltip>
+        )}
       </div>
       {!collapsed &&
         feeds.map((feed) => (
@@ -538,6 +579,7 @@ const FolderSection = memo(function FolderSection({
             refreshing={refreshingFolder || refreshingFeedIds.has(feed.id)}
             onSelect={onSelect}
             unread={unreadCounts[feed.id] || 0}
+            total={articleCounts[feed.id] || 0}
             onContextMenu={(e, id) => onContextMenu(e, 'feed', id)}
             indent
           />
@@ -554,6 +596,7 @@ interface FeedItemProps {
   onSelect: (id: string) => void
   onContextMenu?: (e: React.MouseEvent, feedId: string) => void
   unread: number
+  total: number
   indent?: boolean
 }
 
@@ -565,6 +608,7 @@ const FeedItem = memo(function FeedItem({
   onSelect,
   onContextMenu,
   unread,
+  total,
   indent
 }: FeedItemProps) {
   const { t } = useTranslation()
@@ -597,12 +641,14 @@ const FeedItem = memo(function FeedItem({
           {feed.title}
         </span>
         {unread > 0 && (
-          <div
-            className="cyber-badge"
-            style={{ fontSize: 9, padding: '1px 4px', opacity: feed.disabled ? 0.5 : 1 }}
-          >
-            {formatNum(unread)}
-          </div>
+          <Tooltip label={formatCountBreakdown(unread, total, t)} placement="right">
+            <div
+              className="cyber-badge"
+              style={{ fontSize: 9, padding: '1px 4px', opacity: feed.disabled ? 0.5 : 1 }}
+            >
+              {formatNum(unread)}
+            </div>
+          </Tooltip>
         )}
       </div>
     </Tooltip>

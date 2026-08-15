@@ -1,7 +1,8 @@
-import React, { memo, useRef, useCallback, useEffect, useState } from 'react'
+import React, { memo, useRef, useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   Star,
+  Rss,
   Search,
   ChevronDown,
   ArrowUp,
@@ -212,28 +213,47 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     setTimeout(() => useUIStore.setState({ isFetching: false }), 1000)
   }, [fetchAll])
 
-  // Auto-remove read articles from "Unread Only" view when moving to next
+  // Auto-remove read articles from "Unread Only" view when moving to next.
+  // Read latest articles from the store so this does not re-fire on every list mutation.
   useEffect(() => {
     if (unreadOnly && prevSelectedId.current && prevSelectedId.current !== selectedArticleId) {
       const prevId = prevSelectedId.current
-      const art = articles.find((a) => a.id === prevId)
+      const art = useArticlesStore.getState().articles.find((a) => a.id === prevId)
       if (art && art.read) {
         removeArticleFromList(prevId)
       }
     }
     prevSelectedId.current = selectedArticleId
-  }, [selectedArticleId, unreadOnly, articles, removeArticleFromList])
+  }, [selectedArticleId, unreadOnly, removeArticleFromList])
+
+  const deleteArticleAndAdvance = useCallback((id: string) => {
+    const list = useArticlesStore.getState().articles
+    const selected = useUIStore.getState().selectedArticleId
+    const idx = list.findIndex((a) => a.id === id)
+    if (idx < 0) return
+    const nextId = selected === id ? (list[idx + 1]?.id ?? list[idx - 1]?.id ?? null) : undefined
+    void deleteArticle(id)
+    if (selected === id) useUIStore.getState().selectArticle(nextId ?? null)
+  }, [deleteArticle])
 
   const selectedFeed = feeds.find((f) => f.id === selectedFeedId)
   const isLoadingNewFeed = pendingFeedId === selectedFeedId && articles.length === 0
+  const isAllArticles = selectedFeedId === null && !unreadOnly
+  const isUnreadArticles = selectedFeedId === null && unreadOnly
   const title =
     selectedFeedId === 'starred'
       ? t.articleList.favorites
-      : selectedFeed?.title || t.articleList.allFeeds
+      : isUnreadArticles
+        ? t.articleList.unreadArticles
+        : selectedFeed?.title || t.articleList.allFeeds
 
   const unreadDisplayCount = React.useMemo(() => {
     if (selectedFeedId === 'starred') return totalCount
-    if (selectedFeedId === null) return Object.values(unreadCounts).reduce((a, b) => a + b, 0)
+    if (selectedFeedId === null) {
+      return Object.entries(unreadCounts)
+        .filter(([k]) => k !== 'starred' && k !== 'all')
+        .reduce((a, [, b]) => a + b, 0)
+    }
     if (selectedFeedId.startsWith('folder:')) {
       const folderId = selectedFeedId.split(':')[1]
       const folderFeeds = feeds.filter((f) => f.folderId === folderId)
@@ -242,19 +262,35 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     return unreadCounts[selectedFeedId || ''] || 0
   }, [selectedFeedId, unreadCounts, totalCount, feeds])
 
-  const ITEM_H = 90
-  const ITEM_H_WITH_THUMB = 140
+  const ITEM_H = 120
+  const ITEM_H_WITH_THUMB = 230
+
+  const articlesRef = useRef(articles)
+  articlesRef.current = articles
+  const getItemKey = useCallback(
+    (index: number) => articlesRef.current[index]?.id ?? index,
+    []
+  )
 
   const rowVirtualizer = useVirtualizer({
     count: articles.length,
     getScrollElement: () => parentRef.current,
+    getItemKey,
     estimateSize: (index) => {
-      const article = articles[index]
+      const article = articlesRef.current[index]
       if (article?.thumbnail && settings.showArticleThumbnails) return ITEM_H_WITH_THUMB
       return ITEM_H
     },
     overscan: 8
   })
+
+  // Re-measure mounted rows after the list changes. Do not call virtualizer.measure()
+  // — that wipes cached heights and rows overlap until the pane remounts.
+  useLayoutEffect(() => {
+    rowVirtualizer.elementsCache.forEach((node) => {
+      if (node.isConnected) rowVirtualizer.measureElement(node)
+    })
+  }, [articles, rowVirtualizer])
 
   // Count of articles below the current viewport, and whether to offer "back to top".
   const [belowCount, setBelowCount] = useState(0)
@@ -327,6 +363,29 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     }
   }, [])
 
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null): boolean => {
+      if (!(target instanceof HTMLElement)) return false
+      return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
+    }
+
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.key !== 'Delete') return
+      if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return
+      if (isEditableTarget(e.target)) return
+      if (useUIStore.getState().activePanel) return
+      if (confirmState.isOpen) return
+      const id = useUIStore.getState().selectedArticleId
+      if (!id) return
+      e.preventDefault()
+      e.stopPropagation()
+      deleteArticleAndAdvance(id)
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [deleteArticleAndAdvance, confirmState.isOpen])
+
   return (
     <div className="article-list-pane" onContextMenu={(e) => e.preventDefault()}>
       {/* Header */}
@@ -334,6 +393,10 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
           {selectedFeedId === 'starred' ? (
             <Star size={16} fill="var(--star)" color="var(--star)" style={{ marginRight: 4 }} />
+          ) : isUnreadArticles ? (
+            <CircleDot size={16} color="var(--accent)" style={{ marginRight: 4 }} />
+          ) : isAllArticles ? (
+            <Rss size={16} color="#EF8021" style={{ marginRight: 4 }} />
           ) : (
             selectedFeed?.icon && (
               <FeedFavicon icon={selectedFeed.icon} title={selectedFeed.title} size={16} />
@@ -341,7 +404,13 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           )}
           <h2
             style={{
-              marginLeft: selectedFeedId === 'starred' || selectedFeed?.icon ? 4 : 0,
+              marginLeft:
+                selectedFeedId === 'starred' ||
+                isUnreadArticles ||
+                isAllArticles ||
+                selectedFeed?.icon
+                  ? 4
+                  : 0,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap'
@@ -489,11 +558,13 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           <div className="article-virtual-inner" style={{ height: rowVirtualizer.getTotalSize() }}>
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const article = articles[virtualRow.index]
+              if (!article) return null
               return (
                 <ArticleItem
-                  key={article.id}
+                  key={virtualRow.key}
                   article={article}
                   selected={selectedArticleId === article.id}
+                  contextActive={ctx?.id === article.id}
                   onSelect={selectArticle}
                   onContextMenu={(e, id) => {
                     e.preventDefault()
@@ -615,7 +686,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                 <div
                   className="ctx-item danger"
                   onClick={() => {
-                    deleteArticle(article.id)
+                    deleteArticleAndAdvance(article.id)
                     setCtx(null)
                   }}
                 >
@@ -666,6 +737,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
 interface ArticleItemProps {
   article: Article
   selected: boolean
+  contextActive?: boolean
   onSelect: (id: string) => void
   onContextMenu: (e: React.MouseEvent, id: string) => void
   style?: React.CSSProperties
@@ -677,6 +749,7 @@ const ArticleItem = memo(
   function ArticleItem({
     article,
     selected,
+    contextActive,
     onSelect,
     onContextMenu,
     style,
@@ -710,7 +783,7 @@ const ArticleItem = memo(
       <div
         ref={measureRef}
         data-index={dataIndex}
-        className={`article-item ${selected ? 'active' : ''} ${article.read ? 'read' : ''}`}
+        className={`article-item ${selected ? 'active' : ''} ${contextActive ? 'context-active' : ''} ${article.read ? 'read' : ''}`}
         data-article-id={article.id}
         onClick={handleClick}
         onContextMenu={(e) => onContextMenu(e, article.id)}
@@ -802,6 +875,8 @@ const ArticleItem = memo(
     prev.article.read === next.article.read &&
     prev.article.starred === next.article.starred &&
     prev.selected === next.selected &&
+    prev.contextActive === next.contextActive &&
+    prev.dataIndex === next.dataIndex &&
     prev.style?.transform === next.style?.transform
 )
 

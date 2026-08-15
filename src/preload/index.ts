@@ -24,7 +24,12 @@ const api = {
   // Articles
   getArticles: (query: object) => ipcRenderer.invoke('articles:get', query),
   getArticleCount: (query: object) => ipcRenderer.invoke('articles:getCount', query),
-  getUnreadCounts: () => ipcRenderer.invoke('articles:getUnreadCounts'),
+  getUnreadCounts: () => ipcRenderer.invoke('articles:getUnreadCounts') as Promise<{
+    unread: Record<string, number>
+    total: Record<string, number>
+    starred: number
+    all: number
+  }>,
   getTodayArticles: () => ipcRenderer.invoke('articles:getToday'),
   markRead: (id: string, read: boolean) => ipcRenderer.invoke('articles:markRead', id, read),
   markAllRead: (feedId?: string) => ipcRenderer.invoke('articles:markAllRead', feedId),
