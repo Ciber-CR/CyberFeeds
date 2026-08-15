@@ -320,6 +320,24 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     })
   }, [articles, rowVirtualizer])
 
+  // Keep keyboard/context-menu navigation visible when the selected article
+  // advances beyond the current viewport.
+  useEffect(() => {
+    if (!selectedArticleId || loading) return
+    const index = articles.findIndex((article) => article.id === selectedArticleId)
+    if (index < 0) return
+
+    const scrollElement = parentRef.current
+    if (!scrollElement) return
+
+    const item = rowVirtualizer.getVirtualItems().find((virtualItem) => virtualItem.index === index)
+    const viewportTop = scrollElement.scrollTop
+    const viewportBottom = viewportTop + scrollElement.clientHeight
+    if (!item || item.start < viewportTop || item.end > viewportBottom) {
+      rowVirtualizer.scrollToIndex(index, { align: 'auto' })
+    }
+  }, [articles, loading, rowVirtualizer, selectedArticleId])
+
   // Count of articles below the current viewport, and whether to offer "back to top".
   const [belowCount, setBelowCount] = useState(0)
   const [showScrollTop, setShowScrollTop] = useState(false)

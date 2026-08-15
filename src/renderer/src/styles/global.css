@@ -360,6 +360,11 @@ body {
   font-weight: 700;
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
 }
+.cyber-badge.trash-badge {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  border-color: color-mix(in srgb, var(--text-muted) 35%, transparent);
+}
 .folder-header {
   display: flex;
   align-items: center;
