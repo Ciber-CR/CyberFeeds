@@ -16,9 +16,11 @@ import {
   Pencil,
   Pause,
   Play,
+  CheckCheck,
   Trash2
 } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
+import { useArticlesStore } from '../store/articles.store'
 import { useUIStore } from '../store/ui.store'
 import { FeedFavicon } from './ArticleList'
 import { useConfirm } from '../hooks/useConfirm'
@@ -59,6 +61,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     deleteFeed,
     fetchFeed,
     fetchFolder,
+    fetchAll,
     togglePauseFeed,
     togglePauseFolder,
     deleteFolder
@@ -72,10 +75,17 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
   const [ctx, setCtx] = React.useState<{
     x: number
     y: number
-    type: 'feed' | 'folder'
+    type: 'feed' | 'folder' | 'trash' | 'smart'
     id: string
   } | null>(null)
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
+  const {
+    restoreAllTrash,
+    emptyTrash,
+    markAllFilteredRead,
+    deleteAllActiveArticles,
+    unstarAllArticles
+  } = useArticlesStore()
   const { t } = useTranslation()
 
   React.useEffect(() => {
@@ -117,6 +127,17 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
   const handleAddFolder = useCallback(() => {
     openPanel('addFolder')
   }, [openPanel])
+
+  const openSmartContextMenu = useCallback(
+    (e: React.MouseEvent, id: 'all' | 'unread' | 'starred') => {
+      e.preventDefault()
+      window.dispatchEvent(
+        new CustomEvent('cyberfeeds:close-context-menus', { detail: 'sidebar' })
+      )
+      setCtx({ x: e.clientX, y: e.clientY, type: 'smart', id })
+    },
+    []
+  )
 
   const handleImportOpml = useCallback(async () => {
     setImporting(true)
@@ -183,8 +204,9 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
       <div className="sidebar-scroll">
         {/* All Articles */}
         <div
-          className={`sidebar-item ${selectedFeedId === null && !unreadOnly ? 'active' : ''}`}
+          className={`sidebar-item ${selectedFeedId === null && !unreadOnly ? 'active' : ''} ${ctx?.type === 'smart' && ctx.id === 'all' ? 'context-active' : ''}`}
           onClick={() => selectFeed(null, { unreadOnly: false })}
+          onContextMenu={(e) => openSmartContextMenu(e, 'all')}
         >
           <Rss size={15} style={{ color: '#EF8021', flexShrink: 0 }} />
           <span className="item-label">{t.sidebar.allFeeds}</span>
@@ -198,8 +220,9 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
         </div>
 
         <div
-          className={`sidebar-item ${selectedFeedId === null && unreadOnly ? 'active' : ''}`}
+          className={`sidebar-item ${selectedFeedId === null && unreadOnly ? 'active' : ''} ${ctx?.type === 'smart' && ctx.id === 'unread' ? 'context-active' : ''}`}
           onClick={() => selectFeed(null, { unreadOnly: true })}
+          onContextMenu={(e) => openSmartContextMenu(e, 'unread')}
         >
           <CircleDot size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
           <span className="item-label">{t.sidebar.unreadArticles}</span>
@@ -213,8 +236,9 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
         </div>
 
         <div
-          className={`sidebar-item ${selectedFeedId === 'starred' ? 'active' : ''}`}
+          className={`sidebar-item ${selectedFeedId === 'starred' ? 'active' : ''} ${ctx?.type === 'smart' && ctx.id === 'starred' ? 'context-active' : ''}`}
           onClick={() => selectFeed('starred')}
+          onContextMenu={(e) => openSmartContextMenu(e, 'starred')}
         >
           <Star size={15} style={{ color: 'var(--star)', fill: 'var(--star)', flexShrink: 0 }} />
           <span className="item-label">{t.sidebar.favorites}</span>
@@ -226,8 +250,15 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
         </div>
 
         <div
-          className={`sidebar-item ${selectedFeedId === 'trash' ? 'active' : ''}`}
+          className={`sidebar-item ${selectedFeedId === 'trash' ? 'active' : ''} ${ctx?.type === 'trash' ? 'context-active' : ''}`}
           onClick={() => selectFeed('trash')}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            window.dispatchEvent(
+              new CustomEvent('cyberfeeds:close-context-menus', { detail: 'sidebar' })
+            )
+            setCtx({ x: e.clientX, y: e.clientY, type: 'trash', id: 'trash' })
+          }}
         >
           <Trash2 size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
           <span className="item-label">{t.sidebar.trash}</span>
@@ -379,7 +410,118 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           style={{ left: ctx.x, top: Math.min(ctx.y, window.innerHeight - 160) }}
           onClick={(e) => e.stopPropagation()}
         >
-          {ctx.type === 'feed' ? (
+          {ctx.type === 'smart' ? (
+            <>
+              {(ctx.id === 'all' || ctx.id === 'unread') && (
+                <div
+                  className="ctx-item"
+                  onClick={() => {
+                    void fetchAll()
+                    setCtx(null)
+                  }}
+                >
+                  <RefreshCw size={14} />
+                  {t.topBar.refreshAll}
+                </div>
+              )}
+              <div
+                className="ctx-item"
+                onClick={() => {
+                  void markAllFilteredRead(ctx.id === 'starred')
+                  setCtx(null)
+                }}
+              >
+                <CheckCheck size={14} />
+                {t.articleList.contextMenu.markAllAsRead}
+              </div>
+              {ctx.id === 'starred' && (
+                <>
+                  <div
+                    className="ctx-item"
+                    onClick={async () => {
+                      const confirmed = await confirm({
+                        title: t.articleList.dialogs.removeAllFavoritesTitle,
+                        message: t.articleList.dialogs.removeAllFavoritesMsg,
+                        confirmText: t.articleList.dialogs.removeAllFavoritesBtn,
+                        cancelText: t.sidebar.cancel,
+                        variant: 'warning'
+                      })
+                      if (confirmed) {
+                        await unstarAllArticles()
+                      }
+                      setCtx(null)
+                    }}
+                  >
+                    <Star size={14} />
+                    {t.articleList.contextMenu.removeAllFavorites}
+                  </div>
+                  <div className="ctx-divider" />
+                </>
+              )}
+              {(ctx.id === 'all' || ctx.id === 'starred') && (
+                <div
+                  className="ctx-item danger"
+                  onClick={async () => {
+                    const confirmed = await confirm({
+                      title: t.articleList.dialogs.deleteAllTitle,
+                      message: t.articleList.dialogs.deleteAllMsg,
+                      confirmText: t.articleList.dialogs.deleteAllBtn,
+                      cancelText: t.sidebar.cancel,
+                      variant: 'danger'
+                    })
+                    if (confirmed) {
+                      await deleteAllActiveArticles(ctx.id === 'starred')
+                    }
+                    setCtx(null)
+                  }}
+                >
+                  <Trash2 size={14} />
+                  {t.articleList.contextMenu.deleteAllArticles}
+                </div>
+              )}
+            </>
+          ) : ctx.type === 'trash' ? (
+            <>
+              <div
+                className="ctx-item"
+                onClick={async () => {
+                  const confirmed = await confirm({
+                    title: t.articleList.dialogs.restoreAllTrashTitle,
+                    message: t.articleList.dialogs.restoreAllTrashMsg,
+                    confirmText: t.articleList.dialogs.restoreAllTrashBtn,
+                    cancelText: t.sidebar.cancel,
+                    variant: 'warning'
+                  })
+                  if (confirmed) {
+                    await restoreAllTrash()
+                  }
+                  setCtx(null)
+                }}
+              >
+                <RefreshCw size={14} />
+                {t.articleList.contextMenu.restoreAllTrash}
+              </div>
+              <div
+                className="ctx-item danger"
+                onClick={async () => {
+                  const confirmed = await confirm({
+                    title: t.articleList.dialogs.emptyTrashTitle,
+                    message: t.articleList.dialogs.emptyTrashMsg,
+                    confirmText: t.articleList.dialogs.emptyTrashBtn,
+                    cancelText: t.sidebar.cancel,
+                    variant: 'danger'
+                  })
+                  if (confirmed) {
+                    await emptyTrash()
+                  }
+                  setCtx(null)
+                }}
+              >
+                <Trash2 size={14} />
+                {t.articleList.contextMenu.emptyTrash}
+              </div>
+            </>
+          ) : ctx.type === 'feed' ? (
             <>
               <div
                 className="ctx-item"

@@ -350,6 +350,10 @@ export function restoreArticles(ids: string[]): void {
   db.prepare(`UPDATE articles SET deletedAt = NULL WHERE id IN (${placeholders}) AND deletedAt IS NOT NULL`).run(...ids)
 }
 
+export function restoreAllTrash(): void {
+  db.prepare('UPDATE articles SET deletedAt = NULL WHERE deletedAt IS NOT NULL').run()
+}
+
 export function purgeArticle(id: string): void {
   db.prepare('DELETE FROM articles WHERE id = ? AND deletedAt IS NOT NULL').run(id)
 }
@@ -374,6 +378,24 @@ export function markAllRead(feedId?: string): void {
   } else {
     db.prepare('UPDATE articles SET read = 1 WHERE deletedAt IS NULL').run()
   }
+}
+
+export function markAllFilteredRead(starredOnly = false): void {
+  const sql = starredOnly
+    ? 'UPDATE articles SET read = 1 WHERE deletedAt IS NULL AND starred = 1'
+    : 'UPDATE articles SET read = 1 WHERE deletedAt IS NULL'
+  db.prepare(sql).run()
+}
+
+export function deleteAllActiveArticles(starredOnly = false): void {
+  const sql = starredOnly
+    ? 'UPDATE articles SET deletedAt = ? WHERE deletedAt IS NULL AND starred = 1'
+    : 'UPDATE articles SET deletedAt = ? WHERE deletedAt IS NULL'
+  db.prepare(sql).run(Date.now())
+}
+
+export function unstarAllArticles(): void {
+  db.prepare('UPDATE articles SET starred = 0 WHERE deletedAt IS NULL AND starred = 1').run()
 }
 
 export function starArticle(id: string, starred: boolean): void {

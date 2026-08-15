@@ -87,7 +87,9 @@ export const translations = {
         deletePermanently: 'Delete permanently',
         markAllAsRead: 'Mark all as read',
         deleteAllArticles: 'Move all articles to trash',
-        emptyTrash: 'Empty trash'
+        emptyTrash: 'Empty trash',
+        restoreAllTrash: 'Restore all articles',
+        removeAllFavorites: 'Remove all from Favorites'
       },
       dialogs: {
         deleteAllTitle: 'Move All Articles to Trash',
@@ -99,7 +101,13 @@ export const translations = {
         emptyTrashBtn: 'Empty Trash',
         deletePermanentlyTitle: 'Delete Article Permanently',
         deletePermanentlyMsg: 'Are you sure you want to permanently delete "{title}"? This action cannot be undone.',
-        deletePermanentlyBtn: 'Delete Permanently'
+        deletePermanentlyBtn: 'Delete Permanently',
+        restoreAllTrashTitle: 'Restore All Trash Articles',
+        restoreAllTrashMsg: 'Are you sure you want to restore all articles from the trash?',
+        restoreAllTrashBtn: 'Restore All',
+        removeAllFavoritesTitle: 'Remove All Favorites',
+        removeAllFavoritesMsg: 'Are you sure you want to remove all articles from Favorites?',
+        removeAllFavoritesBtn: 'Remove All'
       }
     },
     articleViewer: {
@@ -492,7 +500,9 @@ export const translations = {
         deletePermanently: 'Eliminar definitivamente',
         markAllAsRead: 'Marcar todos como leídos',
         deleteAllArticles: 'Enviar todos a la papelera',
-        emptyTrash: 'Vaciar papelera'
+        emptyTrash: 'Vaciar papelera',
+        restoreAllTrash: 'Restaurar todos los artículos',
+        removeAllFavorites: 'Quitar todos de Favoritos'
       },
       dialogs: {
         deleteAllTitle: 'Enviar todos los artículos a la papelera',
@@ -506,7 +516,13 @@ export const translations = {
         deletePermanentlyTitle: 'Eliminar artículo definitivamente',
         deletePermanentlyMsg:
           '¿Estás seguro de que deseas eliminar definitivamente "{title}"? Esta acción no se puede deshacer.',
-        deletePermanentlyBtn: 'Eliminar definitivamente'
+        deletePermanentlyBtn: 'Eliminar definitivamente',
+        restoreAllTrashTitle: 'Restaurar todos los artículos de la papelera',
+        restoreAllTrashMsg: '¿Estás seguro de que deseas restaurar todos los artículos de la papelera?',
+        restoreAllTrashBtn: 'Restaurar todos',
+        removeAllFavoritesTitle: 'Quitar todos de Favoritos',
+        removeAllFavoritesMsg: '¿Estás seguro de que deseas quitar todos los artículos de Favoritos?',
+        removeAllFavoritesBtn: 'Quitar todos'
       }
     },
     articleViewer: {
