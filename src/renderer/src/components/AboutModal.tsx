@@ -144,7 +144,7 @@ export default function AboutModal(): JSX.Element {
           <div style={{ position: 'relative', width: 72, height: 72, margin: '8px auto 16px' }}>
             <div style={{
               position: 'absolute', inset: -4,
-              background: 'var(--accent-subtle)',
+              background: 'rgba(239, 128, 33, 0.14)',
               borderRadius: '50%',
               filter: 'blur(12px)'
             }} />
@@ -156,13 +156,13 @@ export default function AboutModal(): JSX.Element {
                 width: 72,
                 height: 72,
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 50%, transparent))'
+                filter: 'drop-shadow(0 0 6px rgba(239, 128, 33, 0.55)) drop-shadow(0 0 12px rgba(239, 128, 33, 0.22))'
               }}
             />
           </div>
 
           <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Cyber<span style={{ color: 'var(--accent)' }}>Feeds</span>
+            Cyber<span className="brand-feeds">Feeds</span>
           </h1>
           <div style={{
             fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
