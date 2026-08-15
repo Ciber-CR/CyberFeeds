@@ -184,6 +184,9 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     loadingMore,
     loadMore,
     deleteArticle,
+    restoreArticle,
+    purgeArticle,
+    emptyTrash,
     removeArticleFromList,
     markRead
   } = useArticlesStore()
@@ -226,15 +229,38 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     prevSelectedId.current = selectedArticleId
   }, [selectedArticleId, unreadOnly, removeArticleFromList])
 
-  const deleteArticleAndAdvance = useCallback((id: string) => {
+  const isTrash = selectedFeedId === 'trash'
+
+  const deleteArticleAndAdvance = useCallback(async (id: string) => {
+    const list = useArticlesStore.getState().articles
+    const selected = useUIStore.getState().selectedArticleId
+    const idx = list.findIndex((a) => a.id === id)
+    if (idx < 0) return
+    if (isTrash) {
+      const article = list[idx]
+      const confirmed = await confirm({
+        title: t.articleList.dialogs.deletePermanentlyTitle,
+        message: t.articleList.dialogs.deletePermanentlyMsg.replace('{title}', article.title),
+        confirmText: t.articleList.dialogs.deletePermanentlyBtn,
+        cancelText: t.sidebar.cancel,
+        variant: 'danger'
+      })
+      if (!confirmed) return
+    }
+    const nextId = selected === id ? (list[idx + 1]?.id ?? list[idx - 1]?.id ?? null) : undefined
+    void (isTrash ? purgeArticle(id) : deleteArticle(id))
+    if (selected === id) useUIStore.getState().selectArticle(nextId ?? null)
+  }, [confirm, deleteArticle, isTrash, purgeArticle, t])
+
+  const restoreArticleAndAdvance = useCallback((id: string) => {
     const list = useArticlesStore.getState().articles
     const selected = useUIStore.getState().selectedArticleId
     const idx = list.findIndex((a) => a.id === id)
     if (idx < 0) return
     const nextId = selected === id ? (list[idx + 1]?.id ?? list[idx - 1]?.id ?? null) : undefined
-    void deleteArticle(id)
+    void restoreArticle(id)
     if (selected === id) useUIStore.getState().selectArticle(nextId ?? null)
-  }, [deleteArticle])
+  }, [restoreArticle])
 
   const selectedFeed = feeds.find((f) => f.id === selectedFeedId)
   const isLoadingNewFeed = pendingFeedId === selectedFeedId && articles.length === 0
@@ -243,12 +269,14 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const title =
     selectedFeedId === 'starred'
       ? t.articleList.favorites
+        : isTrash
+          ? t.articleList.trash
       : isUnreadArticles
         ? t.articleList.unreadArticles
         : selectedFeed?.title || t.articleList.allFeeds
 
   const unreadDisplayCount = React.useMemo(() => {
-    if (selectedFeedId === 'starred') return totalCount
+    if (selectedFeedId === 'starred' || isTrash) return totalCount
     if (selectedFeedId === null) {
       return Object.entries(unreadCounts)
         .filter(([k]) => k !== 'starred' && k !== 'all')
@@ -260,7 +288,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
       return folderFeeds.reduce((sum, f) => sum + (unreadCounts[f.id] || 0), 0)
     }
     return unreadCounts[selectedFeedId || ''] || 0
-  }, [selectedFeedId, unreadCounts, totalCount, feeds])
+  }, [selectedFeedId, unreadCounts, totalCount, feeds, isTrash])
 
   const ITEM_H = 120
   const ITEM_H_WITH_THUMB = 230
@@ -508,6 +536,31 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           </button>
         </Tooltip>
 
+        {isTrash && (
+          <Tooltip label={t.articleList.emptyTrash} placement="bottom">
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={async () => {
+                if (totalCount === 0) return
+                const confirmed = await confirm({
+                  title: t.articleList.dialogs.emptyTrashTitle,
+                  message: t.articleList.dialogs.emptyTrashMsg,
+                  confirmText: t.articleList.dialogs.emptyTrashBtn,
+                  cancelText: t.sidebar.cancel,
+                  variant: 'danger'
+                })
+                if (confirmed) {
+                  await emptyTrash()
+                  selectArticle(null)
+                }
+              }}
+              style={{ flexShrink: 0, width: 24, height: 24 }}
+            >
+              <Trash2 size={14} />
+            </button>
+          </Tooltip>
+        )}
+
         <Tooltip
           label={
             settings.pollingEnabled
@@ -563,6 +616,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                 <ArticleItem
                   key={virtualRow.key}
                   article={article}
+                  isTrash={isTrash}
                   selected={selectedArticleId === article.id}
                   contextActive={ctx?.id === article.id}
                   onSelect={selectArticle}
@@ -618,20 +672,47 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               style={{ left: ctx.x, top: Math.min(ctx.y, window.innerHeight - 220) }}
               onClick={(e) => e.stopPropagation()}
             >
-              {article && (
+              {article && isTrash && (
                 <>
                   <div
                     className="ctx-item"
                     onClick={() => {
-                      markRead(article.id, !article.read)
+                      restoreArticleAndAdvance(article.id)
                       setCtx(null)
                     }}
                   >
-                    {article.read ? <CircleDot size={14} /> : <Circle size={14} />}
-                    {article.read
-                      ? t.articleList.contextMenu.markAsUnread
-                      : t.articleList.contextMenu.markAsRead}
+                    <RefreshCw size={14} />
+                    {t.articleList.contextMenu.restoreArticle}
                   </div>
+                  <div
+                    className="ctx-item danger"
+                    onClick={() => {
+                      deleteArticleAndAdvance(article.id)
+                      setCtx(null)
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    {t.articleList.contextMenu.deletePermanently}
+                  </div>
+                  <div className="ctx-divider" />
+                </>
+              )}
+              {article && !isTrash && !article.deletedAt && (
+                <div
+                  className="ctx-item"
+                  onClick={() => {
+                    markRead(article.id, !article.read)
+                    setCtx(null)
+                  }}
+                >
+                  {article.read ? <CircleDot size={14} /> : <Circle size={14} />}
+                  {article.read
+                    ? t.articleList.contextMenu.markAsUnread
+                    : t.articleList.contextMenu.markAsRead}
+                </div>
+              )}
+              {article && (
+                <>
                   <div
                     className="ctx-item"
                     onClick={() => {
@@ -668,7 +749,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                   </div>
                 </>
               )}
-              <div
+              {!isTrash && <div
                 className="ctx-item"
                 onClick={() => {
                   const unreadIds = articles.filter((a) => !a.read).map((a) => a.id)
@@ -680,9 +761,9 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               >
                 <CheckCheck size={14} />
                 {t.articleList.contextMenu.markAllAsRead}
-              </div>
-              <div className="ctx-divider" />
-              {article && (
+              </div>}
+              {!isTrash && <div className="ctx-divider" />}
+              {article && !isTrash && !article.deletedAt && (
                 <div
                   className="ctx-item danger"
                   onClick={() => {
@@ -698,23 +779,28 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                 className="ctx-item danger"
                 onClick={async () => {
                   const confirmed = await confirm({
-                    title: t.articleList.dialogs.deleteAllTitle,
-                    message: t.articleList.dialogs.deleteAllMsg,
-                    confirmText: t.articleList.dialogs.deleteAllBtn,
+                    title: isTrash ? t.articleList.dialogs.emptyTrashTitle : t.articleList.dialogs.deleteAllTitle,
+                    message: isTrash ? t.articleList.dialogs.emptyTrashMsg : t.articleList.dialogs.deleteAllMsg,
+                    confirmText: isTrash ? t.articleList.dialogs.emptyTrashBtn : t.articleList.dialogs.deleteAllBtn,
                     cancelText: t.sidebar.cancel,
                     variant: 'danger'
                   })
                   if (confirmed) {
-                    const ids = articles.map((a) => a.id)
-                    if (ids.length > 0) {
-                      useArticlesStore.getState().deleteMultiple(ids)
+                    if (isTrash) {
+                      await emptyTrash()
+                      selectArticle(null)
+                    } else {
+                      const ids = articles.map((a) => a.id)
+                      if (ids.length > 0) {
+                        useArticlesStore.getState().deleteMultiple(ids)
+                      }
                     }
                   }
                   setCtx(null)
                 }}
               >
                 <Trash2 size={14} />
-                {t.articleList.contextMenu.deleteAllArticles}
+                {isTrash ? t.articleList.contextMenu.emptyTrash : t.articleList.contextMenu.deleteAllArticles}
               </div>
             </div>
           )
@@ -736,6 +822,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
 
 interface ArticleItemProps {
   article: Article
+  isTrash?: boolean
   selected: boolean
   contextActive?: boolean
   onSelect: (id: string) => void
@@ -748,6 +835,7 @@ interface ArticleItemProps {
 const ArticleItem = memo(
   function ArticleItem({
     article,
+    isTrash,
     selected,
     contextActive,
     onSelect,
@@ -762,8 +850,8 @@ const ArticleItem = memo(
 
     const handleClick = useCallback(() => {
       onSelect(article.id)
-      if (!article.read) markRead(article.id, true)
-    }, [article.id, article.read])
+      if (!isTrash && !article.deletedAt && !article.read) markRead(article.id, true)
+    }, [article.id, article.read, isTrash, markRead, onSelect])
 
     const handleStar = useCallback(
       (e: React.MouseEvent) => {
@@ -783,7 +871,7 @@ const ArticleItem = memo(
       <div
         ref={measureRef}
         data-index={dataIndex}
-        className={`article-item ${selected ? 'active' : ''} ${contextActive ? 'context-active' : ''} ${article.read ? 'read' : ''}`}
+        className={`article-item ${selected ? 'active' : ''} ${contextActive ? 'context-active' : ''} ${article.read ? 'read' : ''} ${article.deletedAt ? 'deleted' : ''}`}
         data-article-id={article.id}
         onClick={handleClick}
         onContextMenu={(e) => onContextMenu(e, article.id)}
@@ -811,18 +899,20 @@ const ArticleItem = memo(
           <span className="article-title" style={{ flex: 1 }}>
             {article.title}
           </span>
-          <Tooltip
-            label={article.starred ? t.articleViewer.unstar : t.articleViewer.star}
-            placement="bottom"
-          >
-            <button onClick={handleStar} className="article-item-star">
-              <Star
-                size={13}
-                fill={article.starred ? 'var(--star)' : 'none'}
-                color={article.starred ? 'var(--star)' : 'var(--text-muted)'}
-              />
-            </button>
-          </Tooltip>
+          {!isTrash && !article.deletedAt && (
+            <Tooltip
+              label={article.starred ? t.articleViewer.unstar : t.articleViewer.star}
+              placement="bottom"
+            >
+              <button onClick={handleStar} className="article-item-star">
+                <Star
+                  size={13}
+                  fill={article.starred ? 'var(--star)' : 'none'}
+                  color={article.starred ? 'var(--star)' : 'var(--text-muted)'}
+                />
+              </button>
+            </Tooltip>
+          )}
         </div>
 
         {/* Snippet */}
@@ -872,8 +962,10 @@ const ArticleItem = memo(
   },
   (prev, next) =>
     prev.article.id === next.article.id &&
+    prev.isTrash === next.isTrash &&
     prev.article.read === next.article.read &&
     prev.article.starred === next.article.starred &&
+    prev.article.deletedAt === next.article.deletedAt &&
     prev.selected === next.selected &&
     prev.contextActive === next.contextActive &&
     prev.dataIndex === next.dataIndex &&

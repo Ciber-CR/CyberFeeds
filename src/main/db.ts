@@ -6,6 +6,8 @@ import { DEFAULT_SETTINGS } from './types'
 
 let db: Database.Database
 
+export const TRASH_RETENTION_DAYS = 30
+
 export function initDb(): void {
   const dbPath = path.join(app.getPath('userData'), 'cybersfeeds.db')
   db = new Database(dbPath)
@@ -15,12 +17,15 @@ export function initDb(): void {
   db.pragma('foreign_keys = ON')
   createSchema()
   migrate()
+  purgeOldTrash(TRASH_RETENTION_DAYS)
 }
 
 function migrate(): void {
   try { db.exec('ALTER TABLE articles ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE articles ADD COLUMN deletedAt INTEGER') } catch { /* already exists */ }
   try { db.exec('ALTER TABLE notification_history ADD COLUMN thumbnail TEXT') } catch { /* already exists */ }
   try { db.exec('ALTER TABLE feeds ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0') } catch { /* already exists */ }
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_articles_deleted ON articles(deletedAt)') } catch { /* already exists */ }
   try {
     const { DEFAULT_SETTINGS } = require('../shared/types')
     const shortcuts = JSON.stringify(DEFAULT_SETTINGS.shortcuts)
@@ -60,6 +65,7 @@ function createSchema(): void {
       thumbnail TEXT,
       read INTEGER NOT NULL DEFAULT 0,
       starred INTEGER NOT NULL DEFAULT 0,
+      deletedAt INTEGER,
       guid TEXT NOT NULL,
       UNIQUE(guid),
       FOREIGN KEY (feedId) REFERENCES feeds(id) ON DELETE CASCADE
@@ -214,13 +220,14 @@ export interface ArticleQuery {
   feedId?: string
   unreadOnly?: boolean
   starredOnly?: boolean
+  trashOnly?: boolean
   search?: string
   limit?: number
   offset?: number
 }
 
 export function getArticles(query: ArticleQuery = {}): Article[] {
-  const { feedId, unreadOnly, starredOnly, search, limit = 100, offset = 0 } = query
+  const { feedId, unreadOnly, starredOnly, trashOnly, search, limit = 100, offset = 0 } = query
   let sql = `
     SELECT a.*, f.title as feedTitle, f.icon as feedIcon
     FROM articles a
@@ -229,6 +236,7 @@ export function getArticles(query: ArticleQuery = {}): Article[] {
   `
   const params: (string | number)[] = []
 
+  sql += trashOnly ? ' AND a.deletedAt IS NOT NULL' : ' AND a.deletedAt IS NULL'
   if (feedId) { sql += ' AND a.feedId = ?'; params.push(feedId) }
   if (unreadOnly) { sql += ' AND a.read = 0' }
   if (starredOnly) { sql += ' AND a.starred = 1' }
@@ -245,9 +253,10 @@ export function getArticles(query: ArticleQuery = {}): Article[] {
 }
 
 export function getArticleCount(query: Omit<ArticleQuery, 'limit' | 'offset'> = {}): number {
-  const { feedId, unreadOnly, starredOnly, search } = query
+  const { feedId, unreadOnly, starredOnly, trashOnly, search } = query
   let sql = 'SELECT COUNT(*) as c FROM articles a WHERE 1=1'
   const params: (string | number)[] = []
+  sql += trashOnly ? ' AND a.deletedAt IS NOT NULL' : ' AND a.deletedAt IS NULL'
   if (feedId) { sql += ' AND a.feedId = ?'; params.push(feedId) }
   if (unreadOnly) { sql += ' AND a.read = 0' }
   if (starredOnly) { sql += ' AND a.starred = 1' }
@@ -272,6 +281,7 @@ export function getUnreadCountByFeed(): FeedArticleCounts {
            COUNT(*) as total,
            SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END) as unread
     FROM articles
+    WHERE deletedAt IS NULL
     GROUP BY feedId
   `).all() as { feedId: string; total: number; unread: number }[]
 
@@ -282,8 +292,8 @@ export function getUnreadCountByFeed(): FeedArticleCounts {
     total[row.feedId] = row.total
   }
 
-  const starredRow = db.prepare('SELECT COUNT(*) as c FROM articles WHERE starred=1').get() as { c: number }
-  const allRow = db.prepare('SELECT COUNT(*) as c FROM articles').get() as { c: number }
+  const starredRow = db.prepare('SELECT COUNT(*) as c FROM articles WHERE starred=1 AND deletedAt IS NULL').get() as { c: number }
+  const allRow = db.prepare('SELECT COUNT(*) as c FROM articles WHERE deletedAt IS NULL').get() as { c: number }
 
   return {
     unread,
@@ -317,23 +327,57 @@ export function insertArticles(articles: Omit<Article, 'feedTitle' | 'feedIcon'>
 }
 
 export function markArticleRead(id: string, read: boolean): void {
-  db.prepare('UPDATE articles SET read = ? WHERE id = ?').run(read ? 1 : 0, id)
+  db.prepare('UPDATE articles SET read = ? WHERE id = ? AND deletedAt IS NULL').run(read ? 1 : 0, id)
 }
 
 export function deleteArticle(id: string): void {
-  db.prepare('DELETE FROM articles WHERE id = ?').run(id)
+  db.prepare('UPDATE articles SET deletedAt = ? WHERE id = ? AND deletedAt IS NULL').run(Date.now(), id)
+}
+
+export function deleteArticles(ids: string[]): void {
+  if (ids.length === 0) return
+  const placeholders = ids.map(() => '?').join(', ')
+  db.prepare(`UPDATE articles SET deletedAt = ? WHERE id IN (${placeholders}) AND deletedAt IS NULL`).run(Date.now(), ...ids)
+}
+
+export function restoreArticle(id: string): void {
+  db.prepare('UPDATE articles SET deletedAt = NULL WHERE id = ? AND deletedAt IS NOT NULL').run(id)
+}
+
+export function restoreArticles(ids: string[]): void {
+  if (ids.length === 0) return
+  const placeholders = ids.map(() => '?').join(', ')
+  db.prepare(`UPDATE articles SET deletedAt = NULL WHERE id IN (${placeholders}) AND deletedAt IS NOT NULL`).run(...ids)
+}
+
+export function purgeArticle(id: string): void {
+  db.prepare('DELETE FROM articles WHERE id = ? AND deletedAt IS NOT NULL').run(id)
+}
+
+export function purgeArticles(ids: string[]): void {
+  if (ids.length === 0) return
+  const placeholders = ids.map(() => '?').join(', ')
+  db.prepare(`DELETE FROM articles WHERE id IN (${placeholders}) AND deletedAt IS NOT NULL`).run(...ids)
+}
+
+export function emptyTrash(): void {
+  db.prepare('DELETE FROM articles WHERE deletedAt IS NOT NULL').run()
+}
+
+export function getTrashCount(): number {
+  return (db.prepare('SELECT COUNT(*) as c FROM articles WHERE deletedAt IS NOT NULL').get() as { c: number }).c
 }
 
 export function markAllRead(feedId?: string): void {
   if (feedId) {
-    db.prepare('UPDATE articles SET read = 1 WHERE feedId = ?').run(feedId)
+    db.prepare('UPDATE articles SET read = 1 WHERE feedId = ? AND deletedAt IS NULL').run(feedId)
   } else {
-    db.prepare('UPDATE articles SET read = 1').run()
+    db.prepare('UPDATE articles SET read = 1 WHERE deletedAt IS NULL').run()
   }
 }
 
 export function starArticle(id: string, starred: boolean): void {
-  db.prepare('UPDATE articles SET starred = ? WHERE id = ?').run(starred ? 1 : 0, id)
+  db.prepare('UPDATE articles SET starred = ? WHERE id = ? AND deletedAt IS NULL').run(starred ? 1 : 0, id)
 }
 
 export function getArticleById(id: string): Article | undefined {
@@ -346,7 +390,12 @@ export function getArticleById(id: string): Article | undefined {
 
 export function cleanupOldArticles(days: number): void {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
-  db.prepare('DELETE FROM articles WHERE read = 1 AND starred = 0 AND pubDate < ?').run(cutoff)
+  db.prepare('DELETE FROM articles WHERE deletedAt IS NULL AND read = 1 AND starred = 0 AND pubDate < ?').run(cutoff)
+}
+
+export function purgeOldTrash(days: number): void {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+  db.prepare('DELETE FROM articles WHERE deletedAt IS NOT NULL AND deletedAt < ?').run(cutoff)
 }
 
 export function getTodayArticles(): Article[] {
@@ -355,7 +404,7 @@ export function getTodayArticles(): Article[] {
   return db.prepare(`
     SELECT a.*, f.title as feedTitle, f.icon as feedIcon
     FROM articles a LEFT JOIN feeds f ON a.feedId = f.id
-    WHERE a.pubDate >= ?
+    WHERE a.deletedAt IS NULL AND a.pubDate >= ?
     ORDER BY a.pubDate DESC
   `).all(startOfDay.getTime()) as Article[]
 }
@@ -458,11 +507,11 @@ export function getDb(): Database.Database {
 
 export function getBackupData(): any {
   return {
-    version: 1,
+    version: 2,
     settings: getSettings(),
     folders: getFolders(),
     feeds: getFeeds(),
-    starredArticles: db.prepare('SELECT * FROM articles WHERE starred = 1').all()
+    starredArticles: db.prepare('SELECT * FROM articles WHERE starred = 1 AND deletedAt IS NULL').all()
   }
 }
 

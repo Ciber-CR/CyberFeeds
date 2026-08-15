@@ -6,6 +6,7 @@ interface ArticleQuery {
   feedId?: string
   unreadOnly?: boolean
   starredOnly?: boolean
+  trashOnly?: boolean
   search?: string
   limit?: number
   offset?: number
@@ -26,6 +27,9 @@ interface ArticlesState {
   starArticle: (id: string, starred: boolean) => Promise<void>
   deleteArticle: (id: string) => Promise<void>
   deleteMultiple: (ids: string[]) => Promise<void>
+  restoreArticle: (id: string) => Promise<void>
+  purgeArticle: (id: string) => Promise<void>
+  emptyTrash: () => Promise<void>
   removeArticleFromList: (id: string) => void
   refresh: () => Promise<void>
 }
@@ -58,6 +62,7 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
   },
 
   markRead: async (id, read) => {
+    if (get().articles.find(a => a.id === id)?.deletedAt) return
     // Optimistic update
     set(s => ({ articles: s.articles.map(a => a.id === id ? { ...a, read: read ? 1 : 0 } : a) }))
     await window.api.markRead(id, read)
@@ -73,6 +78,7 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
   },
 
   starArticle: async (id, starred) => {
+    if (get().articles.find(a => a.id === id)?.deletedAt) return
     set(s => ({ articles: s.articles.map(a => a.id === id ? { ...a, starred: starred ? 1 : 0 } : a) }))
     await window.api.starArticle(id, starred)
     useFeedsStore.getState().refreshUnreadCounts()
@@ -80,10 +86,9 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
 
   deleteArticle: async (id) => {
     set(s => {
-      if (!s.articles.some(a => a.id === id)) return s
+      if (!s.articles.some(a => a.id === id && !a.deletedAt)) return s
       return {
-        articles: s.articles.filter(a => a.id !== id),
-        totalCount: Math.max(0, s.totalCount - 1)
+        articles: s.articles.map(a => a.id === id ? { ...a, deletedAt: Date.now() } : a)
       }
     })
     await window.api.deleteArticle(id)
@@ -102,11 +107,46 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
   },
 
   deleteMultiple: async (ids) => {
+    const activeIds = get().articles
+      .filter(a => ids.includes(a.id) && !a.deletedAt)
+      .map(a => a.id)
+    const deletedAt = Date.now()
     set(s => ({
-      articles: s.articles.filter(a => !ids.includes(a.id)),
-      totalCount: Math.max(0, s.totalCount - ids.length)
+      articles: s.articles.map(a =>
+        activeIds.includes(a.id) ? { ...a, deletedAt } : a
+      )
     }))
-    await Promise.all(ids.map(id => window.api.deleteArticle(id)))
+    await window.api.deleteMultipleArticles(activeIds)
+    useFeedsStore.getState().refreshUnreadCounts()
+  },
+
+  restoreArticle: async (id) => {
+    set(s => {
+      if (!s.articles.some(a => a.id === id)) return s
+      return {
+        articles: s.articles.filter(a => a.id !== id),
+        totalCount: Math.max(0, s.totalCount - 1)
+      }
+    })
+    await window.api.restoreArticle(id)
+    useFeedsStore.getState().refreshUnreadCounts()
+  },
+
+  purgeArticle: async (id) => {
+    set(s => {
+      if (!s.articles.some(a => a.id === id)) return s
+      return {
+        articles: s.articles.filter(a => a.id !== id),
+        totalCount: Math.max(0, s.totalCount - 1)
+      }
+    })
+    await window.api.purgeArticle(id)
+    useFeedsStore.getState().refreshUnreadCounts()
+  },
+
+  emptyTrash: async () => {
+    set({ articles: [], totalCount: 0 })
+    await window.api.emptyTrash()
     useFeedsStore.getState().refreshUnreadCounts()
   },
 

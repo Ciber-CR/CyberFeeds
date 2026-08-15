@@ -6,6 +6,7 @@ interface FeedsState {
   folders: Folder[]
   unreadCounts: Record<string, number>
   articleCounts: Record<string, number>
+  trashCount: number
   loading: boolean
 
   loadAll: () => Promise<void>
@@ -29,20 +30,23 @@ export const useFeedsStore = create<FeedsState>((set, get) => ({
   folders: [],
   unreadCounts: {},
   articleCounts: {},
+  trashCount: 0,
   loading: false,
 
   loadAll: async () => {
     set({ loading: true })
-    const [feeds, folders, counts] = await Promise.all([
+    const [feeds, folders, counts, trashCount] = await Promise.all([
       window.api.getFeeds(),
       window.api.getFolders(),
-      window.api.getUnreadCounts()
+      window.api.getUnreadCounts(),
+      window.api.getTrashCount()
     ])
     set({
       feeds,
       folders,
       unreadCounts: { ...counts.unread, starred: counts.starred, all: counts.all },
       articleCounts: counts.total,
+      trashCount,
       loading: false
     })
   },
@@ -96,9 +100,11 @@ export const useFeedsStore = create<FeedsState>((set, get) => ({
 
   refreshUnreadCounts: async () => {
     const counts = await window.api.getUnreadCounts()
+    const trashCount = await window.api.getTrashCount()
     set({
       unreadCounts: { ...counts.unread, starred: counts.starred, all: counts.all },
-      articleCounts: counts.total
+      articleCounts: counts.total,
+      trashCount
     })
   },
 

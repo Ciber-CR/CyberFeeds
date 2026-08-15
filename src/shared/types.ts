@@ -32,6 +32,7 @@ export interface Article {
   author?: string
   read: number // 0 | 1
   starred: number // 0 | 1
+  deletedAt?: number | null
   guid: string
   thumbnail?: string
 }

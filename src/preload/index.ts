@@ -24,6 +24,7 @@ const api = {
   // Articles
   getArticles: (query: object) => ipcRenderer.invoke('articles:get', query),
   getArticleCount: (query: object) => ipcRenderer.invoke('articles:getCount', query),
+  getTrashCount: () => ipcRenderer.invoke('articles:getTrashCount'),
   getUnreadCounts: () => ipcRenderer.invoke('articles:getUnreadCounts') as Promise<{
     unread: Record<string, number>
     total: Record<string, number>
@@ -35,6 +36,12 @@ const api = {
   markAllRead: (feedId?: string) => ipcRenderer.invoke('articles:markAllRead', feedId),
   starArticle: (id: string, starred: boolean) => ipcRenderer.invoke('articles:star', id, starred),
   deleteArticle: (id: string) => ipcRenderer.invoke('articles:delete', id),
+  deleteMultipleArticles: (ids: string[]) => ipcRenderer.invoke('articles:deleteMultiple', ids),
+  restoreArticle: (id: string) => ipcRenderer.invoke('articles:restore', id),
+  restoreMultipleArticles: (ids: string[]) => ipcRenderer.invoke('articles:restoreMultiple', ids),
+  purgeArticle: (id: string) => ipcRenderer.invoke('articles:purge', id),
+  purgeMultipleArticles: (ids: string[]) => ipcRenderer.invoke('articles:purgeMultiple', ids),
+  emptyTrash: () => ipcRenderer.invoke('articles:emptyTrash'),
   fetchArticleContent: (id: string) => ipcRenderer.invoke('articles:fetchContent', id),
   getArticleById: (id: string) => ipcRenderer.invoke('articles:getById', id),
 

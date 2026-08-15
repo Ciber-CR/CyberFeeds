@@ -122,12 +122,14 @@ export default function App(): JSX.Element {
   // React to feed/filter changes
   useEffect(() => {
     const query: Record<string, unknown> = { limit: 60, offset: 0 }
-    if (selectedFeedId === 'starred') {
+    if (selectedFeedId === 'trash') {
+      query.trashOnly = true
+    } else if (selectedFeedId === 'starred') {
       query.starredOnly = true
     } else if (selectedFeedId) {
       query.feedId = selectedFeedId
     }
-    if (unreadOnly) query.unreadOnly = true
+    if (unreadOnly && selectedFeedId !== 'trash') query.unreadOnly = true
     if (search) query.search = search
     load(query)
   }, [selectedFeedId, unreadOnly, search])
