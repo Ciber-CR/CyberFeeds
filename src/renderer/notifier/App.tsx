@@ -13,6 +13,7 @@ const SNOOZE_LABELS: Record<number, string> = {
   480: '8h',
   1440: '24h'
 }
+const AUTO_HIDE_BUFFER_MS = 500
 
 function formatSnoozeLabel(minutes: number): string {
   return SNOOZE_LABELS[minutes] ?? `${minutes}m`
@@ -77,9 +78,43 @@ export default function NotifierApp(): JSX.Element {
   const [scrolledToBottom, setScrolledToBottom] = useState(true)
   const [scrollbarW, setScrollbarW] = useState(0)
   const hoverOffTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isHovering = useRef(false)
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const countdownEnd = useRef<number | null>(null)
+  const [countdownSeconds, setCountdownSeconds] = useState(0)
   const [historyHovered, setHistoryHovered] = useState(false)
 
   const t = translations[lang] || translations.en
+
+  const stopCountdown = useCallback(() => {
+    if (countdownTimer.current) {
+      clearInterval(countdownTimer.current)
+      countdownTimer.current = null
+    }
+    countdownEnd.current = null
+  }, [])
+
+  const startCountdown = useCallback((durationMs: number) => {
+    stopCountdown()
+    const end = Date.now() + Math.max(0, durationMs)
+    countdownEnd.current = end
+
+    const tick = (): void => {
+      const remaining = Math.max(0, end - Date.now())
+      setCountdownSeconds(Math.ceil(remaining / 1000))
+      if (remaining <= 0) stopCountdown()
+    }
+
+    tick()
+    countdownTimer.current = setInterval(tick, 250)
+  }, [stopCountdown])
+
+  const pauseCountdown = useCallback(() => {
+    if (countdownEnd.current) {
+      setCountdownSeconds(Math.max(0, Math.ceil((countdownEnd.current - Date.now()) / 1000)))
+    }
+    stopCountdown()
+  }, [stopCountdown])
 
   // Debounced hover handlers — prevents flicker from transparent gaps between cards
   const handleMouseEnter = useCallback(() => {
@@ -87,38 +122,48 @@ export default function NotifierApp(): JSX.Element {
       clearTimeout(hoverOffTimer.current)
       hoverOffTimer.current = null
     }
+    isHovering.current = true
+    pauseCountdown()
     window.api.setHover(true)
-  }, [])
+  }, [pauseCountdown])
 
   const handleMouseLeave = useCallback(() => {
     if (hoverOffTimer.current) clearTimeout(hoverOffTimer.current)
     hoverOffTimer.current = setTimeout(() => {
+      isHovering.current = false
       window.api.setHover(false)
+      const duration = state.settings?.duration ?? 6000
+      startCountdown(duration + AUTO_HIDE_BUFFER_MS)
       hoverOffTimer.current = null
     }, 200)
-  }, [])
+  }, [startCountdown, state.settings?.duration])
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
       if (hoverOffTimer.current) clearTimeout(hoverOffTimer.current)
+      stopCountdown()
     }
-  }, [])
+  }, [stopCountdown])
 
   useEffect(() => {
     const unsub = window.api.onNotifierStack(
-      (stack: any, settings: any, language: any, unseenCount: any) => {
+      (stack: object[], settingsPayload: object, language?: string, unseenCount?: number) => {
         dispatch({
           type: 'SET_STACK',
           stack: stack as NotificationHistoryItem[],
-          settings: settings as NotificationSettings,
+          settings: settingsPayload as NotificationSettings,
           unseenCount: Number(unseenCount) || 0
         })
-        if (language) setLang(language)
+        if (!isHovering.current) {
+          const duration = Number((settingsPayload as NotificationSettings)?.duration) || 6000
+          startCountdown(duration + AUTO_HIDE_BUFFER_MS)
+        }
+        if (language === 'en' || language === 'es') setLang(language)
       }
     )
     return unsub
-  }, [])
+  }, [startCountdown])
 
   // When the popup window is hidden (auto-hide, dismiss-all, snooze, open-in-app,
   // open-history, ...) the main process clears its displayStack but never sends
@@ -129,11 +174,14 @@ export default function NotifierApp(): JSX.Element {
   // starts from a clean (transparent) state.
   useEffect(() => {
     const handleVisibility = (): void => {
-      if (document.visibilityState === 'hidden') dispatch({ type: 'CLEAR' })
+      if (document.visibilityState === 'hidden') {
+        dispatch({ type: 'CLEAR' })
+        stopCountdown()
+      }
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [])
+  }, [stopCountdown])
 
   // Re-check scroll state whenever the stack changes
   useEffect(() => {
@@ -159,6 +207,11 @@ export default function NotifierApp(): JSX.Element {
 
   const handleDismiss = (id: string): void => {
     dispatch({ type: 'DISMISS', id })
+    if (state.stack.length <= 1) {
+      isHovering.current = false
+      stopCountdown()
+      window.api.setHover(false)
+    }
     window.api.dismissNotification(id)
   }
 
@@ -274,11 +327,22 @@ export default function NotifierApp(): JSX.Element {
               style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
               onClick={(e) => {
                 e.stopPropagation()
+                isHovering.current = false
+                stopCountdown()
+                window.api.setHover(false)
                 window.api.clearAllNotifications()
               }}
             >
               <X size={12} style={{ flexShrink: 0 }} />
-              {state.stack.length > 1 ? t.notifier.closeAll : t.notifier.close}
+              <span
+                style={{
+                  minWidth: 12,
+                  textAlign: 'center',
+                  fontVariantNumeric: 'tabular-nums'
+                }}
+              >
+                {countdownSeconds}
+              </span>
             </button>
           </Tooltip>
         </div>

@@ -792,7 +792,7 @@ export const translations = {
       dismissTooltip: 'Descartar esta notificación',
       markRead: 'Marcar como leído',
       markReadTooltip: 'Marcar como leído y descartar',
-      snooze: 'Posponer {time}',
+      snooze: 'Pausar {time}',
       snoozeTooltip: 'Pausar notificaciones durante {time}',
       view: 'Ver',
       viewTooltip: 'Abrir en CyberFeeds',
