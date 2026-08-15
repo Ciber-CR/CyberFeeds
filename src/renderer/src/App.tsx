@@ -33,8 +33,16 @@ type UpdateStatus =
 export default function App(): JSX.Element {
   const { loadAll, refreshUnreadCounts } = useFeedsStore()
   const { load, refresh } = useArticlesStore()
-  const { selectedFeedId, selectedArticleId, activePanel, layout, unreadOnly, search, closePanel } =
-    useUIStore()
+  const {
+    selectedFeedId,
+    selectedArticleId,
+    activePanel,
+    layout,
+    unreadOnly,
+    search,
+    pendingFeedId,
+    closePanel
+  } = useUIStore()
   const { load: loadSettings, settings } = useSettingsStore()
   const { t, language } = useTranslation()
   const dismissInbox = useOverlayDismiss(closePanel)
@@ -73,6 +81,16 @@ export default function App(): JSX.Element {
       useUIStore.setState({ unseenNotificationsCount: unseen })
     })
   }, [])
+
+  // Keep the new-feed loading state visible while the first poll is in flight.
+  // A timeout also handles feeds that respond successfully without any articles.
+  useEffect(() => {
+    if (!pendingFeedId) return
+    const timeout = window.setTimeout(() => {
+      useUIStore.getState().setPendingFeedId(null)
+    }, 15_000)
+    return () => window.clearTimeout(timeout)
+  }, [pendingFeedId])
 
   // Apply layout + font sizes from saved settings as CSS vars
   useEffect(() => {
@@ -116,7 +134,10 @@ export default function App(): JSX.Element {
 
   // Listen for new articles from main process
   useEffect(() => {
-    const unsub = window.api.onArticlesUpdated(() => {
+    const unsub = window.api.onArticlesUpdated((data) => {
+      if (data.feedId === useUIStore.getState().pendingFeedId) {
+        useUIStore.getState().setPendingFeedId(null)
+      }
       refresh()
       refreshUnreadCounts()
     })

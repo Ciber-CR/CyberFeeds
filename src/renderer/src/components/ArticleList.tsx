@@ -194,7 +194,8 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     selectArticle,
     setUnreadOnly,
     setSearch,
-    isFetching
+    isFetching,
+    pendingFeedId
   } = useUIStore()
   const [ctx, setCtx] = React.useState<{ x: number; y: number; id: string } | null>(null)
   const { feeds, unreadCounts, fetchAll } = useFeedsStore()
@@ -224,6 +225,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   }, [selectedArticleId, unreadOnly, articles, removeArticleFromList])
 
   const selectedFeed = feeds.find((f) => f.id === selectedFeedId)
+  const isLoadingNewFeed = pendingFeedId === selectedFeedId && articles.length === 0
   const title =
     selectedFeedId === 'starred'
       ? t.articleList.favorites
@@ -465,9 +467,17 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
 
       {/* Virtual list */}
       <div className="article-list-scroll" ref={parentRef} onScroll={handleListScroll}>
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-            <div className="spinner" />
+        {loading || isLoadingNewFeed ? (
+          <div className="feed-loading-state" role="status" aria-live="polite">
+            <div className="feed-loading-orbit" aria-hidden="true">
+              <div className="feed-loading-orbit-dot" />
+            </div>
+            <div className="feed-loading-label">{t.articleList.loadingFeed}</div>
+            <div className="feed-loading-skeletons" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
           </div>
         ) : articles.length === 0 ? (
           <div

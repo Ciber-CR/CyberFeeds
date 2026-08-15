@@ -18,7 +18,7 @@ export default function AddFeedModal(): JSX.Element {
 
   useEffect(() => { urlRef.current?.focus() }, [])
   const { folders, addFeed } = useFeedsStore()
-  const { closePanel } = useUIStore()
+  const { closePanel, selectFeed, setPendingFeedId } = useUIStore()
   const overlayDismiss = useOverlayDismiss(closePanel)
 
   const handlePreview = async (): Promise<void> => {
@@ -46,6 +46,10 @@ export default function AddFeedModal(): JSX.Element {
       }
       setLoading(false)
       return
+    }
+    if (result.feed) {
+      selectFeed(result.feed.id)
+      setPendingFeedId(result.feed.id)
     }
     closePanel()
   }

@@ -32,7 +32,7 @@ function getWorkerPath(): string {
   return path.join(app.getAppPath(), 'out', 'main', 'feed-fetcher.worker.js')
 }
 
-export async function pollFeeds(feeds?: Feed[]): Promise<void> {
+export async function pollFeeds(feeds?: Feed[], onComplete?: () => void): Promise<void> {
   if (isPolling) {
     pendingPoll = true
     return
@@ -44,6 +44,7 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
   if (!settings.pollingEnabled && !feeds) {
     console.log('[Polling] Automatic polling is globally disabled, skipping cycle.')
     isPolling = false
+    onComplete?.()
     return
   }
 
@@ -53,6 +54,7 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
   if (feedsToFetch.length === 0) {
     console.log('[Polling] No feeds to fetch, stopping cycle.')
     isPolling = false
+    onComplete?.()
     return
   }
 
@@ -63,12 +65,19 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
       concurrency: 5
     }
   })
+  let completed = false
+  const complete = (): void => {
+    if (completed) return
+    completed = true
+    onComplete?.()
+  }
 
   clearWatchdog()
   pollWatchdog = setTimeout(() => {
     console.error(`[Polling] Watchdog triggered — worker did not complete within ${POLL_WATCHDOG_MS / 1000}s, terminating`)
     worker.terminate()
     isPolling = false
+    complete()
     if (pendingPoll) {
       pollFeeds()
     }
@@ -90,6 +99,7 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
           console.error('[Polling] Cleanup error:', err)
         }
       }
+      complete()
       if (pendingPoll) {
         console.log('[Polling] Starting pending poll...')
         pollFeeds()
@@ -127,6 +137,7 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
     clearWatchdog()
     console.error('[Polling] Worker error:', err)
     isPolling = false
+    complete()
     if (pendingPoll) {
       pollFeeds()
     }
@@ -135,9 +146,28 @@ export async function pollFeeds(feeds?: Feed[]): Promise<void> {
   worker.on('exit', () => {
     clearWatchdog()
     isPolling = false
+    complete()
     if (pendingPoll) {
       pollFeeds()
     }
+  })
+}
+
+/**
+ * Wait for an explicit/manual poll to finish, including any poll already in
+ * progress. `pollFeeds` remains fire-and-forget for scheduled polling, while
+ * UI actions need an accurate completion boundary.
+ */
+export function pollFeedsAndWait(feeds?: Feed[]): Promise<void> {
+  return new Promise((resolve) => {
+    const startWhenIdle = (): void => {
+      if (isPolling) {
+        setTimeout(startWhenIdle, 50)
+        return
+      }
+      void pollFeeds(feeds, resolve)
+    }
+    startWhenIdle()
   })
 }
 

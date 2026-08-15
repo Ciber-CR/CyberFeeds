@@ -138,19 +138,19 @@ export function registerIpc(): void {
   ipcMain.handle('feeds:fetchOne', async (_, id: string) => {
     const feed = db.getFeedById(id)
     if (!feed) return { error: 'Feed not found' }
-    await polling.pollFeeds([feed])
+    await polling.pollFeedsAndWait([feed])
     return { ok: true }
   })
 
   ipcMain.handle('feeds:fetchAll', async () => {
-    await polling.pollFeeds()
+    await polling.pollFeedsAndWait()
     return { ok: true }
   })
 
   ipcMain.handle('feeds:fetchFolder', async (_, folderId: string) => {
     const feeds = db.getFeeds().filter(f => f.folderId === folderId)
     if (feeds.length > 0) {
-      await polling.pollFeeds(feeds)
+      await polling.pollFeedsAndWait(feeds)
     }
     return { ok: true }
   })
