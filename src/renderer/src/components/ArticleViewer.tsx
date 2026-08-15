@@ -355,21 +355,23 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
           </button>
         </Tooltip>
         <div className="viewer-toolbar-sep" />
-        <Tooltip
-          label={article.starred ? t.articleViewer.unstar : t.articleViewer.star}
-          placement="bottom"
-        >
-          <button
-            className="btn btn-ghost btn-icon"
-            onClick={() => starArticle(article.id, !article.starred)}
+        {!article.deletedAt && (
+          <Tooltip
+            label={article.starred ? t.articleViewer.unstar : t.articleViewer.star}
+            placement="bottom"
           >
-            <Star
-              size={15}
-              fill={article.starred ? 'var(--star)' : 'none'}
-              color={article.starred ? 'var(--star)' : undefined}
-            />
-          </button>
-        </Tooltip>
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={() => starArticle(article.id, !article.starred)}
+            >
+              <Star
+                size={15}
+                fill={article.starred ? 'var(--star)' : 'none'}
+                color={article.starred ? 'var(--star)' : undefined}
+              />
+            </button>
+          </Tooltip>
+        )}
       </div>
 
       <div

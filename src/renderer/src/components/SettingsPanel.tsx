@@ -941,6 +941,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
               <div className="settings-card">
                 <h3>{t.settings.maintenance.title}</h3>
                 <p className="settings-card-hint">{t.settings.maintenance.explanation}</p>
+                <p className="settings-card-hint">{t.settings.maintenance.trashRetention}</p>
                 <div className="form-group">
                   <label className="form-label">{t.settings.maintenance.deleteOlder}</label>
                   <input

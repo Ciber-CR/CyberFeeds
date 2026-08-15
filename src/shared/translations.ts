@@ -22,6 +22,7 @@ export const translations = {
       allFeeds: 'All Articles',
       unreadArticles: 'Unread articles',
       favorites: 'Favorites',
+      trash: 'Trash',
       expandAll: 'Expand All',
       collapseAll: 'Collapse All',
       newFolder: 'New Folder',
@@ -62,6 +63,8 @@ export const translations = {
       showAll: 'Show all',
       searchPlaceholder: 'Search articles...',
       noArticles: 'No articles',
+      trash: 'Trash',
+      emptyTrash: 'Empty trash',
       loadingFeed: 'Fetching the latest articles...',
       moreBelow: 'more below',
       backToTop: 'Back to top',
@@ -79,15 +82,24 @@ export const translations = {
         copyLink: 'Copy link',
         copyImage: 'Copy image',
         openInBrowser: 'Open in browser',
-        deleteArticle: 'Delete article',
+        deleteArticle: 'Move article to trash',
+        restoreArticle: 'Restore article',
+        deletePermanently: 'Delete permanently',
         markAllAsRead: 'Mark all as read',
-        deleteAllArticles: 'Delete all articles'
+        deleteAllArticles: 'Move all articles to trash',
+        emptyTrash: 'Empty trash'
       },
       dialogs: {
-        deleteAllTitle: 'Delete All Articles',
+        deleteAllTitle: 'Move All Articles to Trash',
         deleteAllMsg:
-          'Are you sure you want to delete all articles in the current list? This action cannot be undone.',
-        deleteAllBtn: 'Delete All'
+          'Are you sure you want to move all articles in the current list to the trash? You can restore them from Trash.',
+        deleteAllBtn: 'Move to Trash',
+        emptyTrashTitle: 'Empty Trash',
+        emptyTrashMsg: 'Are you sure you want to permanently delete all articles in the trash? This action cannot be undone.',
+        emptyTrashBtn: 'Empty Trash',
+        deletePermanentlyTitle: 'Delete Article Permanently',
+        deletePermanentlyMsg: 'Are you sure you want to permanently delete "{title}"? This action cannot be undone.',
+        deletePermanentlyBtn: 'Delete Permanently'
       }
     },
     articleViewer: {
@@ -225,6 +237,7 @@ export const translations = {
         title: 'Maintenance',
         explanation:
           'Optimize your database by removing old data. Note: Articles marked with a star (Favorites) are never deleted.',
+        trashRetention: 'Trash items are automatically permanently deleted after 30 days.',
         deleteOlder: 'Delete read articles older than (days)',
         autoClean: 'Auto clean on startup',
         runCleanBtn: 'Run Clean Up Now'
@@ -413,6 +426,7 @@ export const translations = {
       allFeeds: 'Todos los artículos',
       unreadArticles: 'Artículos sin leer',
       favorites: 'Favoritos',
+      trash: 'Papelera',
       expandAll: 'Expandir todo',
       collapseAll: 'Contraer todo',
       newFolder: 'Nueva carpeta',
@@ -454,6 +468,8 @@ export const translations = {
       showAll: 'Mostrar todo',
       searchPlaceholder: 'Buscar artículos...',
       noArticles: 'Sin artículos',
+      trash: 'Papelera',
+      emptyTrash: 'Vaciar papelera',
       loadingFeed: 'Descargando los últimos artículos...',
       moreBelow: 'más abajo',
       backToTop: 'Volver al inicio',
@@ -471,15 +487,26 @@ export const translations = {
         copyLink: 'Copiar enlace',
         copyImage: 'Copiar imagen',
         openInBrowser: 'Abrir en el navegador',
-        deleteArticle: 'Eliminar artículo',
+        deleteArticle: 'Enviar artículo a la papelera',
+        restoreArticle: 'Restaurar artículo',
+        deletePermanently: 'Eliminar definitivamente',
         markAllAsRead: 'Marcar todos como leídos',
-        deleteAllArticles: 'Eliminar todos los artículos'
+        deleteAllArticles: 'Enviar todos a la papelera',
+        emptyTrash: 'Vaciar papelera'
       },
       dialogs: {
-        deleteAllTitle: 'Eliminar todos los artículos',
+        deleteAllTitle: 'Enviar todos los artículos a la papelera',
         deleteAllMsg:
-          '¿Estás seguro de que deseas eliminar todos los artículos de la lista actual? Esta acción no se puede deshacer.',
-        deleteAllBtn: 'Eliminar todos'
+          '¿Estás seguro de que deseas enviar todos los artículos de la lista actual a la papelera? Podrás restaurarlos desde la papelera.',
+        deleteAllBtn: 'Enviar a la papelera',
+        emptyTrashTitle: 'Vaciar papelera',
+        emptyTrashMsg:
+          '¿Estás seguro de que deseas eliminar definitivamente todos los artículos de la papelera? Esta acción no se puede deshacer.',
+        emptyTrashBtn: 'Vaciar papelera',
+        deletePermanentlyTitle: 'Eliminar artículo definitivamente',
+        deletePermanentlyMsg:
+          '¿Estás seguro de que deseas eliminar definitivamente "{title}"? Esta acción no se puede deshacer.',
+        deletePermanentlyBtn: 'Eliminar definitivamente'
       }
     },
     articleViewer: {
@@ -619,6 +646,7 @@ export const translations = {
         title: 'Mantenimiento',
         explanation:
           'Optimiza tu base de datos eliminando datos antiguos. Nota: Los artículos marcados con estrella (Favoritos) nunca se eliminan.',
+        trashRetention: 'Los artículos de la papelera se eliminan definitivamente automáticamente después de 30 días.',
         deleteOlder: 'Eliminar artículos leídos anteriores a (días)',
         autoClean: 'Limpieza automática al iniciar',
         runCleanBtn: 'Ejecutar limpieza ahora'

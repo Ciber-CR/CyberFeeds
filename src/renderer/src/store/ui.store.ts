@@ -40,13 +40,13 @@ export const useUIStore = create<UIState>((set) => ({
   pendingFeedId: null,
 
   selectFeed: (id, options) =>
-    set({
+    set((state) => ({
       selectedFeedId: id,
       selectedArticleId: null,
       search: '',
       pendingFeedId: null,
-      ...(options?.unreadOnly !== undefined ? { unreadOnly: options.unreadOnly } : {})
-    }),
+      unreadOnly: id === 'trash' ? false : (options?.unreadOnly ?? state.unreadOnly)
+    })),
   selectArticle: (id) => set({ selectedArticleId: id }),
   openPanel: (panel, id) => set(() => ({
     activePanel: panel,

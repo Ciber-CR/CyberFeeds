@@ -227,6 +227,10 @@ export function registerIpc(): void {
     return db.getArticleCount(query)
   })
 
+  ipcMain.handle('articles:getTrashCount', () => {
+    return db.getTrashCount()
+  })
+
   ipcMain.handle('articles:getUnreadCounts', () => {
     return db.getUnreadCountByFeed()
   })
@@ -252,6 +256,36 @@ export function registerIpc(): void {
 
   ipcMain.handle('articles:delete', (_, id: string) => {
     db.deleteArticle(id)
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:deleteMultiple', (_, ids: string[]) => {
+    db.deleteArticles(ids)
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:restore', (_, id: string) => {
+    db.restoreArticle(id)
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:restoreMultiple', (_, ids: string[]) => {
+    db.restoreArticles(ids)
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:purge', (_, id: string) => {
+    db.purgeArticle(id)
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:purgeMultiple', (_, ids: string[]) => {
+    db.purgeArticles(ids)
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:emptyTrash', () => {
+    db.emptyTrash()
     return { ok: true }
   })
 
@@ -463,6 +497,7 @@ export function registerIpc(): void {
 
   ipcMain.handle('app:cleanup', (_, days: number) => {
     db.cleanupOldArticles(days)
+    db.purgeOldTrash(db.TRASH_RETENTION_DAYS)
     return { ok: true }
   })
 

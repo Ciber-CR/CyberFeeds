@@ -99,6 +99,11 @@ export async function pollFeeds(feeds?: Feed[], onComplete?: () => void): Promis
           console.error('[Polling] Cleanup error:', err)
         }
       }
+      try {
+        db.purgeOldTrash(db.TRASH_RETENTION_DAYS)
+      } catch (err) {
+        console.error('[Polling] Trash cleanup error:', err)
+      }
       complete()
       if (pendingPoll) {
         console.log('[Polling] Starting pending poll...')
