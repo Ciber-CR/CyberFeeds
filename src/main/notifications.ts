@@ -560,8 +560,11 @@ export function registerNotifierIpc(): void {
   })
 
   ipcMain.on('notifier:openInApp', (_, feedId: string, articleId: string) => {
-    cancelPendingBatch()
-    notifierWindow?.hide()
+    if (settings.closeOnViewInApp) {
+      cancelPendingBatch()
+      displayStack.length = 0
+      notifierWindow?.hide()
+    }
     const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow)
     if (mainWin) {
       restoreMainWindow()

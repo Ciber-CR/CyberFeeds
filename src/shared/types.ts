@@ -105,6 +105,7 @@ export interface NotificationSettings {
   showThumbnails: boolean
   preloadImages: boolean
   disableOnFullscreen: boolean
+  closeOnViewInApp: boolean
 }
 
 export interface WindowState {
@@ -178,7 +179,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     openBehavior: 'app',
     showThumbnails: true,
     preloadImages: true,
-    disableOnFullscreen: true
+    disableOnFullscreen: true,
+    closeOnViewInApp: false
   },
   pollingEnabled: true,
   fetchOnStartup: true,

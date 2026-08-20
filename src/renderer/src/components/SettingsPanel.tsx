@@ -686,6 +686,16 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.disableOnFullscreen}</span>
               </label>
 
+              <label className="toggle" style={{ marginBottom: 14 }}>
+                <div
+                  className={`toggle-track ${local.notifications.closeOnViewInApp ? 'on' : ''}`}
+                  onClick={() => updateNotif({ closeOnViewInApp: !local.notifications.closeOnViewInApp })}
+                >
+                  <div className="toggle-thumb" />
+                </div>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.closeOnViewInApp}</span>
+              </label>
+
               <div className="form-group">
                 <label className="form-label">{t.settings.notifications.openBehavior}</label>
                 <div className="open-behavior-picker">

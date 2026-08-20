@@ -237,11 +237,10 @@ export default function NotifierApp(): JSX.Element {
   }, [state.stack.length, stopCountdown])
 
   const handleViewInApp = (item: NotificationHistoryItem): void => {
-    handleDismiss(item.id, () => {
-      if (item.feedId) {
-        window.api.openInApp(item.feedId, item.articleId || '')
-      }
-    })
+    if (item.feedId) {
+      window.api.openInApp(item.feedId, item.articleId || '')
+    }
+    handleDismiss(item.id)
   }
 
   const handleOpenInBrowser = (item: NotificationHistoryItem): void => {
