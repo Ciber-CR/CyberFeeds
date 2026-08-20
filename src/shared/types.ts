@@ -183,7 +183,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   pollingEnabled: true,
   fetchOnStartup: true,
   fetchOnStartupDelay: 15,
-  pollOnlyWhenUnfocused: false,
+  pollOnlyWhenUnfocused: true,
   shortcuts: {
     // Default: only one hotkey enabled by default.
     // Show/Hide (tray + global shortcut): Alt+Shift+S

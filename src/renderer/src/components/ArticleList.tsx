@@ -936,7 +936,7 @@ const ArticleItem = memo(
         {/* Snippet */}
         <div className="article-snippet">{article.snippet}</div>
 
-        {/* Meta: unread dot + feed name + date */}
+        {/* Meta: unread dot + feed name + author (left) ... timestamp (right) */}
         <div className="article-meta">
           {!article.read ? (
             <Tooltip label={t.articleList.unread} placement="bottom">
@@ -945,26 +945,24 @@ const ArticleItem = memo(
           ) : (
             <div style={{ width: 6, height: 6, flexShrink: 0 }} />
           )}
-          <span
-            style={{
-              maxWidth: 90,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            {article.feedTitle}
-          </span>
-          <span>·</span>
-          <Tooltip label={dateTooltipLabel} placement="bottom">
-            <span>{formatDate(article.pubDate, t)}</span>
-          </Tooltip>
+          {article.feedTitle && (
+            <span
+              style={{
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {article.feedTitle}
+            </span>
+          )}
           {article.author && (
             <>
-              <span>·</span>
+              {article.feedTitle && <span style={{ flexShrink: 0 }}>·</span>}
               <span
                 style={{
-                  maxWidth: 80,
+                  minWidth: 0,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
@@ -974,6 +972,11 @@ const ArticleItem = memo(
               </span>
             </>
           )}
+          <Tooltip label={dateTooltipLabel} placement="bottom">
+            <span style={{ marginLeft: 'auto', paddingLeft: 8, flexShrink: 0, whiteSpace: 'nowrap' }}>
+              {formatDate(article.pubDate, t)}
+            </span>
+          </Tooltip>
         </div>
       </div>
     )

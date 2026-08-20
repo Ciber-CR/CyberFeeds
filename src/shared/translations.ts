@@ -154,8 +154,9 @@ export const translations = {
       general: {
         title: 'General',
         language: 'Language',
-        pollingInterval: 'Polling Interval (minutes)',
-        fetchOnStartup: 'Fetch all articles on startup with an initial delay of',
+        pollingTitle: 'Feed Synchronization & Polling',
+        pollingInterval: 'Check for new articles every',
+        fetchOnStartup: 'Fetch articles on startup with delay:',
         fetchOnStartupDelays: {
           s0: 'Immediately (0s)',
           s5: '5 seconds',
@@ -583,8 +584,9 @@ export const translations = {
       general: {
         title: 'General',
         language: 'Idioma',
-        pollingInterval: 'Intervalo de sondeo (minutos)',
-        fetchOnStartup: 'Obtener todos los artículos al iniciar con un retraso de',
+        pollingTitle: 'Sincronización y sondeo de feeds',
+        pollingInterval: 'Comprobar nuevos artículos cada',
+        fetchOnStartup: 'Obtener artículos al iniciar con retraso:',
         fetchOnStartupDelays: {
           s0: 'Inmediatamente (0s)',
           s5: '5 segundos',
