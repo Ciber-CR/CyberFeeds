@@ -10,16 +10,18 @@ interface UIState {
   editFolderId: string | null
   unseenNotificationsCount: number
   unreadOnly: boolean
+  readOnly: boolean
   search: string
   layout: 'three-panel' | 'two-panel' | 'one-panel' | 'horizontal-split'
   isFetching: boolean
   pendingFeedId: string | null
 
-  selectFeed: (id: string | null, options?: { unreadOnly?: boolean }) => void
+  selectFeed: (id: string | null, options?: { unreadOnly?: boolean; readOnly?: boolean }) => void
   selectArticle: (id: string | null) => void
   openPanel: (panel: Panel, id?: string) => void
   closePanel: () => void
   setUnreadOnly: (v: boolean) => void
+  setReadOnly: (v: boolean) => void
   setSearch: (v: string) => void
   setLayout: (v: 'three-panel' | 'two-panel' | 'one-panel' | 'horizontal-split') => void
   setFetching: (v: boolean) => void
@@ -34,6 +36,7 @@ export const useUIStore = create<UIState>((set) => ({
   editFolderId: null,
   unseenNotificationsCount: 0,
   unreadOnly: false,
+  readOnly: false,
   search: '',
   layout: 'three-panel',
   isFetching: false,
@@ -45,7 +48,12 @@ export const useUIStore = create<UIState>((set) => ({
       selectedArticleId: null,
       search: '',
       pendingFeedId: null,
-      unreadOnly: id === 'trash' ? false : (options?.unreadOnly ?? state.unreadOnly)
+      unreadOnly:
+        id === 'trash' || id === 'starred'
+          ? false
+          : (options?.unreadOnly ?? state.unreadOnly),
+      readOnly:
+        id === 'trash' || id === 'starred' ? false : (options?.readOnly ?? false)
     })),
   selectArticle: (id) => set({ selectedArticleId: id }),
   openPanel: (panel, id) => set(() => ({
@@ -55,6 +63,7 @@ export const useUIStore = create<UIState>((set) => ({
   })),
   closePanel: () => set({ activePanel: null, editFeedId: null, editFolderId: null }),
   setUnreadOnly: (v) => set({ unreadOnly: v }),
+  setReadOnly: (v) => set(v ? { readOnly: true, unreadOnly: false } : { readOnly: false }),
   setSearch: (v) => set({ search: v }),
   setLayout: (v) => set({ layout: v }),
   setFetching: (v) => set({ isFetching: v }),

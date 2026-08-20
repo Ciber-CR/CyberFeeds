@@ -2,7 +2,9 @@ import React, { memo, useRef, useCallback, useEffect, useLayoutEffect, useState 
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   Star,
-  Rss,
+  Library,
+  Mail,
+  MailOpen,
   Search,
   ChevronDown,
   ArrowUp,
@@ -184,6 +186,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     loadingMore,
     loadMore,
     deleteArticle,
+    deleteAllFilteredArticles,
     restoreArticle,
     purgeArticle,
     emptyTrash,
@@ -194,15 +197,17 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     selectedArticleId,
     selectedFeedId,
     unreadOnly,
+    readOnly,
     search,
     selectArticle,
     setUnreadOnly,
+    setReadOnly,
     setSearch,
     isFetching,
     pendingFeedId
   } = useUIStore()
   const [ctx, setCtx] = React.useState<{ x: number; y: number; id: string } | null>(null)
-  const { feeds, unreadCounts, fetchAll } = useFeedsStore()
+  const { feeds, folders, unreadCounts, fetchAll } = useFeedsStore()
   const { settings, togglePolling } = useSettingsStore()
   const { t, language } = useTranslation()
   const parentRef = useRef<HTMLDivElement>(null)
@@ -216,18 +221,23 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     setTimeout(() => useUIStore.setState({ isFetching: false }), 1000)
   }, [fetchAll])
 
-  // Auto-remove read articles from "Unread Only" view when moving to next.
+  // Auto-remove articles that no longer match the active read-state filter
+  // when moving to the next article.
   // Read latest articles from the store so this does not re-fire on every list mutation.
   useEffect(() => {
-    if (unreadOnly && prevSelectedId.current && prevSelectedId.current !== selectedArticleId) {
+    if (
+      (unreadOnly || readOnly) &&
+      prevSelectedId.current &&
+      prevSelectedId.current !== selectedArticleId
+    ) {
       const prevId = prevSelectedId.current
       const art = useArticlesStore.getState().articles.find((a) => a.id === prevId)
-      if (art && art.read) {
+      if (art && ((unreadOnly && art.read) || (readOnly && !art.read))) {
         removeArticleFromList(prevId)
       }
     }
     prevSelectedId.current = selectedArticleId
-  }, [selectedArticleId, unreadOnly, removeArticleFromList])
+  }, [selectedArticleId, unreadOnly, readOnly, removeArticleFromList])
 
   const isTrash = selectedFeedId === 'trash'
 
@@ -263,17 +273,44 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   }, [restoreArticle])
 
   const selectedFeed = feeds.find((f) => f.id === selectedFeedId)
+  const selectedFolder = selectedFeedId?.startsWith('folder:')
+    ? folders.find((folder) => folder.id === selectedFeedId.slice('folder:'.length))
+    : undefined
   const isLoadingNewFeed = pendingFeedId === selectedFeedId && articles.length === 0
-  const isAllArticles = selectedFeedId === null && !unreadOnly
+  const isAllArticles = selectedFeedId === null && !unreadOnly && !readOnly
   const isUnreadArticles = selectedFeedId === null && unreadOnly
+  const isReadArticles = selectedFeedId === null && readOnly
   const title =
     selectedFeedId === 'starred'
       ? t.articleList.favorites
-        : isTrash
-          ? t.articleList.trash
-      : isUnreadArticles
-        ? t.articleList.unreadArticles
-        : selectedFeed?.title || t.articleList.allFeeds
+      : isTrash
+        ? t.articleList.trash
+        : isUnreadArticles
+          ? t.articleList.unreadArticles
+          : isReadArticles
+            ? t.articleList.readArticles
+            : selectedFeed?.title || t.articleList.allFeeds
+  const badgeScopeName =
+    selectedFeed?.title ||
+    selectedFolder?.name ||
+    (isTrash
+      ? t.articleList.trash
+      : selectedFeedId === 'starred'
+        ? t.articleList.favorites
+        : t.articleList.allFeeds)
+  const badgeCanToggle = !isTrash
+  const badgeTooltip = badgeCanToggle
+    ? selectedFeedId === null
+      ? unreadOnly || readOnly
+        ? t.articleList.showAllArticles
+        : t.articleList.showAllUnreadArticles
+      : (
+          unreadOnly || readOnly ? t.articleList.showAllFor : t.articleList.showUnreadFor
+        ).replace('{feed}', badgeScopeName)
+    : t.articleList.showingFilter.replace('{filter}', badgeScopeName)
+  const monitoringTooltip = settings.pollingEnabled
+    ? t.articleList.monitoringActive
+    : t.articleList.monitoringPaused
 
   const unreadDisplayCount = React.useMemo(() => {
     if (selectedFeedId === 'starred' || isTrash) return totalCount
@@ -312,13 +349,57 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     overscan: 8
   })
 
+  const remeasureMountedRows = useCallback(() => {
+    const scrollElement = parentRef.current
+    if (!scrollElement || scrollElement.clientWidth === 0 || scrollElement.clientHeight === 0) {
+      return
+    }
+
+    rowVirtualizer.elementsCache.forEach((node) => {
+      if (!node.isConnected || node.getBoundingClientRect().height <= 0) return
+      rowVirtualizer.measureElement(node)
+    })
+  }, [rowVirtualizer])
+
   // Re-measure mounted rows after the list changes. Do not call virtualizer.measure()
   // — that wipes cached heights and rows overlap until the pane remounts.
   useLayoutEffect(() => {
-    rowVirtualizer.elementsCache.forEach((node) => {
-      if (node.isConnected) rowVirtualizer.measureElement(node)
+    remeasureMountedRows()
+  }, [articles, remeasureMountedRows])
+
+  // A hidden Electron window can receive background refreshes while its rows
+  // have no usable layout box. Re-measure mounted rows after it is visible
+  // again without clearing the cache, which would briefly show large gaps.
+  const remeasureFrameRef = useRef<number | undefined>(undefined)
+  const remeasureAfterVisibility = useCallback(() => {
+    if (document.visibilityState === 'hidden') return
+    if (remeasureFrameRef.current != null) {
+      cancelAnimationFrame(remeasureFrameRef.current)
+    }
+
+    remeasureFrameRef.current = requestAnimationFrame(() => {
+      remeasureFrameRef.current = requestAnimationFrame(() => {
+        remeasureFrameRef.current = undefined
+        if (document.visibilityState === 'hidden') return
+        requestAnimationFrame(remeasureMountedRows)
+      })
     })
-  }, [articles, rowVirtualizer])
+  }, [remeasureMountedRows])
+
+  useEffect(() => {
+    const handleVisibilityChange = (): void => remeasureAfterVisibility()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleVisibilityChange)
+    window.addEventListener('resize', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleVisibilityChange)
+      window.removeEventListener('resize', handleVisibilityChange)
+      if (remeasureFrameRef.current != null) {
+        cancelAnimationFrame(remeasureFrameRef.current)
+      }
+    }
+  }, [remeasureAfterVisibility])
 
   // Keep keyboard/context-menu navigation visible when the selected article
   // advances beyond the current viewport.
@@ -436,13 +517,15 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     <div className="article-list-pane" onContextMenu={(e) => e.preventDefault()}>
       {/* Header */}
       <div className="article-list-header">
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', minWidth: 0 }}>
           {selectedFeedId === 'starred' ? (
             <Star size={16} fill="var(--star)" color="var(--star)" style={{ marginRight: 4 }} />
           ) : isUnreadArticles ? (
-            <CircleDot size={16} color="var(--accent)" style={{ marginRight: 4 }} />
+            <Mail size={16} color="var(--accent)" style={{ marginRight: 4 }} />
+          ) : isReadArticles ? (
+            <MailOpen size={16} color="var(--text-secondary)" style={{ marginRight: 4 }} />
           ) : isAllArticles ? (
-            <Rss size={16} color="#EF8021" style={{ marginRight: 4 }} />
+            <Library size={16} color="#EF8021" style={{ marginRight: 4 }} />
           ) : (
             selectedFeed?.icon && (
               <FeedFavicon icon={selectedFeed.icon} title={selectedFeed.title} size={16} />
@@ -453,6 +536,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
               marginLeft:
                 selectedFeedId === 'starred' ||
                 isUnreadArticles ||
+                isReadArticles ||
                 isAllArticles ||
                 selectedFeed?.icon
                   ? 4
@@ -464,6 +548,22 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           >
             {title}
           </h2>
+          <Tooltip label={monitoringTooltip} placement="bottom">
+            <span
+              aria-label={monitoringTooltip}
+              style={{
+                width: 7,
+                height: 7,
+                marginTop: 3,
+                marginLeft: 8,
+                borderRadius: '50%',
+                background: settings.pollingEnabled ? 'var(--accent)' : '#444',
+                boxShadow: settings.pollingEnabled ? '0 0 6px var(--accent)' : 'none',
+                animation: settings.pollingEnabled ? 'pulse 2s infinite' : 'none',
+                flexShrink: 0
+              }}
+            />
+          </Tooltip>
         </div>
       </div>
 
@@ -499,38 +599,38 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         </div>
 
         <Tooltip
-          label={unreadOnly ? t.articleList.showAll : t.articleList.unreadOnly}
+          label={badgeTooltip}
           placement="bottom"
         >
           <div
-            className="cyber-badge no-brackets"
-            onClick={() => setUnreadOnly(!unreadOnly)}
+            className={`cyber-badge no-brackets article-filter-badge${badgeCanToggle ? '' : ' is-static'}`}
+            onClick={() => {
+              if (!badgeCanToggle) return
+              if (unreadOnly || readOnly) {
+                setUnreadOnly(false)
+                setReadOnly(false)
+              } else {
+                setReadOnly(false)
+                setUnreadOnly(true)
+              }
+            }}
+            aria-label={badgeTooltip}
+            aria-disabled={!badgeCanToggle}
             style={{
-              cursor: 'pointer',
+              cursor: badgeCanToggle ? 'pointer' : 'default',
               userSelect: 'none',
               display: 'flex',
               alignItems: 'center',
               flexShrink: 0,
-              gap: 8,
               padding: '3px 8px',
               height: 24,
-              color: unreadOnly ? 'var(--accent)' : undefined,
-              background: unreadOnly ? 'var(--accent-subtle)' : undefined,
-              border: unreadOnly ? '1px solid color-mix(in srgb, var(--accent) 35%, transparent)' : '1px solid transparent'
+              color: unreadOnly || readOnly ? 'var(--accent)' : undefined,
+              background: unreadOnly || readOnly ? 'var(--accent-subtle)' : undefined,
+              border: unreadOnly || readOnly ? '1px solid color-mix(in srgb, var(--accent) 35%, transparent)' : '1px solid transparent'
             }}
           >
-            <span
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                background: settings.pollingEnabled ? 'var(--accent)' : '#444',
-                boxShadow: settings.pollingEnabled ? '0 0 6px var(--accent)' : 'none',
-                animation: settings.pollingEnabled ? 'pulse 2s infinite' : 'none'
-              }}
-            />
-            <span style={{ opacity: 0.8, marginLeft: 4 }}>
-              [{unreadOnly ? formatNum(unreadDisplayCount) : `${formatNum(unreadDisplayCount)} / ${formatNum(totalCount)}`}]
+            <span style={{ opacity: 0.8 }}>
+              [{unreadOnly || readOnly ? formatNum(totalCount) : `${formatNum(unreadDisplayCount)} / ${formatNum(totalCount)}`}]
             </span>
           </div>
         </Tooltip>
@@ -582,8 +682,8 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         <Tooltip
           label={
             settings.pollingEnabled
-              ? (language === 'es' ? 'Pausar feeds y notificaciones' : 'Pause feeds and notifications')
-              : (language === 'es' ? 'Reactivar feeds y notificaciones' : 'Reactivate feeds and notifications')
+              ? (language === 'es' ? 'Pausar actualización automática de feeds' : 'Pause automatic feed updates')
+              : (language === 'es' ? 'Reactivar actualización automática de feeds' : 'Resume automatic feed updates')
           }
           placement="bottom"
         >
@@ -808,10 +908,8 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                       await emptyTrash()
                       selectArticle(null)
                     } else {
-                      const ids = articles.map((a) => a.id)
-                      if (ids.length > 0) {
-                        useArticlesStore.getState().deleteMultiple(ids)
-                      }
+                      await deleteAllFilteredArticles()
+                      selectArticle(null)
                     }
                   }
                   setCtx(null)
@@ -903,7 +1001,11 @@ const ArticleItem = memo(
               alt=""
               loading="lazy"
               onError={(e) => {
-                ;(e.target as HTMLImageElement).parentElement!.style.display = 'none'
+                const thumbnail = e.currentTarget.parentElement
+                if (!thumbnail) return
+                thumbnail.style.display = 'none'
+                const item = e.currentTarget.closest<HTMLElement>('.article-item')
+                if (item) measureRef?.(item)
               }}
             />
           </div>

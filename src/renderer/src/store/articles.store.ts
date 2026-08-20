@@ -5,6 +5,7 @@ import { useFeedsStore } from './feeds.store'
 interface ArticleQuery {
   feedId?: string
   unreadOnly?: boolean
+  readOnly?: boolean
   starredOnly?: boolean
   trashOnly?: boolean
   search?: string
@@ -29,6 +30,7 @@ interface ArticlesState {
   deleteArticle: (id: string) => Promise<void>
   deleteMultiple: (ids: string[]) => Promise<void>
   deleteAllActiveArticles: (starredOnly?: boolean) => Promise<void>
+  deleteAllFilteredArticles: (query?: ArticleQuery) => Promise<void>
   unstarAllArticles: () => Promise<void>
   restoreArticle: (id: string) => Promise<void>
   restoreAllTrash: () => Promise<void>
@@ -132,6 +134,12 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
 
   deleteAllActiveArticles: async (starredOnly = false) => {
     await window.api.deleteAllActiveArticles(starredOnly)
+    await get().refresh()
+    useFeedsStore.getState().refreshUnreadCounts()
+  },
+
+  deleteAllFilteredArticles: async (query) => {
+    await window.api.deleteAllFilteredArticles(query ?? get().currentQuery)
     await get().refresh()
     useFeedsStore.getState().refreshUnreadCounts()
   },

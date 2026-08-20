@@ -192,6 +192,9 @@ export function registerIpc(): void {
     const settings = db.getSettings()
     const pollingEnabled = !settings.pollingEnabled
     db.saveSettings({ ...settings, pollingEnabled })
+    if (!pollingEnabled) {
+      polling.cancelActivePoll()
+    }
     rebuildTrayMenu()
     // Notify all renderer windows (the sender already refreshes, but this
     // keeps the same event-driven pattern the tray toggle uses).
@@ -256,6 +259,11 @@ export function registerIpc(): void {
 
   ipcMain.handle('articles:deleteAllActive', (_, starredOnly?: boolean) => {
     db.deleteAllActiveArticles(Boolean(starredOnly))
+    return { ok: true }
+  })
+
+  ipcMain.handle('articles:deleteAllFiltered', (_, query?: db.ArticleQuery) => {
+    db.deleteAllFilteredArticles(query || {})
     return { ok: true }
   })
 

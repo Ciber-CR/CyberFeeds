@@ -194,9 +194,9 @@ function ensureWindow(): BrowserWindow {
 
 /** Push current stack to the notifier window, size & position it, show if hidden. */
 let isPushing = false
-async function pushToWindow(s: NotificationSettings = settings): Promise<void> {
-  if (displayStack.length === 0) return
-  if (isPushing) return // Avoid re-entry if multiple notifications arrive fast
+async function pushToWindow(s: NotificationSettings = settings): Promise<boolean> {
+  if (displayStack.length === 0) return false
+  if (isPushing) return false // Avoid re-entry if multiple notifications arrive fast
   
   isPushing = true
   try {
@@ -211,7 +211,7 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<void> {
       })
     }
 
-    if (win.isDestroyed()) return
+    if (win.isDestroyed()) return false
 
     console.log(`[Notifier] Pushing stack (size: ${displayStack.length}) to window`)
 
@@ -231,6 +231,18 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<void> {
       win.showInactive()
     }
 
+    // Wait until the renderer has had two paint frames after receiving the
+    // stack, keeping the notification sound synchronized with the visible card.
+    let painted = true
+    try {
+      await win.webContents.executeJavaScript(
+        'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))'
+      )
+    } catch (err) {
+      painted = false
+      console.error('[Notifier] Failed waiting for notification paint:', err)
+    }
+
     // 5. Auto-hide
     if (hideTimer) clearTimeout(hideTimer)
     if (!isHovering) {
@@ -242,6 +254,7 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<void> {
         }
       }, s.duration + 500)
     }
+    return painted
   } finally {
     isPushing = false
   }
@@ -433,7 +446,11 @@ async function flushBatch(): Promise<void> {
       displayStack.splice(0, displayStack.length - HARD_CAP)
     }
 
-    pushToWindow()
+    const displayed = await pushToWindow()
+    if (displayed && thisBatchId === currentBatchId && Date.now() - lastSoundTime > 60_000) {
+      playNotificationSound(settings)
+      lastSoundTime = Date.now()
+    }
   } finally {
     setTrayActivity('batch', false)
   }
@@ -512,13 +529,9 @@ export async function showNotification(item: NotificationHistoryItem): Promise<v
     return
   }
 
-  // History + badge + sound fire immediately; only the popup card waits on the image.
+  // History and the main-window badge update immediately. The popup and sound
+  // are deferred until the batch has passed fullscreen filtering and rendering.
   db.addNotificationHistory(item)
-
-  if (Date.now() - lastSoundTime > 60_000) {
-    playNotificationSound(settings)
-    lastSoundTime = Date.now()
-  }
 
   const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow && !w.isDestroyed())
   if (mainWin && !mainWin.isDestroyed()) {
@@ -668,9 +681,9 @@ export function registerNotifierIpc(): void {
       if (displayStack.length > effectiveSettings.maxStack) displayStack.length = effectiveSettings.maxStack
 
       // Push with effective (possibly unsaved) settings
-      pushToWindow(effectiveSettings)
-      
-      // Play sound for preview (bypass cooldown)
+      await pushToWindow(effectiveSettings)
+
+      // Play sound for preview after the card has been painted (bypass cooldown).
       playNotificationSound(effectiveSettings)
     } catch (err) {
       console.error('[Notifier] Preview error:', err)
