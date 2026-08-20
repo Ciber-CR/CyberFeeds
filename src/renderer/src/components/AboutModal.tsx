@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react'
 import {
-  X, Github, Folder, RefreshCw, Download, CheckCircle2,
+  X, Github, Folder, RefreshCw, Download,
   CircleDot, Tag, ClipboardCopy, Check
 } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
@@ -45,6 +45,7 @@ export default function AboutModal(): JSX.Element {
   const { settings, update } = useSettingsStore()
   const [versions, setVersions] = useState<AppVersions | null>(null)
   const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
+  const [isRestarting, setIsRestarting] = useState(false)
   const [diagCopied, setDiagCopied] = useState(false)
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { t, language } = useTranslation()
@@ -85,6 +86,8 @@ export default function AboutModal(): JSX.Element {
   }
 
   const handleInstall = (): void => {
+    setIsRestarting(true)
+    setStatus({ state: 'restarting' as any })
     window.api.installUpdate()
   }
 
@@ -193,10 +196,15 @@ export default function AboutModal(): JSX.Element {
                   <Download size={14} />
                   <span>{t.about.downloadBtn}</span>
                 </button>
-              ) : status.state === 'downloaded' ? (
-                <button type="button" className="btn btn-primary about-action-btn" onClick={handleInstall}>
-                  <CheckCircle2 size={14} />
-                  <span>{t.about.installBtn}</span>
+              ) : status.state === 'downloaded' || (status as any).state === 'restarting' ? (
+                <button
+                  type="button"
+                  className="btn btn-primary about-action-btn"
+                  onClick={handleInstall}
+                  disabled={isRestarting}
+                >
+                  <RefreshCw size={14} className={isRestarting ? 'spin' : ''} />
+                  <span>{isRestarting ? t.about.statuses.restarting : t.about.installBtn}</span>
                 </button>
               ) : (
                 <button
@@ -296,23 +304,51 @@ function UpdateStatusLine({ status, t }: { status: UpdateStatus; t: any }): JSX.
     'not-available': { text: t.about.statuses.latest, color: 'var(--green)' },
     available: { text: t.about.statuses.available, color: 'var(--accent)' },
     downloaded: { text: t.about.statuses.downloaded, color: 'var(--green)' },
+    restarting: { text: t.about.statuses.restarting, color: 'var(--accent)' },
     error: { text: t.about.statuses.error, color: 'var(--red)' }
   }
   if (status.state === 'idle') return null
   if (status.state === 'downloading') {
     return (
-      <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
-        {t.about.statuses.downloading.replace('{percent}', String(status.percent))}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+          <span style={{ fontWeight: 500 }}>
+            {t.about.statuses.downloading.replace('… {percent}%', '…').replace('{percent}%', '')}
+          </span>
+          <span style={{ fontWeight: 700, color: 'var(--accent)', fontFamily: 'monospace' }}>
+            {status.percent}%
+          </span>
+        </div>
+        <div
+          style={{
+            width: '100%',
+            height: 6,
+            background: 'var(--bg-3)',
+            borderRadius: 999,
+            overflow: 'hidden',
+            border: '1px solid var(--border-subtle)'
+          }}
+        >
+          <div
+            style={{
+              height: '100%',
+              width: `${Math.max(2, Math.min(100, status.percent))}%`,
+              background: 'linear-gradient(90deg, var(--accent), #38bdf8)',
+              borderRadius: 999,
+              transition: 'width 0.2s ease-out'
+            }}
+          />
+        </div>
       </div>
     )
   }
-  const info = map[status.state]
+  const info = map[status.state] || { text: '', color: 'var(--text-muted)' }
   return (
     <div style={{ textAlign: 'center', fontSize: 12, color: info.color, marginBottom: 10 }}>
       {info.text}
-      {status.state === 'error' && status.message && (
+      {status.state === 'error' && (status as any).message && (
         <div style={{ marginTop: 4, fontSize: 10, color: 'var(--text-muted)', wordBreak: 'break-word' }}>
-          {status.message}
+          {(status as any).message}
         </div>
       )}
     </div>

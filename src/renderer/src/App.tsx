@@ -83,6 +83,18 @@ export default function App(): JSX.Element {
       const unseen = history.filter((h) => h.createdAt > lastChecked).length
       useUIStore.setState({ unseenNotificationsCount: unseen })
     })
+
+    const offUpdates = window.api.onUpdateStatus((raw) => {
+      const s = raw as UpdateStatus
+      if (s.state === 'available' || s.state === 'downloading' || s.state === 'downloaded') {
+        setUpdateStatus(s)
+      } else {
+        setUpdateStatus(null)
+      }
+    })
+    return () => {
+      offUpdates()
+    }
   }, [])
 
   // Keep the new-feed loading state visible while the first poll is in flight.
@@ -385,6 +397,28 @@ export default function App(): JSX.Element {
                   Version {updateStatus.version}
                 </div>
               </div>
+            ) : updateStatus.state === 'downloading' ? (
+              <div style={{ minWidth: 160 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
+                  <strong style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {language === 'es' ? 'Descargando…' : 'Downloading…'}
+                  </strong>
+                  <span style={{ fontWeight: 700, color: 'var(--accent)', fontFamily: 'monospace' }}>
+                    {updateStatus.percent}%
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: 4, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 999, overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${Math.max(2, Math.min(100, updateStatus.percent))}%`,
+                      background: 'linear-gradient(90deg, var(--accent), #38bdf8)',
+                      borderRadius: 999,
+                      transition: 'width 0.2s ease-out'
+                    }}
+                  />
+                </div>
+              </div>
             ) : (
               <div>
                 <strong style={{ fontWeight: 600 }}>{t.about.statuses.downloaded}</strong>
@@ -397,8 +431,8 @@ export default function App(): JSX.Element {
                   }}
                 >
                   {language === 'es'
-                    ? 'Haz clic para reiniciar e instalar'
-                    : 'Click to restart and install'}
+                    ? 'Haz clic para reiniciar y aplicar'
+                    : 'Click to restart and apply'}
                 </div>
               </div>
             )}
@@ -420,7 +454,7 @@ export default function App(): JSX.Element {
               >
                 {t.about.downloadBtn}
               </button>
-            ) : (
+            ) : updateStatus.state === 'downloading' ? null : (
               <button
                 className="btn btn-primary"
                 style={{

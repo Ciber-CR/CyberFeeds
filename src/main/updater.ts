@@ -106,9 +106,8 @@ function registerUpdateIpc(): void {
   })
 
   ipcMain.handle('update:install', () => {
-    // Quit and install the downloaded update. isSilent=false shows the NSIS
-    // wizard; isForceRunAfter relaunches the app once done.
-    autoUpdater.quitAndInstall(false, true)
+    // Quit and install the downloaded update silently (unattended) with auto-relaunch.
+    autoUpdater.quitAndInstall(true, true)
   })
 }
 
