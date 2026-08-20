@@ -208,29 +208,47 @@ export default function NotifierApp(): JSX.Element {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [])
 
-  const handleDismiss = (id: string): void => {
-    dispatch({ type: 'DISMISS', id })
-    if (state.stack.length <= 1) {
-      isHovering.current = false
-      setIsHovered(false)
-      stopCountdown()
-      window.api.setHover(false)
-    }
-    window.api.dismissNotification(id)
-  }
+  const [dismissingIds, setDismissingIds] = useState<Set<string>>(() => new Set())
+
+  const handleDismiss = useCallback((id: string, onAfterDismiss?: () => void): void => {
+    setDismissingIds((prev) => {
+      if (prev.has(id)) return prev
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+
+    setTimeout(() => {
+      dispatch({ type: 'DISMISS', id })
+      setDismissingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      if (state.stack.length <= 1) {
+        isHovering.current = false
+        setIsHovered(false)
+        stopCountdown()
+        window.api.setHover(false)
+      }
+      window.api.dismissNotification(id)
+      onAfterDismiss?.()
+    }, 200)
+  }, [state.stack.length, stopCountdown])
 
   const handleViewInApp = (item: NotificationHistoryItem): void => {
-    if (item.feedId) {
-      window.api.openInApp(item.feedId, item.articleId || '')
-      handleDismiss(item.id)
-    }
+    handleDismiss(item.id, () => {
+      if (item.feedId) {
+        window.api.openInApp(item.feedId, item.articleId || '')
+      }
+    })
   }
 
   const handleOpenInBrowser = (item: NotificationHistoryItem): void => {
     if (item.link) {
       window.api.openExternal(item.link)
-      handleDismiss(item.id)
     }
+    handleDismiss(item.id)
   }
 
   const handleOpen = (item: NotificationHistoryItem): void => {
@@ -372,7 +390,11 @@ export default function NotifierApp(): JSX.Element {
         }}
       >
         {state.stack.map((item) => (
-          <div key={item.id} className="notif-card" onClick={() => handleOpen(item)}>
+          <div
+            key={item.id}
+            className={`notif-card ${dismissingIds.has(item.id) ? 'dismissing' : ''}`}
+            onClick={() => handleOpen(item)}
+          >
             {item.thumbnail && state.settings?.showThumbnails && (
               <div className="notif-thumbnail">
                 <img

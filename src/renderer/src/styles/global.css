@@ -2043,8 +2043,23 @@ body {
   flex-direction: column;
   gap: 5px;
   animation: slideUp 0.2s ease;
-  will-change: transform;
+  will-change: transform, opacity;
   cursor: pointer;
+  transition: border-color 0.15s;
+}
+.notif-card.dismissing {
+  animation: notifSlideOut 0.2s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+  pointer-events: none;
+}
+@keyframes notifSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(28px) scale(0.95);
+  }
 }
 @keyframes slideUp {
   from {
