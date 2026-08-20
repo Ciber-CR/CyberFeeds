@@ -520,8 +520,8 @@ export async function showNotification(item: NotificationHistoryItem): Promise<v
     lastSoundTime = Date.now()
   }
 
-  const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow)
-  if (mainWin) {
+  const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow && !w.isDestroyed())
+  if (mainWin && !mainWin.isDestroyed()) {
     mainWin.webContents.send('notifications:new', item)
   }
 

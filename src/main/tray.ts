@@ -37,13 +37,22 @@ function loadTrayImage(busy = false): Electron.NativeImage {
 }
 
 function updateTrayTooltip(busy: boolean): void {
+  if (!tray || tray.isDestroyed()) return
   const version = app.getVersion()
   if (busy) {
     const lang = db.getSettings().language || 'en'
     const loadingText = translations[lang]?.mainProcess?.tray?.loadingFeeds || 'Loading feeds...'
-    tray?.setToolTip(`CyberFeeds v${version} — ${loadingText}`)
+    try {
+      tray.setToolTip(`CyberFeeds v${version} — ${loadingText}`)
+    } catch {
+      /* ignore if destroyed */
+    }
   } else {
-    tray?.setToolTip(`CyberFeeds v${version}`)
+    try {
+      tray.setToolTip(`CyberFeeds v${version}`)
+    } catch {
+      /* ignore if destroyed */
+    }
   }
 }
 
@@ -59,11 +68,31 @@ export function setTrayActivity(source: 'polling' | 'batch', active: boolean): v
   if (shouldBlink) {
     if (!blinkTimer) {
       isBlinkStateOn = true
-      tray?.setImage(loadTrayImage(true))
-      updateTrayTooltip(true)
+      if (tray && !tray.isDestroyed()) {
+        try {
+          tray.setImage(loadTrayImage(true))
+          updateTrayTooltip(true)
+        } catch {
+          /* ignore */
+        }
+      }
       blinkTimer = setInterval(() => {
+        if (!tray || tray.isDestroyed()) {
+          if (blinkTimer) {
+            clearInterval(blinkTimer)
+            blinkTimer = null
+          }
+          return
+        }
         isBlinkStateOn = !isBlinkStateOn
-        tray?.setImage(loadTrayImage(isBlinkStateOn))
+        try {
+          tray.setImage(loadTrayImage(isBlinkStateOn))
+        } catch {
+          if (blinkTimer) {
+            clearInterval(blinkTimer)
+            blinkTimer = null
+          }
+        }
       }, 450)
     }
   } else {
@@ -72,8 +101,14 @@ export function setTrayActivity(source: 'polling' | 'batch', active: boolean): v
       blinkTimer = null
     }
     isBlinkStateOn = false
-    tray?.setImage(loadTrayImage(false))
-    updateTrayTooltip(false)
+    if (tray && !tray.isDestroyed()) {
+      try {
+        tray.setImage(loadTrayImage(false))
+        updateTrayTooltip(false)
+      } catch {
+        /* ignore */
+      }
+    }
   }
 }
 
@@ -196,6 +231,7 @@ function unregisterGlobalShortcuts(): void {
 
 
 function buildMenu(): void {
+  if (!tray || tray.isDestroyed()) return
   const version = app.getVersion()
   const settings = db.getSettings()
   const lang = settings.language || 'en'
@@ -291,11 +327,25 @@ function buildMenu(): void {
       click: () => { app.quit() }
     }
   ])
-  tray?.setContextMenu(contextMenu)
+  try {
+    tray.setContextMenu(contextMenu)
+  } catch {
+    /* ignore if destroyed */
+  }
 }
 
 export function destroyTray(): void {
+  if (blinkTimer) {
+    clearInterval(blinkTimer)
+    blinkTimer = null
+  }
   unregisterGlobalShortcuts()
-  tray?.destroy()
+  if (tray && !tray.isDestroyed()) {
+    try {
+      tray.destroy()
+    } catch {
+      /* ignore if destroyed */
+    }
+  }
   tray = null
 }
