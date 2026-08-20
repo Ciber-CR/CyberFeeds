@@ -195,8 +195,13 @@ export const useArticlesStore = create<ArticlesState>((set, get) => ({
   },
 
   refresh: async () => {
-    const { currentQuery } = get()
+    const { currentQuery, articles: currentArticles } = get()
     if (Object.keys(currentQuery).length === 0) return
-    await get().load(currentQuery)
+    const q = { ...currentQuery, limit: Math.max(PAGE_SIZE, currentArticles.length), offset: 0 }
+    const [articles, totalCount] = await Promise.all([
+      window.api.getArticles(q),
+      window.api.getArticleCount(currentQuery)
+    ])
+    set({ articles, totalCount })
   }
 }))

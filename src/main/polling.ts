@@ -54,8 +54,9 @@ export async function pollFeeds(feeds?: Feed[], onComplete?: () => void): Promis
   if (!feeds && settings.pollOnlyWhenUnfocused) {
     const windows = BrowserWindow.getAllWindows()
     const isAppFocused = windows.some(w => !w.isDestroyed() && w.isFocused())
-    if (isAppFocused) {
-      console.log('[Polling] Application is currently focused and pollOnlyWhenUnfocused is enabled, skipping background poll cycle.')
+    const isMainVisible = windows.some(w => !w.isDestroyed() && w.isVisible() && !w.isMinimized())
+    if (isAppFocused || isMainVisible) {
+      console.log('[Polling] Application is currently focused or visible on screen and pollOnlyWhenUnfocused is enabled, skipping background poll cycle.')
       isPolling = false
       onComplete?.()
       return
