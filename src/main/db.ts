@@ -219,6 +219,7 @@ export function backfillFavicons(): void {
 export interface ArticleQuery {
   feedId?: string
   unreadOnly?: boolean
+  readOnly?: boolean
   starredOnly?: boolean
   trashOnly?: boolean
   search?: string
@@ -227,7 +228,7 @@ export interface ArticleQuery {
 }
 
 export function getArticles(query: ArticleQuery = {}): Article[] {
-  const { feedId, unreadOnly, starredOnly, trashOnly, search, limit = 100, offset = 0 } = query
+  const { feedId, unreadOnly, readOnly, starredOnly, trashOnly, search, limit = 100, offset = 0 } = query
   let sql = `
     SELECT a.*, f.title as feedTitle, f.icon as feedIcon
     FROM articles a
@@ -239,6 +240,7 @@ export function getArticles(query: ArticleQuery = {}): Article[] {
   sql += trashOnly ? ' AND a.deletedAt IS NOT NULL' : ' AND a.deletedAt IS NULL'
   if (feedId) { sql += ' AND a.feedId = ?'; params.push(feedId) }
   if (unreadOnly) { sql += ' AND a.read = 0' }
+  if (readOnly) { sql += ' AND a.read = 1' }
   if (starredOnly) { sql += ' AND a.starred = 1' }
   if (search) {
     sql += ' AND (a.title LIKE ? OR a.snippet LIKE ? OR a.author LIKE ?)'
@@ -253,12 +255,13 @@ export function getArticles(query: ArticleQuery = {}): Article[] {
 }
 
 export function getArticleCount(query: Omit<ArticleQuery, 'limit' | 'offset'> = {}): number {
-  const { feedId, unreadOnly, starredOnly, trashOnly, search } = query
+  const { feedId, unreadOnly, readOnly, starredOnly, trashOnly, search } = query
   let sql = 'SELECT COUNT(*) as c FROM articles a WHERE 1=1'
   const params: (string | number)[] = []
   sql += trashOnly ? ' AND a.deletedAt IS NOT NULL' : ' AND a.deletedAt IS NULL'
   if (feedId) { sql += ' AND a.feedId = ?'; params.push(feedId) }
   if (unreadOnly) { sql += ' AND a.read = 0' }
+  if (readOnly) { sql += ' AND a.read = 1' }
   if (starredOnly) { sql += ' AND a.starred = 1' }
   if (search) {
     sql += ' AND (a.title LIKE ? OR a.snippet LIKE ? OR a.author LIKE ?)'
@@ -392,6 +395,28 @@ export function deleteAllActiveArticles(starredOnly = false): void {
     ? 'UPDATE articles SET deletedAt = ? WHERE deletedAt IS NULL AND starred = 1'
     : 'UPDATE articles SET deletedAt = ? WHERE deletedAt IS NULL'
   db.prepare(sql).run(Date.now())
+}
+
+export function deleteAllFilteredArticles(query: ArticleQuery = {}): void {
+  const { feedId, unreadOnly, readOnly, starredOnly, trashOnly, search } = query
+  let sql = 'UPDATE articles SET deletedAt = ? WHERE 1=1'
+  const params: (string | number)[] = [Date.now()]
+
+  sql += trashOnly ? ' AND deletedAt IS NOT NULL' : ' AND deletedAt IS NULL'
+  if (feedId) {
+    sql += ' AND feedId = ?'
+    params.push(feedId)
+  }
+  if (unreadOnly) sql += ' AND read = 0'
+  if (readOnly) sql += ' AND read = 1'
+  if (starredOnly) sql += ' AND starred = 1'
+  if (search) {
+    sql += ' AND (title LIKE ? OR snippet LIKE ? OR author LIKE ?)'
+    const term = `%${search}%`
+    params.push(term, term, term)
+  }
+
+  db.prepare(sql).run(...params)
 }
 
 export function unstarAllArticles(): void {

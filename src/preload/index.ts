@@ -36,6 +36,7 @@ const api = {
   markAllRead: (feedId?: string) => ipcRenderer.invoke('articles:markAllRead', feedId),
   markAllFilteredRead: (starredOnly?: boolean) => ipcRenderer.invoke('articles:markAllFilteredRead', starredOnly),
   deleteAllActiveArticles: (starredOnly?: boolean) => ipcRenderer.invoke('articles:deleteAllActive', starredOnly),
+  deleteAllFilteredArticles: (query?: object) => ipcRenderer.invoke('articles:deleteAllFiltered', query),
   unstarAllArticles: () => ipcRenderer.invoke('articles:unstarAll'),
   starArticle: (id: string, starred: boolean) => ipcRenderer.invoke('articles:star', id, starred),
   deleteArticle: (id: string) => ipcRenderer.invoke('articles:delete', id),

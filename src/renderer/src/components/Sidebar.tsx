@@ -9,8 +9,9 @@ import {
   Upload,
   Download,
   Stethoscope,
-  Rss,
-  CircleDot,
+  Library,
+  Mail,
+  MailOpen,
   Star,
   RefreshCw,
   Pencil,
@@ -66,7 +67,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     togglePauseFolder,
     deleteFolder
   } = useFeedsStore()
-  const { selectedFeedId, unreadOnly, selectFeed, openPanel } = useUIStore()
+  const { selectedFeedId, unreadOnly, readOnly, selectFeed, openPanel } = useUIStore()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
@@ -78,12 +79,15 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     type: 'feed' | 'folder' | 'trash' | 'smart'
     id: string
   } | null>(null)
+  const ctxMenuRef = React.useRef<HTMLDivElement>(null)
+  const [ctxMenuPosition, setCtxMenuPosition] = useState<{ left: number; top: number } | null>(null)
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
   const {
     restoreAllTrash,
     emptyTrash,
     markAllFilteredRead,
     deleteAllActiveArticles,
+    deleteAllFilteredArticles,
     unstarAllArticles
   } = useArticlesStore()
   const { t } = useTranslation()
@@ -101,10 +105,25 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     }
   }, [])
 
+  React.useLayoutEffect(() => {
+    if (!ctx || !ctxMenuRef.current) {
+      setCtxMenuPosition(null)
+      return
+    }
+
+    const margin = 8
+    const menu = ctxMenuRef.current
+    setCtxMenuPosition({
+      left: Math.max(margin, Math.min(ctx.x, window.innerWidth - menu.offsetWidth - margin)),
+      top: Math.max(margin, Math.min(ctx.y, window.innerHeight - menu.offsetHeight - margin))
+    })
+  }, [ctx])
+
   const totalAll = unreadCounts['all'] || 0
   const totalUnread = Object.entries(unreadCounts)
     .filter(([k]) => k !== 'starred' && k !== 'all')
     .reduce((sum, [, count]) => sum + count, 0)
+  const totalRead = Math.max(0, totalAll - totalUnread)
 
   const totalStarred = unreadCounts['starred'] || 0
 
@@ -129,7 +148,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
   }, [openPanel])
 
   const openSmartContextMenu = useCallback(
-    (e: React.MouseEvent, id: 'all' | 'unread' | 'starred') => {
+    (e: React.MouseEvent, id: 'all' | 'unread' | 'read' | 'starred') => {
       e.preventDefault()
       window.dispatchEvent(
         new CustomEvent('cyberfeeds:close-context-menus', { detail: 'sidebar' })
@@ -204,11 +223,11 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
       <div className="sidebar-scroll">
         {/* All Articles */}
         <div
-          className={`sidebar-item ${selectedFeedId === null && !unreadOnly ? 'active' : ''} ${ctx?.type === 'smart' && ctx.id === 'all' ? 'context-active' : ''}`}
-          onClick={() => selectFeed(null, { unreadOnly: false })}
+          className={`sidebar-item ${selectedFeedId === null && !unreadOnly && !readOnly ? 'active' : ''} ${ctx?.type === 'smart' && ctx.id === 'all' ? 'context-active' : ''}`}
+          onClick={() => selectFeed(null, { unreadOnly: false, readOnly: false })}
           onContextMenu={(e) => openSmartContextMenu(e, 'all')}
         >
-          <Rss size={15} style={{ color: '#EF8021', flexShrink: 0 }} />
+          <Library size={15} style={{ color: '#EF8021', flexShrink: 0 }} />
           <span className="item-label">{t.sidebar.allFeeds}</span>
           {totalAll > 0 && (
             <Tooltip label={formatCountBreakdown(totalUnread, totalAll, t)} placement="right">
@@ -221,15 +240,31 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
 
         <div
           className={`sidebar-item ${selectedFeedId === null && unreadOnly ? 'active' : ''} ${ctx?.type === 'smart' && ctx.id === 'unread' ? 'context-active' : ''}`}
-          onClick={() => selectFeed(null, { unreadOnly: true })}
+          onClick={() => selectFeed(null, { unreadOnly: true, readOnly: false })}
           onContextMenu={(e) => openSmartContextMenu(e, 'unread')}
         >
-          <CircleDot size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <Mail size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
           <span className="item-label">{t.sidebar.unreadArticles}</span>
           {totalUnread > 0 && (
             <Tooltip label={formatCountBreakdown(totalUnread, totalAll, t)} placement="right">
               <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
                 {formatNum(totalUnread)}
+              </div>
+            </Tooltip>
+          )}
+        </div>
+
+        <div
+          className={`sidebar-item ${selectedFeedId === null && readOnly ? 'active' : ''} ${ctx?.type === 'smart' && ctx.id === 'read' ? 'context-active' : ''}`}
+          onClick={() => selectFeed(null, { unreadOnly: false, readOnly: true })}
+          onContextMenu={(e) => openSmartContextMenu(e, 'read')}
+        >
+          <MailOpen size={15} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+          <span className="item-label">{t.sidebar.readArticles}</span>
+          {totalRead > 0 && (
+            <Tooltip label={formatCountBreakdown(0, totalRead, t)} placement="right">
+              <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
+                {formatNum(totalRead)}
               </div>
             </Tooltip>
           )}
@@ -406,13 +441,17 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
 
       {ctx && (
         <div
+          ref={ctxMenuRef}
           className="ctx-menu"
-          style={{ left: ctx.x, top: Math.min(ctx.y, window.innerHeight - 160) }}
+          style={{
+            left: ctxMenuPosition?.left ?? ctx.x,
+            top: ctxMenuPosition?.top ?? ctx.y
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {ctx.type === 'smart' ? (
             <>
-              {(ctx.id === 'all' || ctx.id === 'unread') && (
+              {(ctx.id === 'all' || ctx.id === 'unread' || ctx.id === 'read') && (
                 <div
                   className="ctx-item"
                   onClick={() => {
@@ -424,16 +463,18 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                   {t.topBar.refreshAll}
                 </div>
               )}
-              <div
-                className="ctx-item"
-                onClick={() => {
-                  void markAllFilteredRead(ctx.id === 'starred')
-                  setCtx(null)
-                }}
-              >
-                <CheckCheck size={14} />
-                {t.articleList.contextMenu.markAllAsRead}
-              </div>
+              {ctx.id !== 'read' && (
+                <div
+                  className="ctx-item"
+                  onClick={() => {
+                    void markAllFilteredRead(ctx.id === 'starred')
+                    setCtx(null)
+                  }}
+                >
+                  <CheckCheck size={14} />
+                  {t.articleList.contextMenu.markAllAsRead}
+                </div>
+              )}
               {ctx.id === 'starred' && (
                 <>
                   <div
@@ -562,6 +603,36 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                   </>
                 )}
               </div>
+              {(articleCounts[ctx.id] || 0) > 0 && (
+                <div
+                  className="ctx-item danger"
+                  onClick={async () => {
+                    const feed = feeds.find((f) => f.id === ctx.id)
+                    const count = articleCounts[ctx.id] || 0
+                    if (feed) {
+                      const confirmed = await confirm({
+                        title: t.sidebar.moveFeedArticlesTitle,
+                        message: t.sidebar.moveFeedArticlesMsg
+                          .replace('{count}', formatNum(count))
+                          .replace('{title}', feed.title),
+                        confirmText: t.sidebar.moveFeedArticlesBtn,
+                        cancelText: t.sidebar.cancel,
+                        variant: 'danger'
+                      })
+                      if (confirmed) {
+                        await deleteAllFilteredArticles({ feedId: ctx.id })
+                      }
+                    }
+                    setCtx(null)
+                  }}
+                >
+                  <Trash2 size={14} />
+                  {t.sidebar.moveFeedArticlesToTrash.replace(
+                    '{count}',
+                    formatNum(articleCounts[ctx.id] || 0)
+                  )}
+                </div>
+              )}
               <div className="ctx-divider" />
               <div
                 className="ctx-item danger"

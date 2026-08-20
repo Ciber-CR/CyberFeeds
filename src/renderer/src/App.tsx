@@ -40,6 +40,7 @@ export default function App(): JSX.Element {
     activePanel,
     layout,
     unreadOnly,
+    readOnly,
     search,
     pendingFeedId,
     closePanel
@@ -145,9 +146,10 @@ export default function App(): JSX.Element {
       query.feedId = selectedFeedId
     }
     if (unreadOnly && selectedFeedId !== 'trash') query.unreadOnly = true
+    if (readOnly && selectedFeedId !== 'trash') query.readOnly = true
     if (search) query.search = search
     load(query)
-  }, [selectedFeedId, unreadOnly, search])
+  }, [selectedFeedId, unreadOnly, readOnly, search])
 
   // Listen for new articles from main process
   useEffect(() => {

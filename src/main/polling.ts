@@ -10,6 +10,7 @@ let pollingTimer: ReturnType<typeof setInterval> | null = null
 let startupPollTimer: ReturnType<typeof setTimeout> | null = null
 let isPolling = false
 let pendingPoll = false
+let activeWorker: Worker | null = null
 let pollWatchdog: ReturnType<typeof setTimeout> | null = null
 
 const POLL_WATCHDOG_MS = 5 * 60 * 1000 // 5 minutes
@@ -83,10 +84,12 @@ export async function pollFeeds(feeds?: Feed[], onComplete?: () => void): Promis
       concurrency: 5
     }
   })
+  activeWorker = worker
   let completed = false
   const complete = (): void => {
     if (completed) return
     completed = true
+    if (activeWorker === worker) activeWorker = null
     setTrayActivity('polling', false)
     setPollingBatchHold(false)
     onComplete?.()
@@ -234,6 +237,13 @@ export function stopPolling(): void {
     clearInterval(pollingTimer)
     pollingTimer = null
   }
+}
+
+/** Cancel a feed fetch already in progress when polling is paused. */
+export function cancelActivePoll(): void {
+  if (!activeWorker) return
+  console.log('[Polling] Cancelling active fetch because polling was paused.')
+  void activeWorker.terminate()
 }
 
 export function restartPolling(intervalMinutes: number): void {
