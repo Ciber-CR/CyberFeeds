@@ -83,6 +83,7 @@ export default function NotifierApp(): JSX.Element {
   const countdownEnd = useRef<number | null>(null)
   const [countdownSeconds, setCountdownSeconds] = useState(0)
   const [historyHovered, setHistoryHovered] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
 
   const t = translations[lang] || translations.en
 
@@ -123,6 +124,7 @@ export default function NotifierApp(): JSX.Element {
       hoverOffTimer.current = null
     }
     isHovering.current = true
+    setIsHovered(true)
     pauseCountdown()
     window.api.setHover(true)
   }, [pauseCountdown])
@@ -131,6 +133,7 @@ export default function NotifierApp(): JSX.Element {
     if (hoverOffTimer.current) clearTimeout(hoverOffTimer.current)
     hoverOffTimer.current = setTimeout(() => {
       isHovering.current = false
+      setIsHovered(false)
       window.api.setHover(false)
       const duration = state.settings?.duration ?? 6000
       startCountdown(duration + AUTO_HIDE_BUFFER_MS)
@@ -209,6 +212,7 @@ export default function NotifierApp(): JSX.Element {
     dispatch({ type: 'DISMISS', id })
     if (state.stack.length <= 1) {
       isHovering.current = false
+      setIsHovered(false)
       stopCountdown()
       window.api.setHover(false)
     }
@@ -280,9 +284,9 @@ export default function NotifierApp(): JSX.Element {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 5,
-                backgroundColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(30,30,46,0.92)',
-                borderColor: historyHovered ? 'var(--accent, #bd93f9)' : 'rgba(255,255,255,0.18)',
-                color: historyHovered ? '#0d1117' : '#ccc'
+                backgroundColor: historyHovered ? 'var(--accent, #58a6ff)' : 'var(--bg-1, #161b22)',
+                borderColor: historyHovered ? 'var(--accent, #58a6ff)' : 'var(--border, #30363d)',
+                color: historyHovered ? '#0d1117' : 'var(--text-primary, #e6edf3)'
               }}
               onMouseEnter={() => setHistoryHovered(true)}
               onMouseLeave={() => setHistoryHovered(false)}
@@ -297,7 +301,7 @@ export default function NotifierApp(): JSX.Element {
                 <span
                   style={{
                     fontWeight: 700,
-                    color: historyHovered ? '#0d1117' : 'var(--accent, #bd93f9)'
+                    color: historyHovered ? '#0d1117' : 'var(--accent, #58a6ff)'
                   }}
                 >
                   {state.unseenCount > 99 ? '99+' : state.unseenCount}
@@ -328,6 +332,7 @@ export default function NotifierApp(): JSX.Element {
               onClick={(e) => {
                 e.stopPropagation()
                 isHovering.current = false
+                setIsHovered(false)
                 stopCountdown()
                 window.api.setHover(false)
                 window.api.clearAllNotifications()
@@ -335,6 +340,7 @@ export default function NotifierApp(): JSX.Element {
             >
               <X size={12} style={{ flexShrink: 0 }} />
               <span
+                className={`notif-countdown-num ${!isHovered && countdownSeconds > 0 ? 'breathing' : ''}`}
                 style={{
                   minWidth: 12,
                   textAlign: 'center',
