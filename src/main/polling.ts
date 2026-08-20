@@ -3,6 +3,7 @@ import path from 'path'
 import { app, BrowserWindow } from 'electron'
 import * as db from './db'
 import type { Feed } from './types'
+import { setTrayActivity } from './tray'
 
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 let startupPollTimer: ReturnType<typeof setTimeout> | null = null
@@ -70,6 +71,8 @@ export async function pollFeeds(feeds?: Feed[], onComplete?: () => void): Promis
     return
   }
 
+  setTrayActivity('polling', true)
+
   const workerPath = getWorkerPath()
   const worker = new Worker(workerPath, {
     workerData: {
@@ -81,6 +84,7 @@ export async function pollFeeds(feeds?: Feed[], onComplete?: () => void): Promis
   const complete = (): void => {
     if (completed) return
     completed = true
+    setTrayActivity('polling', false)
     onComplete?.()
   }
 
