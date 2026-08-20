@@ -458,11 +458,12 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                     </select>
                   </div>
 
-                  <label className="toggle" style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                    <div
-                      className={`toggle-track ${local.pollOnlyWhenUnfocused ? 'on' : ''}`}
-                      onClick={() => update({ pollOnlyWhenUnfocused: !local.pollOnlyWhenUnfocused })}
-                    >
+                  <label
+                    className="toggle"
+                    style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}
+                    onClick={() => update({ pollOnlyWhenUnfocused: !local.pollOnlyWhenUnfocused })}
+                  >
+                    <div className={`toggle-track ${local.pollOnlyWhenUnfocused ? 'on' : ''}`}>
                       <div className="toggle-thumb" />
                     </div>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.3 }}>
