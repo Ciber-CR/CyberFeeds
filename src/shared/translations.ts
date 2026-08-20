@@ -410,6 +410,7 @@ export const translations = {
         fetchNow: 'Fetch Now',
         pauseFeeds: 'Pause feeds',
         resumeFeeds: 'Resume feeds',
+        loadingFeeds: 'Loading feeds...',
         quit: 'Exit'
       },
       webviewCtx: {
@@ -844,6 +845,7 @@ export const translations = {
         fetchNow: 'Buscar ahora',
         pauseFeeds: 'Pausar feeds',
         resumeFeeds: 'Reactivar feeds',
+        loadingFeeds: 'Cargando feeds...',
         quit: 'Salir'
       },
       webviewCtx: {

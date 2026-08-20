@@ -36,6 +36,17 @@ function loadTrayImage(busy = false): Electron.NativeImage {
   return nativeImage.createFromPath(path.join(resourcesDir, 'icon.ico'))
 }
 
+function updateTrayTooltip(busy: boolean): void {
+  const version = app.getVersion()
+  if (busy) {
+    const lang = db.getSettings().language || 'en'
+    const loadingText = translations[lang]?.mainProcess?.tray?.loadingFeeds || 'Loading feeds...'
+    tray?.setToolTip(`CyberFeeds v${version} — ${loadingText}`)
+  } else {
+    tray?.setToolTip(`CyberFeeds v${version}`)
+  }
+}
+
 export function setTrayActivity(source: 'polling' | 'batch', active: boolean): void {
   if (active) {
     activeActivities.add(source)
@@ -49,6 +60,7 @@ export function setTrayActivity(source: 'polling' | 'batch', active: boolean): v
     if (!blinkTimer) {
       isBlinkStateOn = true
       tray?.setImage(loadTrayImage(true))
+      updateTrayTooltip(true)
       blinkTimer = setInterval(() => {
         isBlinkStateOn = !isBlinkStateOn
         tray?.setImage(loadTrayImage(isBlinkStateOn))
@@ -61,6 +73,7 @@ export function setTrayActivity(source: 'polling' | 'batch', active: boolean): v
     }
     isBlinkStateOn = false
     tray?.setImage(loadTrayImage(false))
+    updateTrayTooltip(false)
   }
 }
 
@@ -71,7 +84,7 @@ export function createTray(mainWindow: BrowserWindow): Tray {
   buildMenu()
   registerGlobalShortcuts()
 
-  tray.setToolTip(`CyberFeeds v${app.getVersion()}`)
+  updateTrayTooltip(false)
 
   tray.on('click', () => {
     const win = _mainWindow
