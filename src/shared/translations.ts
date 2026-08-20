@@ -155,6 +155,18 @@ export const translations = {
         title: 'General',
         language: 'Language',
         pollingInterval: 'Polling Interval (minutes)',
+        fetchOnStartup: 'Fetch all articles on startup with an initial delay of',
+        fetchOnStartupDelays: {
+          s0: 'Immediately (0s)',
+          s5: '5 seconds',
+          s10: '10 seconds',
+          s15: '15 seconds',
+          s30: '30 seconds',
+          m1: '1 minute',
+          m2: '2 minutes',
+          m5: '5 minutes'
+        },
+        pollOnlyWhenUnfocused: 'Only fetch articles automatically if the application is not focused',
         theme: 'Theme',
         themes: {
           dark: 'Dark (Default)',
@@ -572,6 +584,18 @@ export const translations = {
         title: 'General',
         language: 'Idioma',
         pollingInterval: 'Intervalo de sondeo (minutos)',
+        fetchOnStartup: 'Obtener todos los artículos al iniciar con un retraso de',
+        fetchOnStartupDelays: {
+          s0: 'Inmediatamente (0s)',
+          s5: '5 segundos',
+          s10: '10 segundos',
+          s15: '15 segundos',
+          s30: '30 segundos',
+          m1: '1 minuto',
+          m2: '2 minutos',
+          m5: '5 minutos'
+        },
+        pollOnlyWhenUnfocused: 'Sólo obtener artículos automáticamente si la aplicación no está enfocada',
         theme: 'Tema',
         themes: {
           dark: 'Oscuro (Predeterminado)',

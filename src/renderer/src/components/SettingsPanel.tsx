@@ -403,7 +403,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
 
               <div className="settings-card">
                 <h3>{t.settings.general.pollingInterval}</h3>
-                <div className="form-group" style={{ marginBottom: 0 }}>
+                <div className="form-group">
                   <input
                     className="form-input"
                     type="number"
@@ -412,6 +412,56 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                     value={local.pollingInterval}
                     onChange={e => update({ pollingInterval: Number(e.target.value) }, 300)}
                   />
+                </div>
+
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <label className="toggle" style={{ margin: 0 }}>
+                      <div
+                        className={`toggle-track ${local.fetchOnStartup !== false ? 'on' : ''}`}
+                        onClick={() => update({ fetchOnStartup: local.fetchOnStartup === false })}
+                      >
+                        <div className="toggle-thumb" />
+                      </div>
+                    </label>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                      {t.settings.general.fetchOnStartup}
+                    </span>
+                    <select
+                      className="form-select"
+                      disabled={local.fetchOnStartup === false}
+                      value={local.fetchOnStartupDelay ?? 15}
+                      onChange={e => update({ fetchOnStartupDelay: Number(e.target.value) })}
+                      style={{
+                        width: 'auto',
+                        minWidth: 140,
+                        padding: '4px 8px',
+                        fontSize: 12,
+                        opacity: local.fetchOnStartup === false ? 0.5 : 1
+                      }}
+                    >
+                      <option value={0}>{t.settings.general.fetchOnStartupDelays.s0}</option>
+                      <option value={5}>{t.settings.general.fetchOnStartupDelays.s5}</option>
+                      <option value={10}>{t.settings.general.fetchOnStartupDelays.s10}</option>
+                      <option value={15}>{t.settings.general.fetchOnStartupDelays.s15}</option>
+                      <option value={30}>{t.settings.general.fetchOnStartupDelays.s30}</option>
+                      <option value={60}>{t.settings.general.fetchOnStartupDelays.m1}</option>
+                      <option value={120}>{t.settings.general.fetchOnStartupDelays.m2}</option>
+                      <option value={300}>{t.settings.general.fetchOnStartupDelays.m5}</option>
+                    </select>
+                  </div>
+
+                  <label className="toggle" style={{ margin: 0 }}>
+                    <div
+                      className={`toggle-track ${local.pollOnlyWhenUnfocused ? 'on' : ''}`}
+                      onClick={() => update({ pollOnlyWhenUnfocused: !local.pollOnlyWhenUnfocused })}
+                    >
+                      <div className="toggle-thumb" />
+                    </div>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                      {t.settings.general.pollOnlyWhenUnfocused}
+                    </span>
+                  </label>
                 </div>
               </div>
 

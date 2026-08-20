@@ -362,7 +362,7 @@ app.whenReady().then(() => {
 
   // Start polling
   console.log(`[Main] Startup: Polling interval is ${settings.pollingInterval} minutes`)
-  startPolling(settings.pollingInterval)
+  startPolling(settings.pollingInterval, true)
 
   // Auto-start
   setAutoStart(settings.autoStart, settings.startMinimized)

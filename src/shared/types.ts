@@ -74,6 +74,9 @@ export interface AppSettings {
   listFontSize: number       // px — controls article list font size
   notifications: NotificationSettings
   pollingEnabled: boolean
+  fetchOnStartup: boolean
+  fetchOnStartupDelay: number
+  pollOnlyWhenUnfocused: boolean
   shortcuts: KeyboardShortcuts
   autoFetchFullContent: boolean
 }
@@ -178,6 +181,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
     disableOnFullscreen: true
   },
   pollingEnabled: true,
+  fetchOnStartup: true,
+  fetchOnStartupDelay: 15,
+  pollOnlyWhenUnfocused: false,
   shortcuts: {
     // Default: only one hotkey enabled by default.
     // Show/Hide (tray + global shortcut): Alt+Shift+S
