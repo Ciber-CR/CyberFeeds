@@ -1,10 +1,11 @@
 import { Worker } from 'worker_threads'
 import path from 'path'
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import * as db from './db'
 import type { Feed } from './types'
 
 let pollingTimer: ReturnType<typeof setInterval> | null = null
+let startupPollTimer: ReturnType<typeof setTimeout> | null = null
 let isPolling = false
 let pendingPoll = false
 let pollWatchdog: ReturnType<typeof setTimeout> | null = null
@@ -46,6 +47,17 @@ export async function pollFeeds(feeds?: Feed[], onComplete?: () => void): Promis
     isPolling = false
     onComplete?.()
     return
+  }
+
+  if (!feeds && settings.pollOnlyWhenUnfocused) {
+    const windows = BrowserWindow.getAllWindows()
+    const isAppFocused = windows.some(w => !w.isDestroyed() && w.isFocused())
+    if (isAppFocused) {
+      console.log('[Polling] Application is currently focused and pollOnlyWhenUnfocused is enabled, skipping background poll cycle.')
+      isPolling = false
+      onComplete?.()
+      return
+    }
   }
 
   const feedsToFetch = feeds || db.getFeeds().filter(f => !f.disabled)
@@ -176,13 +188,28 @@ export function pollFeedsAndWait(feeds?: Feed[]): Promise<void> {
   })
 }
 
-export function startPolling(intervalMinutes: number): void {
+export function startPolling(intervalMinutes: number, isInitialStartup = false): void {
   stopPolling()
+  const settings = db.getSettings()
   const interval = Math.max(1, isNaN(intervalMinutes) ? 15 : intervalMinutes)
-  console.log(`[Polling] Initializing background polling every ${interval} minutes.`)
+  console.log(`[Polling] Initializing background polling every ${interval} minutes. (Startup: ${isInitialStartup})`)
   
-  // Immediate first poll
-  pollFeeds() 
+  if (isInitialStartup) {
+    if (settings.fetchOnStartup !== false) {
+      const delaySec = typeof settings.fetchOnStartupDelay === 'number' ? settings.fetchOnStartupDelay : 15
+      if (delaySec > 0) {
+        console.log(`[Polling] Scheduling initial startup poll in ${delaySec}s...`)
+        startupPollTimer = setTimeout(() => {
+          startupPollTimer = null
+          pollFeeds()
+        }, delaySec * 1000)
+      } else {
+        pollFeeds()
+      }
+    } else {
+      console.log('[Polling] Initial startup poll is disabled by user setting.')
+    }
+  }
   
   pollingTimer = setInterval(() => {
     console.log('[Polling] Interval triggered.')
@@ -191,6 +218,10 @@ export function startPolling(intervalMinutes: number): void {
 }
 
 export function stopPolling(): void {
+  if (startupPollTimer) {
+    clearTimeout(startupPollTimer)
+    startupPollTimer = null
+  }
   if (pollingTimer) {
     clearInterval(pollingTimer)
     pollingTimer = null
@@ -199,5 +230,5 @@ export function stopPolling(): void {
 
 export function restartPolling(intervalMinutes: number): void {
   stopPolling()
-  startPolling(intervalMinutes)
+  startPolling(intervalMinutes, false)
 }
