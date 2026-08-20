@@ -160,7 +160,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     displayId: 0,
     marginX: 16,
     marginY: 16,
-    maxWidth: 380,
+    maxWidth: 360,
     maxHeight: 120,
     duration: 6000,
     fontSize: 13,

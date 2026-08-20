@@ -27,11 +27,12 @@ const HARD_CAP = 50
 // when the stack overflows and the scrollbar appears.
 const SCROLLBAR_W = 16
 /** Floor width so action buttons + date stay on one row (ES labels are longer). */
-const MIN_WIDTH_BY_LANG: Record<string, number> = { en: 380, es: 430 }
+const MIN_WIDTH_BY_LANG: Record<string, number> = { en: 350, es: 385 }
 
 function contentWidth(s: NotificationSettings): number {
   const lang = db.getSettings().language || 'en'
-  return Math.max(s.maxWidth, MIN_WIDTH_BY_LANG[lang] ?? 380)
+  const minW = MIN_WIDTH_BY_LANG[lang] ?? 350
+  return Math.max(s.maxWidth || 350, minW)
 }
 
 export function initNotifier(s: NotificationSettings): void {
@@ -359,6 +360,74 @@ function isAnyAppFullscreen(): Promise<boolean> {
   })
 }
 
+const incomingBatchQueue: NotificationHistoryItem[] = []
+let batchTimer: ReturnType<typeof setTimeout> | null = null
+let batchStartTime = 0
+let currentBatchId = 0
+const BATCH_DEBOUNCE_MS = 1200
+const BATCH_MAX_WAIT_MS = 3000
+
+export function cancelPendingBatch(): void {
+  currentBatchId++
+  incomingBatchQueue.length = 0
+  if (batchTimer) {
+    clearTimeout(batchTimer)
+    batchTimer = null
+  }
+  batchStartTime = 0
+}
+
+async function flushBatch(): Promise<void> {
+  if (incomingBatchQueue.length === 0) return
+  const batch = [...incomingBatchQueue]
+  incomingBatchQueue.length = 0
+  batchStartTime = 0
+  const thisBatchId = ++currentBatchId
+
+  console.log(`[Notifier] Preparing batch of ${batch.length} notification(s)...`)
+
+  // Preload all thumbnails in parallel for the whole batch
+  const processed = await Promise.all(
+    batch.map(async (item) => {
+      const displayItem: NotificationHistoryItem = { ...item }
+      if (settings.showThumbnails && displayItem.thumbnail) {
+        const dataUrl = await preloadImageDataUrl(displayItem.thumbnail)
+        if (dataUrl) displayItem.thumbnail = dataUrl
+      }
+      return displayItem
+    })
+  )
+
+  // If the batch was cancelled while preloading (e.g. user dismissed all / snoozed)
+  if (thisBatchId !== currentBatchId) {
+    console.log(`[Notifier] Batch ${thisBatchId} was cancelled during preparation, skipping push`)
+    return
+  }
+
+  // Push all processed items to displayStack
+  displayStack.push(...processed)
+  if (displayStack.length > HARD_CAP) {
+    displayStack.splice(0, displayStack.length - HARD_CAP)
+  }
+
+  pushToWindow()
+}
+
+function queueForBatch(item: NotificationHistoryItem): void {
+  incomingBatchQueue.push(item)
+  if (!batchStartTime) {
+    batchStartTime = Date.now()
+  }
+  const elapsed = Date.now() - batchStartTime
+  const delay = Math.min(BATCH_DEBOUNCE_MS, Math.max(200, BATCH_MAX_WAIT_MS - elapsed))
+
+  if (batchTimer) clearTimeout(batchTimer)
+  batchTimer = setTimeout(() => {
+    batchTimer = null
+    void flushBatch()
+  }, delay)
+}
+
 function startQueueChecker(): void {
   if (queueCheckInterval) return
 
@@ -376,7 +445,7 @@ function startQueueChecker(): void {
       stopQueueChecker()
 
       for (const item of itemsToPresent) {
-        void presentInPopup(item)
+        queueForBatch(item)
       }
     }
   }, 10_000)
@@ -433,29 +502,7 @@ export async function showNotification(item: NotificationHistoryItem): Promise<v
     }
   }
 
-  void presentInPopup(item)
-}
-
-/**
- * Push a notification into the popup stack. When image preloading is enabled,
- * the card is held back until its thumbnail is fully fetched (as a data URL),
- * so the card never appears with an empty/half-loaded image container.
- */
-async function presentInPopup(item: NotificationHistoryItem): Promise<void> {
-  const displayItem: NotificationHistoryItem = { ...item }
-
-  if (settings.showThumbnails && displayItem.thumbnail) {
-    const dataUrl = await preloadImageDataUrl(displayItem.thumbnail)
-    // On success render the painted image instantly; on failure fall back to the
-    // original URL (better a late lazy-load than suppressing the card forever).
-    if (dataUrl) displayItem.thumbnail = dataUrl
-  }
-
-  displayStack.push(displayItem)
-  // Hard cap to prevent unbounded memory growth
-  if (displayStack.length > HARD_CAP) displayStack.splice(0, displayStack.length - HARD_CAP)
-
-  pushToWindow()
+  queueForBatch(item)
 }
 
 /**
@@ -463,7 +510,7 @@ async function presentInPopup(item: NotificationHistoryItem): Promise<void> {
  * paint it with no network round-trip. Returns null on any failure/timeout or
  * if the source isn't a remote http(s) image.
  */
-async function preloadImageDataUrl(src: string, timeoutMs = 6000): Promise<string | null> {
+async function preloadImageDataUrl(src: string, timeoutMs = 4000): Promise<string | null> {
   if (!/^https?:\/\//i.test(src)) return null // already data:/relative — nothing to preload
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -487,6 +534,7 @@ export function registerNotifierIpc(): void {
     const idx = displayStack.findIndex(n => n.id === id)
     if (idx !== -1) displayStack.splice(idx, 1)
     if (displayStack.length === 0) {
+      cancelPendingBatch()
       notifierWindow?.hide()
     } else {
       pushToWindow()
@@ -494,6 +542,7 @@ export function registerNotifierIpc(): void {
   })
 
   ipcMain.on('notifier:clearAll', () => {
+    cancelPendingBatch()
     displayStack.length = 0
     notifierWindow?.hide()
   })
@@ -503,6 +552,7 @@ export function registerNotifierIpc(): void {
   })
 
   ipcMain.on('notifier:snooze', (_, minutes: number) => {
+    cancelPendingBatch()
     settings = { ...settings, snoozedUntil: Date.now() + minutes * 60_000 }
     db.saveSettings({ ...db.getSettings(), notifications: settings })
     displayStack.length = 0
@@ -510,6 +560,7 @@ export function registerNotifierIpc(): void {
   })
 
   ipcMain.on('notifier:openInApp', (_, feedId: string, articleId: string) => {
+    cancelPendingBatch()
     notifierWindow?.hide()
     const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow)
     if (mainWin) {
@@ -519,6 +570,7 @@ export function registerNotifierIpc(): void {
   })
 
   ipcMain.on('notifier:openHistory', () => {
+    cancelPendingBatch()
     notifierWindow?.hide()
     const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow)
     if (mainWin) {
