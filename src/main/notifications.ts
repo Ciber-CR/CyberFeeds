@@ -368,6 +368,23 @@ let currentBatchId = 0
 const BATCH_DEBOUNCE_MS = 1200
 const BATCH_MAX_WAIT_MS = 3000
 
+let isBatchBlockedByPolling = false
+
+export function setPollingBatchHold(hold: boolean): void {
+  isBatchBlockedByPolling = hold
+  if (!hold) {
+    if (incomingBatchQueue.length > 0) {
+      if (batchTimer) {
+        clearTimeout(batchTimer)
+        batchTimer = null
+      }
+      void flushBatch()
+    } else {
+      setTrayActivity('batch', false)
+    }
+  }
+}
+
 export function cancelPendingBatch(): void {
   currentBatchId++
   incomingBatchQueue.length = 0
@@ -425,6 +442,12 @@ async function flushBatch(): Promise<void> {
 function queueForBatch(item: NotificationHistoryItem): void {
   incomingBatchQueue.push(item)
   setTrayActivity('batch', true)
+
+  // When a full poll cycle is in progress, hold the batch until the cycle finishes
+  if (isBatchBlockedByPolling) {
+    return
+  }
+
   if (!batchStartTime) {
     batchStartTime = Date.now()
   }

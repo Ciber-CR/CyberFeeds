@@ -4,6 +4,7 @@ import { app, BrowserWindow } from 'electron'
 import * as db from './db'
 import type { Feed } from './types'
 import { setTrayActivity } from './tray'
+import { setPollingBatchHold } from './notifications'
 
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 let startupPollTimer: ReturnType<typeof setTimeout> | null = null
@@ -72,6 +73,7 @@ export async function pollFeeds(feeds?: Feed[], onComplete?: () => void): Promis
   }
 
   setTrayActivity('polling', true)
+  setPollingBatchHold(true)
 
   const workerPath = getWorkerPath()
   const worker = new Worker(workerPath, {
@@ -85,6 +87,7 @@ export async function pollFeeds(feeds?: Feed[], onComplete?: () => void): Promis
     if (completed) return
     completed = true
     setTrayActivity('polling', false)
+    setPollingBatchHold(false)
     onComplete?.()
   }
 
