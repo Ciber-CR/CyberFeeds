@@ -402,31 +402,38 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
               </div>
 
               <div className="settings-card">
-                <h3>{t.settings.general.pollingInterval}</h3>
-                <div className="form-group">
-                  <input
-                    className="form-input"
-                    type="number"
-                    min={1}
-                    max={1440}
-                    value={local.pollingInterval}
-                    onChange={e => update({ pollingInterval: Number(e.target.value) }, 300)}
-                  />
+                <h3>{t.settings.general.pollingTitle}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                    {t.settings.general.pollingInterval}
+                  </span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      className="form-input"
+                      style={{ width: 64, textAlign: 'center', padding: '4px 6px' }}
+                      type="number"
+                      min={1}
+                      max={1440}
+                      value={local.pollingInterval}
+                      onChange={e => update({ pollingInterval: Number(e.target.value) }, 300)}
+                    />
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>min</span>
+                  </div>
                 </div>
 
-                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <label className="toggle" style={{ margin: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid var(--border-muted)', paddingTop: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <label className="toggle" style={{ margin: 0, flex: 1, minWidth: 200, display: 'inline-flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                       <div
                         className={`toggle-track ${local.fetchOnStartup !== false ? 'on' : ''}`}
                         onClick={() => update({ fetchOnStartup: local.fetchOnStartup === false })}
                       >
                         <div className="toggle-thumb" />
                       </div>
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                        {t.settings.general.fetchOnStartup}
+                      </span>
                     </label>
-                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                      {t.settings.general.fetchOnStartup}
-                    </span>
                     <select
                       className="form-select"
                       disabled={local.fetchOnStartup === false}
@@ -437,7 +444,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                         minWidth: 140,
                         padding: '4px 8px',
                         fontSize: 12,
-                        opacity: local.fetchOnStartup === false ? 0.5 : 1
+                        opacity: local.fetchOnStartup === false ? 0.45 : 1
                       }}
                     >
                       <option value={0}>{t.settings.general.fetchOnStartupDelays.s0}</option>
@@ -451,14 +458,14 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                     </select>
                   </div>
 
-                  <label className="toggle" style={{ margin: 0 }}>
+                  <label className="toggle" style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                     <div
                       className={`toggle-track ${local.pollOnlyWhenUnfocused ? 'on' : ''}`}
                       onClick={() => update({ pollOnlyWhenUnfocused: !local.pollOnlyWhenUnfocused })}
                     >
                       <div className="toggle-thumb" />
                     </div>
-                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.3 }}>
                       {t.settings.general.pollOnlyWhenUnfocused}
                     </span>
                   </label>
