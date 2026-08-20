@@ -320,10 +320,11 @@ export const translations = {
         available: 'An update is available.',
         downloaded: 'Update ready to install.',
         error: 'Could not check for updates.',
-        downloading: 'Downloading… {percent}%'
+        downloading: 'Downloading… {percent}%',
+        restarting: 'Restarting application…'
       },
       downloadBtn: 'Download update',
-      installBtn: 'Install and restart'
+      installBtn: 'Restart and update'
     },
     doctor: {
       title: 'Feeds Doctor',
@@ -754,10 +755,11 @@ export const translations = {
         available: 'Hay una actualización disponible.',
         downloaded: 'Actualización lista para instalar.',
         error: 'No se pudo buscar actualizaciones.',
-        downloading: 'Descargando… {percent}%'
+        downloading: 'Descargando… {percent}%',
+        restarting: 'Reiniciando aplicación…'
       },
       downloadBtn: 'Descargar actualización',
-      installBtn: 'Instalar y reiniciar'
+      installBtn: 'Reiniciar y actualizar'
     },
     doctor: {
       title: 'Doctor de feeds',
