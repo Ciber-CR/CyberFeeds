@@ -13,7 +13,7 @@ import { startPolling, setOnNewArticles } from './polling'
 import { registerIpc, setAutoStart } from './ipc'
 import { initUpdater } from './updater'
 import { initNotifier, registerNotifierIpc, showNotification } from './notifications'
-import { createTray } from './tray'
+import { createTray, destroyTray } from './tray'
 import { clampWindowBounds, MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from './window-bounds'
 import type { NotificationHistoryItem, WindowState } from './types'
 import crypto from 'crypto'
@@ -352,7 +352,9 @@ app.whenReady().then(() => {
       showNotification(item)
     }
     // Tell renderer to refresh article count
-    mainWindow?.webContents.send('articles:updated', { feedId, count: inserted.length })
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('articles:updated', { feedId, count: inserted.length })
+    }
   })
 
   // Auto cleanup on startup
@@ -373,6 +375,7 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   ;(app as any).isQuitting = true
+  destroyTray()
 })
 
 app.on('window-all-closed', () => {
