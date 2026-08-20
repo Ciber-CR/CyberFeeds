@@ -47,15 +47,15 @@ def generate_busy_overlay(src_png: Path, dest_png: Path, is_256: bool) -> None:
     overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
     if is_256:
-        # 256x256 frame
-        draw.ellipse([160, 160, 245, 245], fill=(13, 17, 23, 230), outline=(0, 229, 255, 255), width=6)
-        draw.ellipse([175, 175, 230, 230], fill=(0, 229, 255, 255))
-        draw.ellipse([192, 192, 213, 213], fill=(255, 255, 255, 255))
+        # 256x256 frame: top-right LED
+        draw.ellipse([160, 10, 245, 95], fill=(13, 17, 23, 230), outline=(0, 229, 255, 255), width=6)
+        draw.ellipse([175, 25, 230, 80], fill=(0, 229, 255, 255))
+        draw.ellipse([192, 42, 213, 63], fill=(255, 255, 255, 255))
     else:
-        # 32x32 frame
-        draw.ellipse([19, 19, 31, 31], fill=(13, 17, 23, 230), outline=(0, 229, 255, 255), width=1)
-        draw.ellipse([21, 21, 29, 29], fill=(0, 229, 255, 255))
-        draw.ellipse([23, 23, 27, 27], fill=(255, 255, 255, 255))
+        # 32x32 frame: top-right LED
+        draw.ellipse([19, 1, 31, 13], fill=(13, 17, 23, 230), outline=(0, 229, 255, 255), width=1)
+        draw.ellipse([21, 3, 29, 11], fill=(0, 229, 255, 255))
+        draw.ellipse([23, 5, 27, 9], fill=(255, 255, 255, 255))
     res = Image.alpha_composite(img, overlay)
     res.save(dest_png, format='PNG')
     w, h = png_size(dest_png)
