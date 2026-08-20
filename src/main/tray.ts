@@ -10,17 +10,23 @@ let tray: Tray | null = null
 let _mainWindow: BrowserWindow | null = null
 let registeredGlobalShortcuts: string[] = []
 
-function loadTrayImage(): Electron.NativeImage {
+const activeActivities = new Set<'polling' | 'batch'>()
+let blinkTimer: NodeJS.Timeout | null = null
+let isBlinkStateOn = false
+
+function loadTrayImage(busy = false): Electron.NativeImage {
   const resourcesDir = path.join(__dirname, '../../resources')
   // Windows tray is 16 logical px; use physical px so HiDPI is not an upscaled 16x16.
   const px = Math.max(16, Math.round(16 * screen.getPrimaryDisplay().scaleFactor))
+  const filename = busy ? 'icon-busy.png' : 'icon.png'
+  const trayFilename = busy ? 'tray-busy.png' : 'tray.png'
 
-  const hiRes = nativeImage.createFromPath(path.join(resourcesDir, 'icon.png'))
+  const hiRes = nativeImage.createFromPath(path.join(resourcesDir, filename))
   if (!hiRes.isEmpty()) {
     return hiRes.resize({ width: px, height: px, quality: 'best' })
   }
 
-  const trayPng = nativeImage.createFromPath(path.join(resourcesDir, 'tray.png'))
+  const trayPng = nativeImage.createFromPath(path.join(resourcesDir, trayFilename))
   if (!trayPng.isEmpty()) {
     const { width } = trayPng.getSize()
     if (width === px) return trayPng
@@ -30,8 +36,36 @@ function loadTrayImage(): Electron.NativeImage {
   return nativeImage.createFromPath(path.join(resourcesDir, 'icon.ico'))
 }
 
+export function setTrayActivity(source: 'polling' | 'batch', active: boolean): void {
+  if (active) {
+    activeActivities.add(source)
+  } else {
+    activeActivities.delete(source)
+  }
+
+  const shouldBlink = activeActivities.size > 0
+
+  if (shouldBlink) {
+    if (!blinkTimer) {
+      isBlinkStateOn = true
+      tray?.setImage(loadTrayImage(true))
+      blinkTimer = setInterval(() => {
+        isBlinkStateOn = !isBlinkStateOn
+        tray?.setImage(loadTrayImage(isBlinkStateOn))
+      }, 450)
+    }
+  } else {
+    if (blinkTimer) {
+      clearInterval(blinkTimer)
+      blinkTimer = null
+    }
+    isBlinkStateOn = false
+    tray?.setImage(loadTrayImage(false))
+  }
+}
+
 export function createTray(mainWindow: BrowserWindow): Tray {
-  tray = new Tray(loadTrayImage())
+  tray = new Tray(loadTrayImage(false))
   _mainWindow = mainWindow
 
   buildMenu()

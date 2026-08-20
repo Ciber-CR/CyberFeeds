@@ -41,6 +41,27 @@ def save_frame(ico: Image.Image, size: tuple[int, int], dest: Path) -> None:
     print(f'  {dest.relative_to(ROOT)}  {w}x{h}')
 
 
+def generate_busy_overlay(src_png: Path, dest_png: Path, is_256: bool) -> None:
+    from PIL import ImageDraw
+    img = Image.open(src_png).convert('RGBA')
+    overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    if is_256:
+        # 256x256 frame
+        draw.ellipse([160, 160, 245, 245], fill=(13, 17, 23, 230), outline=(0, 229, 255, 255), width=6)
+        draw.ellipse([175, 175, 230, 230], fill=(0, 229, 255, 255))
+        draw.ellipse([192, 192, 213, 213], fill=(255, 255, 255, 255))
+    else:
+        # 32x32 frame
+        draw.ellipse([19, 19, 31, 31], fill=(13, 17, 23, 230), outline=(0, 229, 255, 255), width=1)
+        draw.ellipse([21, 21, 29, 29], fill=(0, 229, 255, 255))
+        draw.ellipse([23, 23, 27, 27], fill=(255, 255, 255, 255))
+    res = Image.alpha_composite(img, overlay)
+    res.save(dest_png, format='PNG')
+    w, h = png_size(dest_png)
+    print(f'  {dest_png.relative_to(ROOT)}  {w}x{h} (busy LED overlay)')
+
+
 def main() -> None:
     if not SRC.is_file():
         raise SystemExit(f'missing {SRC} — place the new icon there first')
@@ -56,8 +77,12 @@ def main() -> None:
         save_frame(ico, (256, 256), ROOT / 'resources' / 'icon.png')
         save_frame(ico, (32, 32), ROOT / 'resources' / 'tray.png')
 
+    generate_busy_overlay(ROOT / 'resources' / 'icon.png', ROOT / 'resources' / 'icon-busy.png', is_256=True)
+    generate_busy_overlay(ROOT / 'resources' / 'tray.png', ROOT / 'resources' / 'tray-busy.png', is_256=False)
+
     print('done')
 
 
 if __name__ == '__main__':
     sys.exit(main())
+

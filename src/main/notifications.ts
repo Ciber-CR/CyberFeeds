@@ -8,6 +8,7 @@ import * as db from './db'
 import { restoreMainWindow } from './index'
 import { translations } from '../shared/translations'
 import type { NotificationHistoryItem, NotificationSettings } from './types'
+import { setTrayActivity } from './tray'
 
 let notifierWindow: BrowserWindow | null = null
 const displayStack: NotificationHistoryItem[] = []
@@ -375,10 +376,14 @@ export function cancelPendingBatch(): void {
     batchTimer = null
   }
   batchStartTime = 0
+  setTrayActivity('batch', false)
 }
 
 async function flushBatch(): Promise<void> {
-  if (incomingBatchQueue.length === 0) return
+  if (incomingBatchQueue.length === 0) {
+    setTrayActivity('batch', false)
+    return
+  }
   const batch = [...incomingBatchQueue]
   incomingBatchQueue.length = 0
   batchStartTime = 0
@@ -386,35 +391,40 @@ async function flushBatch(): Promise<void> {
 
   console.log(`[Notifier] Preparing batch of ${batch.length} notification(s)...`)
 
-  // Preload all thumbnails in parallel for the whole batch
-  const processed = await Promise.all(
-    batch.map(async (item) => {
-      const displayItem: NotificationHistoryItem = { ...item }
-      if (settings.showThumbnails && displayItem.thumbnail) {
-        const dataUrl = await preloadImageDataUrl(displayItem.thumbnail)
-        if (dataUrl) displayItem.thumbnail = dataUrl
-      }
-      return displayItem
-    })
-  )
+  try {
+    // Preload all thumbnails in parallel for the whole batch
+    const processed = await Promise.all(
+      batch.map(async (item) => {
+        const displayItem: NotificationHistoryItem = { ...item }
+        if (settings.showThumbnails && displayItem.thumbnail) {
+          const dataUrl = await preloadImageDataUrl(displayItem.thumbnail)
+          if (dataUrl) displayItem.thumbnail = dataUrl
+        }
+        return displayItem
+      })
+    )
 
-  // If the batch was cancelled while preloading (e.g. user dismissed all / snoozed)
-  if (thisBatchId !== currentBatchId) {
-    console.log(`[Notifier] Batch ${thisBatchId} was cancelled during preparation, skipping push`)
-    return
+    // If the batch was cancelled while preloading (e.g. user dismissed all / snoozed)
+    if (thisBatchId !== currentBatchId) {
+      console.log(`[Notifier] Batch ${thisBatchId} was cancelled during preparation, skipping push`)
+      return
+    }
+
+    // Push all processed items to displayStack
+    displayStack.push(...processed)
+    if (displayStack.length > HARD_CAP) {
+      displayStack.splice(0, displayStack.length - HARD_CAP)
+    }
+
+    pushToWindow()
+  } finally {
+    setTrayActivity('batch', false)
   }
-
-  // Push all processed items to displayStack
-  displayStack.push(...processed)
-  if (displayStack.length > HARD_CAP) {
-    displayStack.splice(0, displayStack.length - HARD_CAP)
-  }
-
-  pushToWindow()
 }
 
 function queueForBatch(item: NotificationHistoryItem): void {
   incomingBatchQueue.push(item)
+  setTrayActivity('batch', true)
   if (!batchStartTime) {
     batchStartTime = Date.now()
   }
