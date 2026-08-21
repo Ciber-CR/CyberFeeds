@@ -207,9 +207,10 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     pendingFeedId
   } = useUIStore()
   const [ctx, setCtx] = React.useState<{ x: number; y: number; id: string } | null>(null)
+  const [windowOnScreen, setWindowOnScreen] = useState(true)
   const { feeds, folders, unreadCounts, fetchAll } = useFeedsStore()
   const { settings, togglePolling } = useSettingsStore()
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const parentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const prevSelectedId = useRef<string | null>(null)
@@ -308,9 +309,13 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           unreadOnly || readOnly ? t.articleList.showAllFor : t.articleList.showUnreadFor
         ).replace('{feed}', badgeScopeName)
     : t.articleList.showingFilter.replace('{filter}', badgeScopeName)
-  const monitoringTooltip = settings.pollingEnabled
-    ? t.articleList.monitoringActive
-    : t.articleList.monitoringPaused
+  const updatesHeldBack =
+    settings.pollingEnabled && Boolean(settings.pollOnlyWhenUnfocused) && windowOnScreen
+  const monitoringTooltip = !settings.pollingEnabled
+    ? t.articleList.monitoringPaused
+    : updatesHeldBack
+      ? t.articleList.monitoringHeld
+      : t.articleList.monitoringActive
 
   const unreadDisplayCount = React.useMemo(() => {
     if (selectedFeedId === 'starred' || isTrash) return totalCount
@@ -326,6 +331,20 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     }
     return unreadCounts[selectedFeedId || ''] || 0
   }, [selectedFeedId, unreadCounts, totalCount, feeds, isTrash])
+
+  const viewingFolderId = selectedFeedId?.startsWith('folder:')
+    ? selectedFeedId.slice('folder:'.length)
+    : null
+  const folderNameByFeedId = React.useMemo(() => {
+    const folderNameById = new Map(folders.map((folder) => [folder.id, folder.name]))
+    const map = new Map<string, string>()
+    for (const feed of feeds) {
+      if (!feed.folderId || feed.folderId === viewingFolderId) continue
+      const name = folderNameById.get(feed.folderId)
+      if (name) map.set(feed.id, name)
+    }
+    return map
+  }, [feeds, folders, viewingFolderId])
 
   const ITEM_H = 120
   const ITEM_H_WITH_THUMB = 230
@@ -346,7 +365,17 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
       if (article?.thumbnail && settings.showArticleThumbnails) return ITEM_H_WITH_THUMB
       return ITEM_H
     },
-    overscan: 8
+    overscan: 8,
+    // Never persist a 0px row. Hidden Electron windows can layout at height 0;
+    // storing that collapses several items onto the same translateY.
+    measureElement: (element) => {
+      const height = element.getBoundingClientRect().height
+      if (height > 1) return Math.round(height)
+      const index = Number(element.getAttribute('data-index'))
+      const article = Number.isFinite(index) ? articlesRef.current[index] : undefined
+      if (article?.thumbnail && settings.showArticleThumbnails) return ITEM_H_WITH_THUMB
+      return ITEM_H
+    }
   })
 
   const remeasureMountedRows = useCallback(() => {
@@ -356,7 +385,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     }
 
     rowVirtualizer.elementsCache.forEach((node) => {
-      if (!node.isConnected || node.getBoundingClientRect().height <= 0) return
+      if (!node.isConnected) return
       rowVirtualizer.measureElement(node)
     })
   }, [rowVirtualizer])
@@ -371,8 +400,9 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   // have no usable layout box. Re-measure mounted rows after it is visible
   // again without clearing the cache, which would briefly show large gaps.
   const remeasureFrameRef = useRef<number | undefined>(undefined)
-  const remeasureAfterVisibility = useCallback(() => {
-    if (document.visibilityState === 'hidden') return
+  const remeasureAfterVisibility = useCallback((force?: boolean | Event) => {
+    const mustRun = force === true
+    if (!mustRun && document.visibilityState === 'hidden') return
     if (remeasureFrameRef.current != null) {
       cancelAnimationFrame(remeasureFrameRef.current)
     }
@@ -380,21 +410,31 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     remeasureFrameRef.current = requestAnimationFrame(() => {
       remeasureFrameRef.current = requestAnimationFrame(() => {
         remeasureFrameRef.current = undefined
-        if (document.visibilityState === 'hidden') return
+        if (!mustRun && document.visibilityState === 'hidden') return
         requestAnimationFrame(remeasureMountedRows)
       })
     })
   }, [remeasureMountedRows])
 
   useEffect(() => {
-    const handleVisibilityChange = (): void => remeasureAfterVisibility()
+    const handleVisibilityChange = (): void => {
+      setWindowOnScreen(document.visibilityState === 'visible')
+      remeasureAfterVisibility()
+    }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('focus', handleVisibilityChange)
     window.addEventListener('resize', handleVisibilityChange)
+    const unsubShown = window.api.onWindowShown(() => {
+      setWindowOnScreen(true)
+      remeasureAfterVisibility(true)
+    })
+    const unsubHidden = window.api.onWindowHidden(() => setWindowOnScreen(false))
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleVisibilityChange)
       window.removeEventListener('resize', handleVisibilityChange)
+      unsubShown()
+      unsubHidden()
       if (remeasureFrameRef.current != null) {
         cancelAnimationFrame(remeasureFrameRef.current)
       }
@@ -496,22 +536,63 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
       return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
     }
 
-    const onKeyDown = (e: KeyboardEvent): void => {
-      if (e.key !== 'Delete') return
-      if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return
-      if (isEditableTarget(e.target)) return
-      if (useUIStore.getState().activePanel) return
-      if (confirmState.isOpen) return
-      const id = useUIStore.getState().selectedArticleId
-      if (!id) return
-      e.preventDefault()
-      e.stopPropagation()
-      deleteArticleAndAdvance(id)
+    const selectByIndex = (index: number): void => {
+      const list = useArticlesStore.getState().articles
+      const next = list[index]
+      if (!next) return
+      useUIStore.getState().selectArticle(next.id)
+      if (!isTrash && !next.deletedAt && !next.read) {
+        void markRead(next.id, true)
+      }
     }
 
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [deleteArticleAndAdvance, confirmState.isOpen])
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return
+      if (useUIStore.getState().activePanel) return
+      if (confirmState.isOpen) return
+
+      const inArticleSearch =
+        e.target instanceof HTMLElement && Boolean(e.target.closest('[data-article-search="true"]'))
+      if (isEditableTarget(e.target) && !inArticleSearch) return
+      if (inArticleSearch && e.key !== 'ArrowDown') return
+
+      if (e.key === 'Delete') {
+        if (e.repeat) return
+        const id = useUIStore.getState().selectedArticleId
+        if (!id) return
+        e.preventDefault()
+        e.stopPropagation()
+        deleteArticleAndAdvance(id)
+        return
+      }
+
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+      const list = useArticlesStore.getState().articles
+      if (list.length === 0) return
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      if (inArticleSearch) {
+        ;(e.target as HTMLElement).blur()
+        selectByIndex(0)
+        return
+      }
+
+      const selected = useUIStore.getState().selectedArticleId
+      const idx = selected ? list.findIndex((a) => a.id === selected) : -1
+      if (idx < 0) {
+        selectByIndex(0)
+        return
+      }
+      const nextIdx = e.key === 'ArrowDown' ? idx + 1 : idx - 1
+      if (nextIdx < 0 || nextIdx >= list.length) return
+      selectByIndex(nextIdx)
+    }
+
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [deleteArticleAndAdvance, confirmState.isOpen, isTrash, markRead])
 
   return (
     <div className="article-list-pane" onContextMenu={(e) => e.preventDefault()}>
@@ -557,9 +638,15 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                 marginTop: 3,
                 marginLeft: 8,
                 borderRadius: '50%',
-                background: settings.pollingEnabled ? 'var(--accent)' : '#444',
-                boxShadow: settings.pollingEnabled ? '0 0 6px var(--accent)' : 'none',
-                animation: settings.pollingEnabled ? 'pulse 2s infinite' : 'none',
+                background: !settings.pollingEnabled
+                  ? '#444'
+                  : updatesHeldBack
+                    ? 'color-mix(in srgb, var(--accent) 42%, #555)'
+                    : 'var(--accent)',
+                boxShadow:
+                  settings.pollingEnabled && !updatesHeldBack ? '0 0 6px var(--accent)' : 'none',
+                animation:
+                  settings.pollingEnabled && !updatesHeldBack ? 'pulse 2s infinite' : 'none',
                 flexShrink: 0
               }}
             />
@@ -591,6 +678,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           />
           <input
             className="search-input"
+            data-article-search="true"
             style={{ paddingLeft: 28, width: '100%' }}
             placeholder={t.articleList.searchPlaceholder}
             defaultValue={search}
@@ -682,8 +770,8 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         <Tooltip
           label={
             settings.pollingEnabled
-              ? (language === 'es' ? 'Pausar actualización automática de feeds' : 'Pause automatic feed updates')
-              : (language === 'es' ? 'Reactivar actualización automática de feeds' : 'Resume automatic feed updates')
+              ? t.articleList.pauseAutoUpdates
+              : t.articleList.resumeAutoUpdates
           }
           placement="bottom"
         >
@@ -734,6 +822,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                 <ArticleItem
                   key={virtualRow.key}
                   article={article}
+                  folderName={folderNameByFeedId.get(article.feedId)}
                   isTrash={isTrash}
                   selected={selectedArticleId === article.id}
                   contextActive={ctx?.id === article.id}
@@ -940,6 +1029,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
 
 interface ArticleItemProps {
   article: Article
+  folderName?: string
   isTrash?: boolean
   selected: boolean
   contextActive?: boolean
@@ -953,6 +1043,7 @@ interface ArticleItemProps {
 const ArticleItem = memo(
   function ArticleItem({
     article,
+    folderName,
     isTrash,
     selected,
     contextActive,
@@ -1076,8 +1167,14 @@ const ArticleItem = memo(
               </span>
             </>
           )}
+          <span style={{ marginLeft: 'auto', flexShrink: 0 }} />
+          {folderName && (
+            <Tooltip label={t.articleList.feedFolder} placement="bottom">
+              <span className="article-meta-folder">{folderName}</span>
+            </Tooltip>
+          )}
           <Tooltip label={dateTooltipLabel} placement="bottom">
-            <span style={{ marginLeft: 'auto', paddingLeft: 8, flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <span style={{ paddingLeft: folderName ? 0 : 8, flexShrink: 0, whiteSpace: 'nowrap' }}>
               {formatDate(article.pubDate, t)}
             </span>
           </Tooltip>
@@ -1087,6 +1184,7 @@ const ArticleItem = memo(
   },
   (prev, next) =>
     prev.article.id === next.article.id &&
+    prev.folderName === next.folderName &&
     prev.isTrash === next.isTrash &&
     prev.article.read === next.article.read &&
     prev.article.starred === next.article.starred &&

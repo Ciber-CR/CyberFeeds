@@ -96,6 +96,63 @@ function removeDuplicateFeaturedImage(html: string, thumbnail: string, baseUrl: 
   return document.body.innerHTML
 }
 
+const VIDEO_PLACEHOLDER_TEXT =
+  /^(play video content|play video|loading video|video loading|click to play|tap to play video)$/i
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value, 'https://invalid.invalid')
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function videoHasPlayableSource(video: Element): boolean {
+  const src = video.getAttribute('src') || ''
+  if (isHttpUrl(src)) return true
+  return Array.from(video.querySelectorAll('source')).some((source) =>
+    isHttpUrl(source.getAttribute('src') || '')
+  )
+}
+
+/** Drop player shells that cannot play in the in-app viewer (no src, leftover loading UI). */
+function stripUnplayableMedia(html: string): string {
+  if (!html) return html
+  const document = new DOMParser().parseFromString(html, 'text/html')
+
+  for (const video of Array.from(document.querySelectorAll('video'))) {
+    if (videoHasPlayableSource(video)) {
+      video.setAttribute('controls', '')
+      continue
+    }
+    const wrapper = video.parentElement
+    video.remove()
+    if (
+      wrapper &&
+      !wrapper.querySelector('img, video, a, p, li') &&
+      !(wrapper.textContent || '').trim()
+    ) {
+      wrapper.remove()
+    }
+  }
+
+  for (const el of Array.from(document.querySelectorAll('div, span, p, section, figure'))) {
+    const text = (el.textContent || '').replace(/\s+/g, ' ').trim()
+    if (!VIDEO_PLACEHOLDER_TEXT.test(text)) continue
+    if (el.querySelector('img, a, video')) continue
+    el.remove()
+  }
+
+  for (const el of Array.from(
+    document.querySelectorAll('.spinner, [class*="loading-spinner"], [class*="video-loading"]')
+  )) {
+    el.remove()
+  }
+
+  return document.body.innerHTML
+}
+
 const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
   const { selectedArticleId } = useUIStore()
   const { articles, starArticle } = useArticlesStore()
@@ -219,6 +276,33 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
     }
   }, [article?.id, settings.autoFetchFullContent])
 
+  // Hide <video> tags that error or never produce data (CORS / DRM / dead URLs).
+  useEffect(() => {
+    const root = contentRef.current
+    if (!root) return
+    const videos = Array.from(root.querySelectorAll('video'))
+    const timers: number[] = []
+
+    for (const video of videos) {
+      const hide = (): void => {
+        video.remove()
+      }
+      video.addEventListener('error', hide)
+      for (const source of Array.from(video.querySelectorAll('source'))) {
+        source.addEventListener('error', hide)
+      }
+      timers.push(
+        window.setTimeout(() => {
+          if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) hide()
+        }, 5000)
+      )
+    }
+
+    return () => {
+      for (const timer of timers) window.clearTimeout(timer)
+    }
+  }, [article?.id, fullHtml, article?.content])
+
   const handleContentScroll = useCallback(() => {
     if (scrollRaf.current != null) return
     scrollRaf.current = requestAnimationFrame(() => {
@@ -267,7 +351,7 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
   const bodyHtml = article.thumbnail
     ? removeDuplicateFeaturedImage(rawHtml, article.thumbnail, article.link)
     : rawHtml
-  const safeHtml = DOMPurify.sanitize(bodyHtml, {
+  const safeHtml = stripUnplayableMedia(DOMPurify.sanitize(bodyHtml, {
     ALLOWED_TAGS: [
       'p',
       'h1',
@@ -319,7 +403,7 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
       'media'
     ],
     FORCE_BODY: true
-  })
+  }))
 
   return (
     <div className="article-viewer">

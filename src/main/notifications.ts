@@ -22,7 +22,7 @@ const CARD_H = 140
 const THUMB_H = 102 // 100px img + 2px margin-bottom
 const CARD_GAP = 6
 const CLEAR_BAR_H = 36
-const WIN_PAD = 12
+const WIN_PAD = 4
 const HARD_CAP = 50
 // Extra width reserved for the scrollbar so action buttons aren't cramped/clipped
 // when the stack overflows and the scrollbar appears.
@@ -60,6 +60,9 @@ export function initNotifier(s: NotificationSettings): void {
   } catch (err) {
     console.error('[Notifier] Failed to auto-align display ID on startup:', err)
   }
+  // Preload the hidden notifier so the first preview/toast isn't waiting on Chromium.
+  ensureWindow()
+  resolveDefaultSound()
 }
 export function updateNotifierSettings(s: NotificationSettings): void {
   const prevFilters = new Set(settings?.feedFilters ?? [])
@@ -122,7 +125,10 @@ function calcPosition(
 
   const { workArea: wa } = display
   const mx = Math.round(s.marginX)
-  const my = Math.round(s.marginY)
+  const isBottom = (s.position || '').startsWith('bottom')
+  // Bottom toasts sit above a leftover window pad; keep them a bit closer to
+  // the work-area edge (left/right taskbars don't eat vertical space).
+  const my = Math.round(isBottom ? Math.max(4, (s.marginY || 16) - 8) : s.marginY)
 
   const map: Record<string, { x: number; y: number }> = {
     'top-left':      { x: wa.x + mx,                              y: wa.y + my },
@@ -154,14 +160,36 @@ function applyPositionToWindow(
   const winH = visibleCards * CARD_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar
 
   const { x, y } = calcPosition(winW, winH, s)
+  const bounds = { x, y, width: winW, height: winH }
   // Atomic update of position and size to avoid Windows-specific lag/flicker
-  win.setBounds({ x, y, width: winW, height: winH }, false)
+  win.setBounds(bounds, false)
+  if (process.platform === 'win32') {
+    // Transparent frameless windows often ignore the first setBounds Y on Windows
+    // (they keep the default centered origin). Stamp position again.
+    win.setPosition(x, y, false)
+  }
 }
 
+function reassertNotifierPosition(win: BrowserWindow, cardCount: number, s: NotificationSettings): void {
+  if (win.isDestroyed()) return
+  applyPositionToWindow(win, cardCount, s)
+  if (process.platform !== 'win32') return
+  setImmediate(() => {
+    if (!win.isDestroyed()) applyPositionToWindow(win, cardCount, s)
+  })
+}
+
+let notifierReady: Promise<void> | null = null
+
 function createNotifierWindow(s: NotificationSettings): BrowserWindow {
+  const initW = contentWidth(s) + SCROLLBAR_W
+  const initH = CARD_H + CLEAR_BAR_H + WIN_PAD
+  const { x, y } = calcPosition(initW, initH, s)
   const win = new BrowserWindow({
-    width: contentWidth(s) + SCROLLBAR_W,
-    height: CARD_H + CLEAR_BAR_H + WIN_PAD, // 1 card + clear bar
+    x,
+    y,
+    width: initW,
+    height: initH,
     frame: false,
     transparent: true,
     resizable: false,
@@ -169,16 +197,23 @@ function createNotifierWindow(s: NotificationSettings): BrowserWindow {
     alwaysOnTop: true,
     focusable: false,
     show: false,
+    paintWhenInitiallyHidden: true,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      webSecurity: false
+      webSecurity: false,
+      backgroundThrottling: false
     }
   })
 
   win.setIgnoreMouseEvents(false)
+  win.webContents.setBackgroundThrottling(false)
+
+  notifierReady = new Promise<void>((resolve) => {
+    win.webContents.once('did-finish-load', () => resolve())
+  })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/notifier/index.html`)
@@ -186,8 +221,21 @@ function createNotifierWindow(s: NotificationSettings): BrowserWindow {
     win.loadFile(path.join(__dirname, '../renderer/notifier/index.html'))
   }
 
-  win.on('closed', () => { notifierWindow = null })
+  win.on('closed', () => {
+    notifierWindow = null
+    notifierReady = null
+  })
   return win
+}
+
+function waitUntilReady(win: BrowserWindow): Promise<void> {
+  if (win.isDestroyed() || !win.webContents.isLoading()) return Promise.resolve()
+  return Promise.race([
+    notifierReady ?? new Promise<void>((resolve) => {
+      win.webContents.once('did-finish-load', () => resolve())
+    }),
+    new Promise<void>((resolve) => setTimeout(resolve, 1500))
+  ])
 }
 
 function ensureWindow(): BrowserWindow {
@@ -206,15 +254,7 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<boolean
   isPushing = true
   try {
     const win = ensureWindow()
-
-    // Wait for renderer to be ready if window is still loading
-    if (win.webContents.isLoading()) {
-      console.log('[Notifier] Window is loading, waiting...')
-      await new Promise<void>((resolve) => {
-        win.webContents.once('did-finish-load', resolve)
-        setTimeout(resolve, 2000) // Safety fallback
-      })
-    }
+    await waitUntilReady(win)
 
     if (win.isDestroyed()) return false
 
@@ -230,11 +270,13 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<boolean
     //    (Windows can demote z-order after repeated hide/show cycles)
     win.setAlwaysOnTop(true, 'screen-saver')
 
-    // 4. Show
+    // 4. Show — then stamp position again. showInactive() can recenter
+    //    transparent windows on Windows.
     if (!win.isVisible()) {
       console.log('[Notifier] Showing window (showInactive)')
       win.showInactive()
     }
+    reassertNotifierPosition(win, displayStack.length, s)
 
     // Wait until the renderer has had two paint frames after receiving the
     // stack, keeping the notification sound synchronized with the visible card.
@@ -265,42 +307,37 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<boolean
   }
 }
 
+let cachedDefaultSound: string | null | undefined
+
+function resolveDefaultSound(): string | null {
+  if (cachedDefaultSound !== undefined) return cachedDefaultSound
+  const candidates = [
+    path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'CyberFeeds.mp3'),
+    path.join(app.getAppPath(), 'resources', 'CyberFeeds.mp3'),
+    'C:\\CyberGems\\CyberFeeds\\CyberFeeds.mp3'
+  ]
+  cachedDefaultSound = candidates.find((p) => fs.existsSync(p)) ?? null
+  return cachedDefaultSound
+}
+
 function playNotificationSound(s: NotificationSettings): void {
   if (s.soundEnabled === false) {
     console.log('[Notifier] Sound is disabled')
     return
   }
 
-  // Determine path to play
-  let playPath = s.soundFile
-  
-  let defaultMp3 = path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'CyberFeeds.mp3')
-  if (!fs.existsSync(defaultMp3)) {
-    defaultMp3 = path.join(app.getAppPath(), 'resources', 'CyberFeeds.mp3')
-  }
-  if (!fs.existsSync(defaultMp3)) {
-    defaultMp3 = 'C:\\CyberGems\\CyberFeeds\\CyberFeeds.mp3'
-  }
-
-  if (!playPath) {
-    if (fs.existsSync(defaultMp3)) {
-      playPath = defaultMp3
-    }
-  }
+  const playPath = s.soundFile || resolveDefaultSound()
 
   if (playPath) {
     console.log(`[Notifier] Playing sound: ${playPath}`)
     try {
       const win = ensureWindow()
       const encoded = url.pathToFileURL(playPath).toString()
-      console.log(`[Notifier] Executing JS to play: ${encoded}`)
       win.webContents.executeJavaScript(
         `(function(){ 
-          console.log('Attempting to play sound: ${encoded}');
           var a = new Audio('${encoded}'); 
           a.volume = 0.7; 
-          a.play().then(() => console.log('Sound played successfully'))
-                  .catch(e => console.error('Sound play failed:', e)); 
+          a.play().catch(function(e){ console.error('Sound play failed:', e); }); 
         })()`
       ).catch(err => console.error('[Notifier] JS execution failed:', err))
     } catch (err) {
@@ -640,6 +677,53 @@ async function preloadImageDataUrl(src: string, timeoutMs = 4000): Promise<strin
   }
 }
 
+async function showSettingsPreview(
+  effectiveSettings: NotificationSettings,
+  playSound: boolean
+): Promise<void> {
+  const win = ensureWindow()
+  await waitUntilReady(win)
+  if (win.isDestroyed()) return
+
+  const lang = (db.getSettings().language || 'en') as 'en' | 'es'
+  const previewT = translations[lang]?.settings?.notifications
+  const previewItem: NotificationHistoryItem = {
+    id: 'preview',
+    title: previewT?.previewTitle || 'CyberFeeds — Notification Preview',
+    body: previewT?.previewBody || 'Your notifications will appear like this.',
+    link: '',
+    feedName: 'CyberFeeds',
+    createdAt: Date.now()
+  }
+
+  displayStack.length = 0
+  displayStack.push(previewItem)
+
+  applyPositionToWindow(win, 1, effectiveSettings)
+  win.webContents.send(
+    'notifier:stack',
+    displayStack,
+    effectiveSettings,
+    lang,
+    db.getUnseenNotificationCount()
+  )
+  win.setAlwaysOnTop(true, 'screen-saver')
+  if (!win.isVisible()) win.showInactive()
+  reassertNotifierPosition(win, 1, effectiveSettings)
+
+  if (hideTimer) clearTimeout(hideTimer)
+  if (!isHovering) {
+    hideTimer = setTimeout(() => {
+      if (notifierWindow && !notifierWindow.isDestroyed()) {
+        notifierWindow.hide()
+        displayStack.length = 0
+      }
+    }, effectiveSettings.duration + 500)
+  }
+
+  if (playSound) playNotificationSound(effectiveSettings)
+}
+
 export function registerNotifierIpc(): void {
   ipcMain.on('notifier:muteFeed', (_, feedId: string) => {
     muteFeed(feedId)
@@ -718,45 +802,20 @@ export function registerNotifierIpc(): void {
    * Preview handler.
    * Accepts OPTIONAL notification settings from the renderer (the UI's local state),
    * so the preview reflects what the user currently has typed — even before Save.
+   * Re-entrant: changing position while a preview is up just moves the window.
    */
-  ipcMain.handle('notifier:preview', async (_, tempNotifSettings?: NotificationSettings) => {
-    try {
-      // Use temp settings from UI if provided, fall back to saved settings
-      const effectiveSettings: NotificationSettings = tempNotifSettings
-        ? { ...settings, ...tempNotifSettings }
-        : settings
-
-      const win = ensureWindow()
-
-      // Wait for renderer to be ready if window just opened
-      await new Promise<void>(resolve => {
-        if (!win.webContents.isLoading()) { resolve(); return }
-        win.webContents.once('did-finish-load', resolve)
-        setTimeout(resolve, 1500)
-      })
-
-      const lang = (db.getSettings().language || 'en') as 'en' | 'es'
-      const previewT = translations[lang]?.settings?.notifications
-      const previewItem: NotificationHistoryItem = {
-        id: 'preview-' + Date.now(),
-        title: previewT?.previewTitle || 'CyberFeeds — Notification Preview',
-        body: previewT?.previewBody || 'Your notifications will appear like this.',
-        link: '',
-        feedName: 'CyberFeeds',
-        createdAt: Date.now()
+  ipcMain.handle(
+    'notifier:preview',
+    async (_, tempNotifSettings?: NotificationSettings, playSound = true) => {
+      try {
+        const effectiveSettings: NotificationSettings = tempNotifSettings
+          ? { ...settings, ...tempNotifSettings }
+          : settings
+        await showSettingsPreview(effectiveSettings, playSound !== false)
+      } catch (err) {
+        console.error('[Notifier] Preview error:', err)
       }
-
-      displayStack.unshift(previewItem)
-      if (displayStack.length > effectiveSettings.maxStack) displayStack.length = effectiveSettings.maxStack
-
-      // Push with effective (possibly unsaved) settings
-      await pushToWindow(effectiveSettings)
-
-      // Play sound for preview after the card has been painted (bypass cooldown).
-      playNotificationSound(effectiveSettings)
-    } catch (err) {
-      console.error('[Notifier] Preview error:', err)
+      return true
     }
-    return true
-  })
+  )
 }

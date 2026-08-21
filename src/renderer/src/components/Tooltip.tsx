@@ -197,17 +197,18 @@ export default function Tooltip({ label, placement = 'bottom', children }: Toolt
               top: pos ? pos.top : -9999,
               zIndex: 1000001,
               pointerEvents: 'none',
-              visibility: pos ? 'visible' : 'hidden'
+              visibility: pos ? 'visible' : 'hidden',
+              outline: 'none'
             }}
           >
             <div
               ref={cardRef}
-              className="glass-effect"
               style={{
                 position: 'relative',
                 background: 'rgba(15, 15, 20, 0.97)',
                 backdropFilter: 'blur(10px)',
                 border: '1px solid var(--border)',
+                outline: 'none',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4), 0 0 4px var(--accent-glow)',
                 borderRadius: 8,
                 padding: '6px 10px',

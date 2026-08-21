@@ -75,7 +75,6 @@ export default function NotifierApp(): JSX.Element {
   const [state, dispatch] = useReducer(reducer, { stack: [], settings: null, unseenCount: 0 })
   const [lang, setLang] = useState<'en' | 'es'>('en')
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [scrolledToBottom, setScrolledToBottom] = useState(true)
   const [scrollbarW, setScrollbarW] = useState(0)
   const hoverOffTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isHovering = useRef(false)
@@ -186,27 +185,12 @@ export default function NotifierApp(): JSX.Element {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [stopCountdown])
 
-  // Re-check scroll state whenever the stack changes
+  // Keep the top bar gutter aligned with the cards' right edge.
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
-    setScrolledToBottom(atBottom)
-    // Measure the actual scrollbar width so the top bar can mirror it (keeps
-    // "Clear All" aligned with the cards' right edge, not the scrollbar).
     setScrollbarW(el.offsetWidth - el.clientWidth)
   }, [state.stack.length])
-
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
-    setScrolledToBottom(atBottom)
-  }, [])
-
-  const scrollToBottom = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [])
 
   const [dismissingIds, setDismissingIds] = useState<Set<string>>(() => new Set())
 
@@ -260,15 +244,18 @@ export default function NotifierApp(): JSX.Element {
 
   if (state.stack.length === 0) return <div />
 
-  const maxStack = state.settings?.maxStack || 5
+  const maxStack = Math.max(1, Number(state.settings?.maxStack) || 2)
+  const visibleStack = state.stack.slice(0, maxStack)
   const overflowCount = Math.max(0, state.stack.length - maxStack)
-  const showMoreIndicator = overflowCount > 0 && !scrolledToBottom
+  const showMoreIndicator = overflowCount > 0
   const snoozeMinutes = state.settings?.snoozeMinutes ?? 30
   const snoozeLabel = formatSnoozeLabel(snoozeMinutes)
   const snoozeText = t.notifier.snooze.replace('{time}', snoozeLabel)
   const snoozeTooltip = t.notifier.snoozeTooltip.replace('{time}', snoozeLabel)
   const cardOpenTooltip =
     state.settings?.openBehavior === 'browser' ? t.notifier.openTooltip : t.notifier.viewTooltip
+
+  const isBottom = (state.settings?.position || '').startsWith('bottom')
 
   return (
     <div
@@ -278,6 +265,7 @@ export default function NotifierApp(): JSX.Element {
       style={{
         display: 'flex',
         flexDirection: 'column',
+        justifyContent: isBottom ? 'flex-end' : 'flex-start',
         height: '100%',
         background: 'rgba(0,0,0,0.01)'
       }}
@@ -374,21 +362,20 @@ export default function NotifierApp(): JSX.Element {
       {/* Scrollable notification list */}
       <div
         ref={scrollRef}
-        onScroll={handleScroll}
         style={{
           flex: 1,
-          overflowY: state.stack.length > maxStack ? 'auto' : 'hidden',
+          overflowY: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           gap: 6,
           paddingTop: 4,
           // Keep card right edge aligned whether or not the scrollbar is visible
-          paddingRight: state.stack.length > maxStack ? 0 : 16,
+          paddingRight: 16,
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(255,255,255,0.15) transparent'
         }}
       >
-        {state.stack.map((item) => (
+        {visibleStack.map((item) => (
           <div
             key={item.id}
             className={`notif-card ${dismissingIds.has(item.id) ? 'dismissing' : ''}`}
@@ -540,7 +527,6 @@ export default function NotifierApp(): JSX.Element {
       {showMoreIndicator && (
         <Tooltip label={t.notifier.moreTooltip} placement="bottom">
           <div
-            onClick={scrollToBottom}
             style={{
               position: 'absolute',
               bottom: 8,
@@ -552,13 +538,12 @@ export default function NotifierApp(): JSX.Element {
               padding: '3px 12px',
               fontSize: 10,
               color: '#ffffff',
-              cursor: 'pointer',
+              cursor: 'default',
               display: 'flex',
               alignItems: 'center',
               gap: 4,
               zIndex: 10,
               backdropFilter: 'blur(8px)',
-              transition: 'opacity 0.2s',
               boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
             }}
           >
