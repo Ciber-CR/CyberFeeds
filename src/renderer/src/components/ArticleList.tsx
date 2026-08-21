@@ -916,7 +916,9 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
                 }}
               >
                 <Trash2 size={14} />
-                {isTrash ? t.articleList.contextMenu.emptyTrash : t.articleList.contextMenu.deleteAllArticles}
+                {isTrash
+                  ? t.articleList.contextMenu.emptyTrash
+                  : t.sidebar.moveFeedArticlesToTrash.replace('{count}', formatNum(totalCount))}
               </div>
             </div>
           )

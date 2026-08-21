@@ -242,7 +242,10 @@ function buildMenu(): void {
   const iconShowHide = nativeImage.createFromPath(path.join(iconsDir, 'show-hide.png'))
   const iconNotifications = nativeImage.createFromPath(path.join(iconsDir, 'notifications.png'))
   const iconSettings = nativeImage.createFromPath(path.join(iconsDir, 'settings.png'))
-  const iconFetch = nativeImage.createFromPath(path.join(iconsDir, 'fetch.png'))
+  const refreshIcon = nativeImage.createFromPath(path.join(iconsDir, 'refresh.png'))
+  const iconFetch = refreshIcon.isEmpty()
+    ? nativeImage.createFromPath(path.join(iconsDir, 'fetch.png'))
+    : refreshIcon
   const iconPause = nativeImage.createFromPath(path.join(iconsDir, 'pause-blue.png'))
   const iconPlay = nativeImage.createFromPath(path.join(iconsDir, 'play-green.png'))
   const iconQuit = nativeImage.createFromPath(path.join(iconsDir, 'quit.png'))
@@ -280,7 +283,7 @@ function buildMenu(): void {
       }
     },
     {
-      label: t.fetchNow,
+      label: t.updateFeeds,
       icon: iconFetch,
       accelerator: shortcuts.fetch.enabled ? shortcuts.fetch.accelerator : undefined,
       click: () => { pollFeeds() }
