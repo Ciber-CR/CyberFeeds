@@ -190,6 +190,7 @@ export const translations = {
           m5: '5 minutes'
         },
         pollOnlyWhenUnfocused: 'Only fetch articles automatically if the application is not focused',
+        pollOnlyWhenUnfocusedHint: 'Keeps your place in the list while you read. Automatic fetching resumes when CyberFeeds is minimized or in the tray.',
         theme: 'Theme',
         themes: {
           dark: 'Dark (Default)',
@@ -653,6 +654,7 @@ export const translations = {
           m5: '5 minutos'
         },
         pollOnlyWhenUnfocused: 'Sólo obtener artículos automáticamente si la aplicación no está enfocada',
+        pollOnlyWhenUnfocusedHint: 'Conserva tu posición en la lista mientras lees. La obtención automática se reanuda al minimizar o enviar a la bandeja.',
         theme: 'Tema',
         themes: {
           dark: 'Oscuro (Predeterminado)',

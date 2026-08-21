@@ -527,6 +527,9 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                       {t.settings.general.pollOnlyWhenUnfocused}
                     </span>
                   </label>
+                  <p className="settings-card-hint" style={{ margin: '6px 0 0 46px' }}>
+                    {t.settings.general.pollOnlyWhenUnfocusedHint}
+                  </p>
                 </div>
               </div>
 
