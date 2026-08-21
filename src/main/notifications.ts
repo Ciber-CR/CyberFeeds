@@ -18,11 +18,12 @@ let lastSoundTime = 0
 let isHovering = false
 
 // Pixel height of each notification card (content + gap)
-const CARD_H = 140
+const CARD_BASE_H = 108
 const THUMB_H = 102 // 100px img + 2px margin-bottom
 const CARD_GAP = 6
-const CLEAR_BAR_H = 36
-const WIN_PAD = 4
+const CLEAR_BAR_H = 34
+const WIN_PAD = 16
+const MORE_INDICATOR_H = 26
 const HARD_CAP = 50
 // Extra width reserved for the scrollbar so action buttons aren't cramped/clipped
 // when the stack overflows and the scrollbar appears.
@@ -157,7 +158,8 @@ function applyPositionToWindow(
   const gaps = Math.max(0, visibleCards - 1) * CARD_GAP
   const visible = displayStack.slice(0, visibleCards)
   const thumbCount = s.showThumbnails ? visible.filter(n => n.thumbnail).length : 0
-  const winH = visibleCards * CARD_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar
+  const moreH = cardCount > s.maxStack ? MORE_INDICATOR_H : 0
+  const winH = visibleCards * CARD_BASE_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar + moreH
 
   const { x, y } = calcPosition(winW, winH, s)
   const bounds = { x, y, width: winW, height: winH }
@@ -167,6 +169,23 @@ function applyPositionToWindow(
     // Transparent frameless windows often ignore the first setBounds Y on Windows
     // (they keep the default centered origin). Stamp position again.
     win.setPosition(x, y, false)
+  }
+}
+
+function applyExactHeightToWindow(
+  win: BrowserWindow,
+  contentH: number,
+  s: NotificationSettings
+): void {
+  if (win.isDestroyed()) return
+  const winW = contentWidth(s) + SCROLLBAR_W
+  const { x, y } = calcPosition(winW, contentH, s)
+  const cur = win.getBounds()
+  if (cur.x !== x || cur.y !== y || cur.width !== winW || cur.height !== contentH) {
+    win.setBounds({ x, y, width: winW, height: contentH }, false)
+    if (process.platform === 'win32') {
+      win.setPosition(x, y, false)
+    }
   }
 }
 
@@ -183,7 +202,7 @@ let notifierReady: Promise<void> | null = null
 
 function createNotifierWindow(s: NotificationSettings): BrowserWindow {
   const initW = contentWidth(s) + SCROLLBAR_W
-  const initH = CARD_H + CLEAR_BAR_H + WIN_PAD
+  const initH = CARD_BASE_H + CLEAR_BAR_H + WIN_PAD
   const { x, y } = calcPosition(initW, initH, s)
   const win = new BrowserWindow({
     x,
@@ -195,7 +214,6 @@ function createNotifierWindow(s: NotificationSettings): BrowserWindow {
     resizable: false,
     skipTaskbar: true,
     alwaysOnTop: true,
-    focusable: false,
     show: false,
     paintWhenInitiallyHidden: true,
     webPreferences: {
@@ -268,7 +286,7 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<boolean
 
     // 3. Re-apply alwaysOnTop to ensure window stays in foreground
     //    (Windows can demote z-order after repeated hide/show cycles)
-    win.setAlwaysOnTop(true, 'screen-saver')
+    win.setAlwaysOnTop(true, 'status')
 
     // 4. Show — then stamp position again. showInactive() can recenter
     //    transparent windows on Windows.
@@ -707,7 +725,7 @@ async function showSettingsPreview(
     lang,
     db.getUnseenNotificationCount()
   )
-  win.setAlwaysOnTop(true, 'screen-saver')
+  win.setAlwaysOnTop(true, 'status')
   if (!win.isVisible()) win.showInactive()
   reassertNotifierPosition(win, 1, effectiveSettings)
 
@@ -725,6 +743,13 @@ async function showSettingsPreview(
 }
 
 export function registerNotifierIpc(): void {
+  ipcMain.on('notifier:reportHeight', (_, height: number) => {
+    if (!notifierWindow || notifierWindow.isDestroyed() || !settings) return
+    if (typeof height === 'number' && height > 40) {
+      applyExactHeightToWindow(notifierWindow, height, settings)
+    }
+  })
+
   ipcMain.on('notifier:muteFeed', (_, feedId: string) => {
     muteFeed(feedId)
   })

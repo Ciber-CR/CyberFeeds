@@ -255,18 +255,30 @@ export default function NotifierApp(): JSX.Element {
   const cardOpenTooltip =
     state.settings?.openBehavior === 'browser' ? t.notifier.openTooltip : t.notifier.viewTooltip
 
-  const isBottom = (state.settings?.position || '').startsWith('bottom')
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // Report measured content height to main process so the window wraps tightly
+  useEffect(() => {
+    if (state.stack.length === 0) return
+    const el = rootRef.current
+    if (!el) return
+    const height = Math.ceil(el.scrollHeight)
+    if (height > 40) {
+      window.api.reportNotifierHeight(height)
+    }
+  }, [state.stack.length, state.settings, visibleStack.length, showMoreIndicator])
 
   return (
     <div
+      ref={rootRef}
       className="notifier-root"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: isBottom ? 'flex-end' : 'flex-start',
-        height: '100%',
+        height: 'auto',
+        minHeight: 0,
         background: 'rgba(0,0,0,0.01)'
       }}
     >
@@ -363,7 +375,7 @@ export default function NotifierApp(): JSX.Element {
       <div
         ref={scrollRef}
         style={{
-          flex: 1,
+          flexShrink: 0,
           overflowY: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -525,32 +537,37 @@ export default function NotifierApp(): JSX.Element {
       </div>
       {/* "More" floating indicator */}
       {showMoreIndicator && (
-        <Tooltip label={t.notifier.moreTooltip} placement="bottom">
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 8,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'rgba(0, 170, 255, 0.65)',
-              border: '1px solid rgba(0, 170, 255, 0.5)',
-              borderRadius: 12,
-              padding: '3px 12px',
-              fontSize: 10,
-              color: '#ffffff',
-              cursor: 'default',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              zIndex: 10,
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
-            }}
-          >
-            <ChevronDown size={10} />
-            {overflowCount} {t.notifier.more}
-          </div>
-        </Tooltip>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            paddingTop: 6,
+            paddingBottom: 2,
+            paddingRight: 16
+          }}
+        >
+          <Tooltip label={t.notifier.moreTooltip} placement="top">
+            <div
+              style={{
+                background: 'rgba(0, 170, 255, 0.65)',
+                border: '1px solid rgba(0, 170, 255, 0.5)',
+                borderRadius: 12,
+                padding: '3px 12px',
+                fontSize: 10,
+                color: '#ffffff',
+                cursor: 'default',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+              }}
+            >
+              <ChevronDown size={10} />
+              {overflowCount} {t.notifier.more}
+            </div>
+          </Tooltip>
+        </div>
       )}
     </div>
   )
