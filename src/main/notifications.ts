@@ -153,12 +153,13 @@ function applyPositionToWindow(
   // Always reserve scrollbar gutter width so cards aren't clipped on the right
   // when there is no overflow (Windows frameless windows + action-button row).
   const winW = contentWidth(s) + SCROLLBAR_W
-  const visibleCards = Math.min(Math.max(1, cardCount), s.maxStack)
+  const maxStack = Math.max(1, Number(s.maxStack) || 2)
+  const visibleCards = Math.min(Math.max(1, cardCount), maxStack)
   const clearBar = cardCount > 0 ? CLEAR_BAR_H : 0
   const gaps = Math.max(0, visibleCards - 1) * CARD_GAP
   const visible = displayStack.slice(0, visibleCards)
   const thumbCount = s.showThumbnails ? visible.filter(n => n.thumbnail).length : 0
-  const moreH = cardCount > s.maxStack ? MORE_INDICATOR_H : 0
+  const moreH = cardCount > maxStack ? MORE_INDICATOR_H : 0
   const winH = visibleCards * CARD_BASE_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar + moreH
 
   const { x, y } = calcPosition(winW, winH, s)
@@ -169,23 +170,6 @@ function applyPositionToWindow(
     // Transparent frameless windows often ignore the first setBounds Y on Windows
     // (they keep the default centered origin). Stamp position again.
     win.setPosition(x, y, false)
-  }
-}
-
-function applyExactHeightToWindow(
-  win: BrowserWindow,
-  contentH: number,
-  s: NotificationSettings
-): void {
-  if (win.isDestroyed()) return
-  const winW = contentWidth(s) + SCROLLBAR_W
-  const { x, y } = calcPosition(winW, contentH, s)
-  const cur = win.getBounds()
-  if (cur.x !== x || cur.y !== y || cur.width !== winW || cur.height !== contentH) {
-    win.setBounds({ x, y, width: winW, height: contentH }, false)
-    if (process.platform === 'win32') {
-      win.setPosition(x, y, false)
-    }
   }
 }
 
@@ -286,7 +270,7 @@ async function pushToWindow(s: NotificationSettings = settings): Promise<boolean
 
     // 3. Re-apply alwaysOnTop to ensure window stays in foreground
     //    (Windows can demote z-order after repeated hide/show cycles)
-    win.setAlwaysOnTop(true, 'status')
+    win.setAlwaysOnTop(true, 'screen-saver')
 
     // 4. Show — then stamp position again. showInactive() can recenter
     //    transparent windows on Windows.
@@ -725,7 +709,7 @@ async function showSettingsPreview(
     lang,
     db.getUnseenNotificationCount()
   )
-  win.setAlwaysOnTop(true, 'status')
+  win.setAlwaysOnTop(true, 'screen-saver')
   if (!win.isVisible()) win.showInactive()
   reassertNotifierPosition(win, 1, effectiveSettings)
 
@@ -743,13 +727,6 @@ async function showSettingsPreview(
 }
 
 export function registerNotifierIpc(): void {
-  ipcMain.on('notifier:reportHeight', (_, height: number) => {
-    if (!notifierWindow || notifierWindow.isDestroyed() || !settings) return
-    if (typeof height === 'number' && height > 40) {
-      applyExactHeightToWindow(notifierWindow, height, settings)
-    }
-  })
-
   ipcMain.on('notifier:muteFeed', (_, feedId: string) => {
     muteFeed(feedId)
   })

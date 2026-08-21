@@ -207,7 +207,9 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     pendingFeedId
   } = useUIStore()
   const [ctx, setCtx] = React.useState<{ x: number; y: number; id: string } | null>(null)
-  const [windowOnScreen, setWindowOnScreen] = useState(true)
+  const [windowFocused, setWindowFocused] = useState(() =>
+    typeof document !== 'undefined' ? document.hasFocus() : true
+  )
   const { feeds, folders, unreadCounts, fetchAll } = useFeedsStore()
   const { settings, togglePolling } = useSettingsStore()
   const { t } = useTranslation()
@@ -310,7 +312,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         ).replace('{feed}', badgeScopeName)
     : t.articleList.showingFilter.replace('{filter}', badgeScopeName)
   const updatesHeldBack =
-    settings.pollingEnabled && Boolean(settings.pollOnlyWhenUnfocused) && windowOnScreen
+    settings.pollingEnabled && Boolean(settings.pollOnlyWhenUnfocused) && windowFocused
   const monitoringTooltip = !settings.pollingEnabled
     ? t.articleList.monitoringPaused
     : updatesHeldBack
@@ -417,22 +419,32 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   }, [remeasureMountedRows])
 
   useEffect(() => {
-    const handleVisibilityChange = (): void => {
-      setWindowOnScreen(document.visibilityState === 'visible')
+    const handleFocusChange = (): void => {
+      setWindowFocused(document.hasFocus())
       remeasureAfterVisibility()
     }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleVisibilityChange)
-    window.addEventListener('resize', handleVisibilityChange)
+    const handleFocus = (): void => {
+      setWindowFocused(true)
+      remeasureAfterVisibility()
+    }
+    const handleBlur = (): void => {
+      setWindowFocused(false)
+      remeasureAfterVisibility()
+    }
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('blur', handleBlur)
+    document.addEventListener('visibilitychange', handleFocusChange)
+    window.addEventListener('resize', handleFocusChange)
     const unsubShown = window.api.onWindowShown(() => {
-      setWindowOnScreen(true)
+      setWindowFocused(document.hasFocus())
       remeasureAfterVisibility(true)
     })
-    const unsubHidden = window.api.onWindowHidden(() => setWindowOnScreen(false))
+    const unsubHidden = window.api.onWindowHidden(() => setWindowFocused(false))
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleVisibilityChange)
-      window.removeEventListener('resize', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('blur', handleBlur)
+      document.removeEventListener('visibilitychange', handleFocusChange)
+      window.removeEventListener('resize', handleFocusChange)
       unsubShown()
       unsubHidden()
       if (remeasureFrameRef.current != null) {
