@@ -419,7 +419,7 @@ export const translations = {
     mainProcess: {
       tray: {
         showHide: 'Show / Hide',
-        notifications: 'Notifications',
+        notifications: 'Notifications...',
         settings: 'Configuration...',
         updateFeeds: 'Update feeds',
         pauseFeeds: 'Pause feeds',
@@ -868,7 +868,7 @@ export const translations = {
     mainProcess: {
       tray: {
         showHide: 'Mostrar / Ocultar',
-        notifications: 'Notificaciones',
+        notifications: 'Notificaciones...',
         settings: 'Configuración...',
         updateFeeds: 'Actualizar feeds',
         pauseFeeds: 'Pausar feeds',
