@@ -12,6 +12,8 @@ import AlertDialog from './AlertDialog'
 import Tooltip from './Tooltip'
 import type { AppSettings, KeyboardShortcuts } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
+import { useFeedsStore } from '../store/feeds.store'
+import { FeedFavicon } from './ArticleList'
 
 interface DisplayInfo {
   id: number
@@ -191,6 +193,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
   const { closePanel: storeClosePanel, openPanel } = useUIStore()
   const closePanel = onClose || storeClosePanel
   const { settings, save } = useSettingsStore()
+  const { feeds, folders } = useFeedsStore()
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
   const { alert, alertState, handleClose } = useAlert()
   const [local, setLocal] = useState<AppSettings>({ ...settings })
@@ -209,6 +212,22 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
   useEffect(() => {
     localRef.current = local
   }, [local])
+
+  useEffect(() => {
+    const incoming = settings.notifications.feedFilters ?? []
+    setLocal((prev) => {
+      const current = prev.notifications.feedFilters ?? []
+      if (incoming.length === current.length && incoming.every((id) => current.includes(id))) {
+        return prev
+      }
+      const next = {
+        ...prev,
+        notifications: { ...prev.notifications, feedFilters: incoming }
+      }
+      localRef.current = next
+      return next
+    })
+  }, [settings.notifications.feedFilters])
 
   useEffect(() => {
     window.api.getDisplays().then((raw: DisplayInfo[]) => {
@@ -278,6 +297,30 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
     persist({ ...cur, notifications: { ...cur.notifications, ...partial } }, debounceMs)
   }
 
+  const toggleIgnoredFeed = (feedId: string): void => {
+    const current = localRef.current.notifications.feedFilters ?? []
+    const feedFilters = current.includes(feedId)
+      ? current.filter((id) => id !== feedId)
+      : [...current, feedId]
+    updateNotif({ feedFilters })
+  }
+
+  const ignoredFeedGroups = (() => {
+    const sortedFolders = [...folders].sort((a, b) => a.name.localeCompare(b.name))
+    const sortedFeeds = [...feeds].sort((a, b) => a.title.localeCompare(b.title))
+    const groups: { id: string; name: string; feeds: typeof sortedFeeds }[] = []
+    for (const folder of sortedFolders) {
+      const inFolder = sortedFeeds.filter((f) => f.folderId === folder.id)
+      if (inFolder.length > 0) groups.push({ id: folder.id, name: folder.name, feeds: inFolder })
+    }
+    const unfiled = sortedFeeds.filter((f) => !f.folderId)
+    if (unfiled.length > 0) {
+      groups.push({ id: '', name: t.addFeed.noFolder, feeds: unfiled })
+    }
+    return groups
+  })()
+  const mutedCount = (local.notifications.feedFilters ?? []).length
+
   const updateShortcuts = (shortcuts: KeyboardShortcuts): void => {
     persist({ ...localRef.current, shortcuts })
   }
@@ -321,10 +364,20 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
     }
   }
 
-  const positions = [
-    'top-left', 'top-center', 'top-right',
-    'bottom-left', 'bottom-center', 'bottom-right'
-  ] as const
+  const positionCells: Array<{
+    id: AppSettings['notifications']['position'] | null
+    dot: 'tl' | 'tc' | 'tr' | 'bl' | 'bc' | 'br' | 'center' | null
+  }> = [
+    { id: 'top-left', dot: 'tl' },
+    { id: 'top-center', dot: 'tc' },
+    { id: 'top-right', dot: 'tr' },
+    { id: null, dot: null },
+    { id: null, dot: 'center' },
+    { id: null, dot: null },
+    { id: 'bottom-left', dot: 'bl' },
+    { id: 'bottom-center', dot: 'bc' },
+    { id: 'bottom-right', dot: 'br' }
+  ]
 
   const navItems: Array<{ id: ActiveTab; label: string; icon: JSX.Element }> = [
     { id: 'general', label: t.settings.tabs.general, icon: <Sliders size={13} /> },
@@ -687,15 +740,20 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.disableOnFullscreen}</span>
               </label>
 
-              <label className="toggle" style={{ marginBottom: 14 }}>
-                <div
-                  className={`toggle-track ${local.notifications.closeOnViewInApp ? 'on' : ''}`}
-                  onClick={() => updateNotif({ closeOnViewInApp: !local.notifications.closeOnViewInApp })}
-                >
-                  <div className="toggle-thumb" />
-                </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.closeOnViewInApp}</span>
-              </label>
+              <div style={{ marginBottom: 14 }}>
+                <label className="toggle" style={{ marginBottom: 6 }}>
+                  <div
+                    className={`toggle-track ${local.notifications.closeOnViewInApp ? 'on' : ''}`}
+                    onClick={() => updateNotif({ closeOnViewInApp: !local.notifications.closeOnViewInApp })}
+                  >
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.closeOnViewInApp}</span>
+                </label>
+                <p className="settings-card-hint" style={{ margin: '0 0 0 46px' }}>
+                  {t.settings.notifications.closeOnViewInAppHint}
+                </p>
+              </div>
 
               <div className="form-group">
                 <label className="form-label">{t.settings.notifications.openBehavior}</label>
@@ -755,28 +813,48 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
 
               <div className="form-group">
                 <label className="form-label">{t.settings.notifications.position}</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4, marginTop: 4 }}>
-                  {positions.map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => updateNotif({ position: p })}
-                      style={{
-                        padding: '6px 4px',
-                        borderRadius: 'var(--radius-sm)',
-                        border: `1px solid ${local.notifications.position === p ? 'var(--accent)' : 'var(--border)'}`,
-                        background: local.notifications.position === p ? 'var(--accent-subtle)' : 'var(--bg-2)',
-                        color: local.notifications.position === p ? 'var(--accent)' : 'var(--text-secondary)',
-                        fontSize: 11,
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        transition: 'all 0.15s',
-                        fontFamily: 'inherit'
-                      }}
-                    >
-                      {t.settings.notifications.positions[p]}
-                    </button>
-                  ))}
+                <div className="notif-placement-row">
+                  <div className="position-monitor" role="group" aria-label={t.settings.notifications.position}>
+                    {positionCells.map((cell, idx) => {
+                      if (!cell.id) {
+                        return (
+                          <div key={idx} className="position-cell is-spacer">
+                            {cell.dot === 'center' && <span className="position-center-mark" />}
+                          </div>
+                        )
+                      }
+                      const isActive = local.notifications.position === cell.id
+                      return (
+                        <Tooltip key={cell.id} label={t.settings.notifications.positions[cell.id]} placement="top">
+                          <button
+                            type="button"
+                            className={`position-cell${isActive ? ' is-active' : ''}`}
+                            onClick={() => updateNotif({ position: cell.id! })}
+                            aria-label={t.settings.notifications.positions[cell.id]}
+                            aria-pressed={isActive}
+                          >
+                            <span className={`position-dot ${cell.dot}`} />
+                          </button>
+                        </Tooltip>
+                      )
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    className={`btn settings-preview-btn${testing ? ' is-sending' : ''}`}
+                    disabled={testing}
+                    onClick={async () => {
+                      setTesting(true)
+                      try {
+                        await window.api.previewNotification(local.notifications)
+                      } finally {
+                        setTimeout(() => setTesting(false), 1600)
+                      }
+                    }}
+                  >
+                    {testing ? <Zap size={15} /> : <Bell size={15} />}
+                    {testing ? t.settings.notifications.sendingBtn : t.settings.notifications.previewBtn}
+                  </button>
                 </div>
               </div>
 
@@ -867,22 +945,47 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                 </div>
               </div>
 
-              <button
-                type="button"
-                className={`btn settings-preview-btn${testing ? ' is-sending' : ''}`}
-                disabled={testing}
-                onClick={async () => {
-                  setTesting(true)
-                  try {
-                    await window.api.previewNotification(local.notifications)
-                  } finally {
-                    setTimeout(() => setTesting(false), 1600)
-                  }
-                }}
-              >
-                {testing ? <Zap size={15} /> : <Bell size={15} />}
-                {testing ? t.settings.notifications.sendingBtn : t.settings.notifications.previewBtn}
-              </button>
+              <div className="form-group" style={{ marginTop: 16 }}>
+                <label className="form-label">{t.settings.notifications.ignoredFeeds}</label>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+                  {t.settings.notifications.ignoredFeedsHint}
+                  {mutedCount > 0 && (
+                    <>
+                      {' · '}
+                      {mutedCount === 1
+                        ? t.settings.notifications.mutedCountOne
+                        : t.settings.notifications.mutedCount.replace('{count}', String(mutedCount))}
+                    </>
+                  )}
+                </div>
+                {feeds.length === 0 ? (
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    {t.settings.notifications.ignoredFeedsEmpty}
+                  </div>
+                ) : (
+                  <div className="muted-feeds-list">
+                    {ignoredFeedGroups.map((group) => (
+                      <div key={group.id || 'unfiled'}>
+                        <div className="muted-feeds-group">{group.name}</div>
+                        {group.feeds.map((feed) => {
+                          const muted = (local.notifications.feedFilters ?? []).includes(feed.id)
+                          return (
+                            <label key={feed.id} className="muted-feeds-row">
+                              <input
+                                type="checkbox"
+                                checked={muted}
+                                onChange={() => toggleIgnoredFeed(feed.id)}
+                              />
+                              <FeedFavicon icon={feed.icon} title={feed.title} size={14} />
+                              <span className="muted-feeds-title">{feed.title}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

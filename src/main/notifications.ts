@@ -28,7 +28,7 @@ const HARD_CAP = 50
 // when the stack overflows and the scrollbar appears.
 const SCROLLBAR_W = 16
 /** Floor width so action buttons + date stay on one row (ES labels are longer). */
-const MIN_WIDTH_BY_LANG: Record<string, number> = { en: 350, es: 385 }
+const MIN_WIDTH_BY_LANG: Record<string, number> = { en: 400, es: 455 }
 
 function contentWidth(s: NotificationSettings): number {
   const lang = db.getSettings().language || 'en'
@@ -62,7 +62,12 @@ export function initNotifier(s: NotificationSettings): void {
   }
 }
 export function updateNotifierSettings(s: NotificationSettings): void {
+  const prevFilters = new Set(settings?.feedFilters ?? [])
   settings = s
+  const newlyMuted = (s.feedFilters ?? []).filter((id) => id && !prevFilters.has(id))
+  for (const id of newlyMuted) {
+    removeFeedFromQueues(id)
+  }
   if (notifierWindow && !notifierWindow.isDestroyed() && notifierWindow.isVisible()) {
     applyPositionToWindow(notifierWindow, displayStack.length, settings)
   }
@@ -409,6 +414,61 @@ export function cancelPendingBatch(): void {
   setTrayActivity('batch', false)
 }
 
+function persistNotifierSettings(next: NotificationSettings): void {
+  settings = next
+  db.saveSettings({ ...db.getSettings(), notifications: settings })
+  const mainWin = BrowserWindow.getAllWindows().find((w) => w !== notifierWindow && !w.isDestroyed())
+  if (mainWin) {
+    mainWin.webContents.send('settings:changed', db.getSettings())
+  }
+}
+
+function removeFeedFromQueues(feedId: string): void {
+  if (!feedId) return
+  const drop = (arr: NotificationHistoryItem[]): void => {
+    for (let i = arr.length - 1; i >= 0; i--) {
+      if (arr[i].feedId === feedId) arr.splice(i, 1)
+    }
+  }
+  drop(displayStack)
+  drop(incomingBatchQueue)
+  drop(queuedNotifications)
+
+  if (incomingBatchQueue.length === 0) {
+    if (batchTimer) {
+      clearTimeout(batchTimer)
+      batchTimer = null
+    }
+    batchStartTime = 0
+    if (displayStack.length === 0) setTrayActivity('batch', false)
+  }
+
+  if (displayStack.length === 0) {
+    if (hideTimer) clearTimeout(hideTimer)
+    notifierWindow?.hide()
+  } else {
+    void pushToWindow()
+  }
+}
+
+/** Persist mute and drop any pending/visible cards for this feed. */
+export function muteFeed(feedId: string): void {
+  if (!feedId) return
+  if (!(settings.feedFilters ?? []).includes(feedId)) {
+    persistNotifierSettings({ ...settings, feedFilters: [...(settings.feedFilters ?? []), feedId] })
+  }
+  removeFeedFromQueues(feedId)
+}
+
+/** Drop a deleted feed id from the mute list. */
+export function pruneFeedFilter(feedId: string): void {
+  if (!feedId || !(settings.feedFilters ?? []).includes(feedId)) return
+  persistNotifierSettings({
+    ...settings,
+    feedFilters: (settings.feedFilters ?? []).filter((id) => id !== feedId)
+  })
+}
+
 async function flushBatch(): Promise<void> {
   if (incomingBatchQueue.length === 0) {
     setTrayActivity('batch', false)
@@ -440,8 +500,11 @@ async function flushBatch(): Promise<void> {
       return
     }
 
+    const allowed = processed.filter((item) => !(settings.feedFilters ?? []).includes(item.feedId || ''))
+    if (allowed.length === 0) return
+
     // Push all processed items to displayStack
-    displayStack.push(...processed)
+    displayStack.push(...allowed)
     if (displayStack.length > HARD_CAP) {
       displayStack.splice(0, displayStack.length - HARD_CAP)
     }
@@ -495,7 +558,9 @@ function startQueueChecker(): void {
       stopQueueChecker()
 
       for (const item of itemsToPresent) {
-        queueForBatch(item)
+        if (!(settings.feedFilters ?? []).includes(item.feedId || '')) {
+          queueForBatch(item)
+        }
       }
     }
   }, 10_000)
@@ -518,7 +583,7 @@ export async function showNotification(item: NotificationHistoryItem): Promise<v
     console.warn('[Notifier] Notification suppressed: snoozed until', new Date(settings.snoozedUntil).toISOString())
     return
   }
-  if (settings.feedFilters.includes(item.feedId || '')) {
+  if ((settings.feedFilters ?? []).includes(item.feedId || '')) {
     console.warn(`[Notifier] Notification suppressed: feed ${item.feedId} is filtered`)
     return
   }
@@ -576,6 +641,10 @@ async function preloadImageDataUrl(src: string, timeoutMs = 4000): Promise<strin
 }
 
 export function registerNotifierIpc(): void {
+  ipcMain.on('notifier:muteFeed', (_, feedId: string) => {
+    muteFeed(feedId)
+  })
+
   ipcMain.on('notifier:dismiss', (_, id: string) => {
     const idx = displayStack.findIndex(n => n.id === id)
     if (idx !== -1) displayStack.splice(idx, 1)

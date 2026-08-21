@@ -4,6 +4,7 @@ import { useFeedsStore } from './store/feeds.store'
 import { useArticlesStore } from './store/articles.store'
 import { useUIStore } from './store/ui.store'
 import { useSettingsStore } from './store/settings.store'
+import { DEFAULT_SETTINGS } from './types'
 import { useColumnResize } from './hooks/useColumnResize'
 import { useRowResize } from './hooks/useRowResize'
 import { useOverlayDismiss } from './hooks/useOverlayDismiss'
@@ -225,6 +226,27 @@ export default function App(): JSX.Element {
   useEffect(() => {
     const unsub = window.api.onPollingToggled((pollingEnabled) => {
       useSettingsStore.getState().update({ pollingEnabled })
+    })
+    return unsub
+  }, [])
+
+  // Settings mutated from the main process (e.g. mute-feed from a notification card)
+  useEffect(() => {
+    const unsub = window.api.onSettingsChanged((raw) => {
+      const incoming = raw as typeof DEFAULT_SETTINGS
+      const current = useSettingsStore.getState().settings
+      useSettingsStore.setState({
+        settings: {
+          ...DEFAULT_SETTINGS,
+          ...current,
+          ...incoming,
+          notifications: {
+            ...DEFAULT_SETTINGS.notifications,
+            ...current.notifications,
+            ...incoming.notifications
+          }
+        }
+      })
     })
     return unsub
   }, [])
