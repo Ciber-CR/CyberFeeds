@@ -10,6 +10,7 @@ interface SettingsState {
   save: (s: AppSettings) => Promise<void>
   update: (partial: Partial<AppSettings>) => void
   togglePolling: () => Promise<void>
+  setFeedNotificationMuted: (feedIds: string[], muted: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -36,5 +37,18 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     await window.api.togglePolling()
     const settings = await window.api.getSettings()
     set({ settings: { ...get().settings, ...settings } })
+  },
+
+  setFeedNotificationMuted: (feedIds, muted) => {
+    if (feedIds.length === 0) return
+    const s = get().settings
+    const next = new Set(s.notifications.feedFilters ?? [])
+    for (const id of feedIds) {
+      if (muted) next.add(id)
+      else next.delete(id)
+    }
+    get().update({
+      notifications: { ...s.notifications, feedFilters: [...next] }
+    })
   }
 }))

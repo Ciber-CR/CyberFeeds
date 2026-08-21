@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Feed, Folder } from '../types'
+import { useSettingsStore } from './settings.store'
 
 interface FeedsState {
   feeds: Feed[]
@@ -71,6 +72,19 @@ export const useFeedsStore = create<FeedsState>((set, get) => ({
     await window.api.deleteFeed(id)
     set(s => ({ feeds: s.feeds.filter(f => f.id !== id) }))
     get().refreshUnreadCounts()
+    const { settings } = useSettingsStore.getState()
+    const filters = settings.notifications.feedFilters ?? []
+    if (filters.includes(id)) {
+      useSettingsStore.setState({
+        settings: {
+          ...settings,
+          notifications: {
+            ...settings.notifications,
+            feedFilters: filters.filter((fid) => fid !== id)
+          }
+        }
+      })
+    }
   },
 
   addFolder: async (name) => {

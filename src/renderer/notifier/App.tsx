@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState, useCallback } from 'react'
-import { X, ExternalLink, ChevronDown, Bell, Clock, Check, Eye } from 'lucide-react'
+import { X, ExternalLink, ChevronDown, Bell, BellOff, Clock, Check, Eye } from 'lucide-react'
 import type { NotificationHistoryItem, NotificationSettings } from '@shared/types'
 import { translations } from '@shared/translations'
 import Tooltip from '../src/components/Tooltip'
@@ -508,6 +508,18 @@ export default function NotifierApp(): JSX.Element {
                   >
                     <ExternalLink size={11} />
                     {t.notifier.open}
+                  </button>
+                </Tooltip>
+              )}
+              {item.feedId && (
+                <Tooltip label={t.notifier.muteTooltip} placement="bottom">
+                  <button
+                    className="notif-btn"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                    onClick={() => window.api.muteFeedNotifications(item.feedId!)}
+                  >
+                    <BellOff size={11} />
+                    {t.notifier.mute}
                   </button>
                 </Tooltip>
               )}

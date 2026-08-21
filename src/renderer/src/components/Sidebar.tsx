@@ -17,12 +17,15 @@ import {
   Pencil,
   Pause,
   Play,
+  Bell,
+  BellOff,
   CheckCheck,
   Trash2
 } from 'lucide-react'
 import { useFeedsStore } from '../store/feeds.store'
 import { useArticlesStore } from '../store/articles.store'
 import { useUIStore } from '../store/ui.store'
+import { useSettingsStore } from '../store/settings.store'
 import { FeedFavicon } from './ArticleList'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
@@ -91,6 +94,9 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     unstarAllArticles
   } = useArticlesStore()
   const { t } = useTranslation()
+  const feedFilters = useSettingsStore((s) => s.settings.notifications.feedFilters ?? [])
+  const setFeedNotificationMuted = useSettingsStore((s) => s.setFeedNotificationMuted)
+  const mutedIds = React.useMemo(() => new Set(feedFilters), [feedFilters])
 
   React.useEffect(() => {
     const handleUp = () => setCtx(null)
@@ -603,6 +609,26 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                   </>
                 )}
               </div>
+              <div
+                className="ctx-item"
+                onClick={() => {
+                  const muted = mutedIds.has(ctx.id)
+                  setFeedNotificationMuted([ctx.id], !muted)
+                  setCtx(null)
+                }}
+              >
+                {mutedIds.has(ctx.id) ? (
+                  <>
+                    <Bell size={14} />
+                    {t.sidebar.unmuteFeed}
+                  </>
+                ) : (
+                  <>
+                    <BellOff size={14} />
+                    {t.sidebar.muteFeed}
+                  </>
+                )}
+              </div>
               {(articleCounts[ctx.id] || 0) > 0 && (
                 <div
                   className="ctx-item danger"
@@ -698,6 +724,29 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
                   </>
                 )}
               </div>
+              {feeds.filter((f) => f.folderId === ctx.id).length > 0 && (
+                <div
+                  className="ctx-item"
+                  onClick={() => {
+                    const folderFeeds = feeds.filter((f) => f.folderId === ctx.id)
+                    const allMuted = folderFeeds.every((f) => mutedIds.has(f.id))
+                    setFeedNotificationMuted(folderFeeds.map((f) => f.id), !allMuted)
+                    setCtx(null)
+                  }}
+                >
+                  {feeds.filter((f) => f.folderId === ctx.id).every((f) => mutedIds.has(f.id)) ? (
+                    <>
+                      <Bell size={14} />
+                      {t.sidebar.unmuteFolder}
+                    </>
+                  ) : (
+                    <>
+                      <BellOff size={14} />
+                      {t.sidebar.muteFolder}
+                    </>
+                  )}
+                </div>
+              )}
               <div className="ctx-divider" />
               <div
                 className="ctx-item danger"
@@ -839,9 +888,14 @@ const FeedItem = memo(function FeedItem({
   indent
 }: FeedItemProps) {
   const { t } = useTranslation()
+  const muted = useSettingsStore((s) => (s.settings.notifications.feedFilters ?? []).includes(feed.id))
+  const extras = [
+    feed.disabled ? t.articleList.paused.toLowerCase() : '',
+    muted ? t.sidebar.muted : ''
+  ].filter(Boolean)
   return (
     <Tooltip
-      label={feed.title + (feed.disabled ? ` (${t.articleList.paused.toLowerCase()})` : '')}
+      label={feed.title + (extras.length ? ` (${extras.join(', ')})` : '')}
       placement="right"
     >
       <div
@@ -867,6 +921,9 @@ const FeedItem = memo(function FeedItem({
         >
           {feed.title}
         </span>
+        {muted && (
+          <BellOff size={12} className="feed-mute-icon" />
+        )}
         {unread > 0 && (
           <Tooltip label={formatCountBreakdown(unread, total, t)} placement="right">
             <div

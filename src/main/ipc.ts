@@ -8,7 +8,7 @@ import { app } from 'electron'
 import * as db from './db'
 import * as polling from './polling'
 import { importOpml, exportOpml } from './opml'
-import { updateNotifierSettings } from './notifications'
+import { updateNotifierSettings, pruneFeedFilter } from './notifications'
 import { setAutoUpdate } from './updater'
 import { rebuildTrayMenu, rebuildGlobalShortcuts } from './tray'
 import { translations } from '../shared/translations'
@@ -132,6 +132,7 @@ export function registerIpc(): void {
 
   ipcMain.handle('feeds:delete', (_, id: string) => {
     db.deleteFeed(id)
+    pruneFeedFilter(id)
     return { ok: true }
   })
 

@@ -125,6 +125,11 @@ const api = {
     ipcRenderer.on('settings:pollingToggled', handler)
     return () => { ipcRenderer.removeListener('settings:pollingToggled', handler) }
   },
+  onSettingsChanged: (cb: (settings: object) => void) => {
+    const handler = (_: unknown, settings: object) => cb(settings)
+    ipcRenderer.on('settings:changed', handler)
+    return () => { ipcRenderer.removeListener('settings:changed', handler) }
+  },
 
   // Updates
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
@@ -141,6 +146,7 @@ const api = {
   clearAllNotifications: () => ipcRenderer.send('notifier:clearAll'),
   markNotificationRead: (articleId: string) => ipcRenderer.send('notifier:markRead', articleId),
   snoozeNotifications: (minutes: number) => ipcRenderer.send('notifier:snooze', minutes),
+  muteFeedNotifications: (feedId: string) => ipcRenderer.send('notifier:muteFeed', feedId),
   openInApp: (feedId: string, articleId: string) => ipcRenderer.send('notifier:openInApp', feedId, articleId),
   openHistoryInApp: () => ipcRenderer.send('notifier:openHistory'),
   setHover: (isHovering: boolean) => ipcRenderer.send('notifier:hover', isHovering),
