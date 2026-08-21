@@ -93,7 +93,7 @@ export function setTrayActivity(source: 'polling' | 'batch', active: boolean): v
             blinkTimer = null
           }
         }
-      }, 450)
+      }, 900)
     }
   } else {
     if (blinkTimer) {

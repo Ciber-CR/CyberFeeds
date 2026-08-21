@@ -18,12 +18,11 @@ let lastSoundTime = 0
 let isHovering = false
 
 // Pixel height of each notification card (content + gap)
-const CARD_BASE_H = 108
+const CARD_BASE_H = 126
 const THUMB_H = 102 // 100px img + 2px margin-bottom
 const CARD_GAP = 6
 const CLEAR_BAR_H = 34
 const WIN_PAD = 16
-const MORE_INDICATOR_H = 26
 const HARD_CAP = 50
 // Extra width reserved for the scrollbar so action buttons aren't cramped/clipped
 // when the stack overflows and the scrollbar appears.
@@ -144,6 +143,8 @@ function calcPosition(
   return { x: Math.round(p.x), y: Math.round(p.y) }
 }
 
+const PEEK_BASE_H = 48
+
 /** Resize window to fit N cards (capped at maxStack), then place it correctly. */
 function applyPositionToWindow(
   win: BrowserWindow,
@@ -159,8 +160,12 @@ function applyPositionToWindow(
   const gaps = Math.max(0, visibleCards - 1) * CARD_GAP
   const visible = displayStack.slice(0, visibleCards)
   const thumbCount = s.showThumbnails ? visible.filter(n => n.thumbnail).length : 0
-  const moreH = cardCount > maxStack ? MORE_INDICATOR_H : 0
-  const winH = visibleCards * CARD_BASE_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar + moreH
+
+  const peekItem = cardCount > maxStack ? displayStack[maxStack] : null
+  const peekThumb = (peekItem?.thumbnail && s.showThumbnails) ? THUMB_H : 0
+  const peekH = cardCount > maxStack ? (PEEK_BASE_H + peekThumb + CARD_GAP) : 0
+
+  const winH = visibleCards * CARD_BASE_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar + peekH
 
   const { x, y } = calcPosition(winW, winH, s)
   const bounds = { x, y, width: winW, height: winH }

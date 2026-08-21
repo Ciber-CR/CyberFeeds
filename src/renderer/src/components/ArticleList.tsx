@@ -210,19 +210,13 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const [windowFocused, setWindowFocused] = useState(() =>
     typeof document !== 'undefined' ? document.hasFocus() : true
   )
-  const { feeds, folders, unreadCounts, fetchAll } = useFeedsStore()
+  const { feeds, folders, unreadCounts, fetchAll, fetchFeed, fetchFolder } = useFeedsStore()
   const { settings, togglePolling } = useSettingsStore()
   const { t } = useTranslation()
   const parentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const prevSelectedId = useRef<string | null>(null)
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
-
-  const handleFetchAll = useCallback(async (): Promise<void> => {
-    useUIStore.setState({ isFetching: true })
-    await fetchAll()
-    setTimeout(() => useUIStore.setState({ isFetching: false }), 1000)
-  }, [fetchAll])
 
   // Auto-remove articles that no longer match the active read-state filter
   // when moving to the next article.
@@ -318,6 +312,31 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     : updatesHeldBack
       ? t.articleList.monitoringHeld
       : t.articleList.monitoringActive
+
+  const handleRefresh = useCallback(async (): Promise<void> => {
+    useUIStore.setState({ isFetching: true })
+    try {
+      if (selectedFolder) {
+        await fetchFolder(selectedFolder.id)
+      } else if (selectedFeed) {
+        await fetchFeed(selectedFeed.id)
+      } else {
+        await fetchAll()
+      }
+    } finally {
+      setTimeout(() => useUIStore.setState({ isFetching: false }), 800)
+    }
+  }, [selectedFolder, selectedFeed, fetchFolder, fetchFeed, fetchAll])
+
+  const refreshTooltip = React.useMemo(() => {
+    if (selectedFolder) {
+      return t.articleList.refreshFolder.replace('{folder}', selectedFolder.name)
+    }
+    if (selectedFeed) {
+      return t.articleList.refreshFeed.replace('{feed}', selectedFeed.title)
+    }
+    return t.articleList.refreshAllFeeds || t.topBar.refreshAll
+  }, [selectedFolder, selectedFeed, t])
 
   const unreadDisplayCount = React.useMemo(() => {
     if (selectedFeedId === 'starred' || isTrash) return totalCount
@@ -735,10 +754,10 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           </div>
         </Tooltip>
 
-        <Tooltip label={t.topBar.refreshAll} placement="bottom">
+        <Tooltip label={refreshTooltip} placement="bottom">
           <button
             className="btn btn-ghost btn-icon"
-            onClick={handleFetchAll}
+            onClick={handleRefresh}
             disabled={isFetching}
             style={{
               flexShrink: 0,

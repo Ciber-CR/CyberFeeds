@@ -75,6 +75,7 @@ export default function NotifierApp(): JSX.Element {
   const [state, dispatch] = useReducer(reducer, { stack: [], settings: null, unseenCount: 0 })
   const [lang, setLang] = useState<'en' | 'es'>('en')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [scrolledToBottom, setScrolledToBottom] = useState(false)
   const [scrollbarW, setScrollbarW] = useState(0)
   const hoverOffTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isHovering = useRef(false)
@@ -98,47 +99,41 @@ export default function NotifierApp(): JSX.Element {
     stopCountdown()
     const end = Date.now() + Math.max(0, durationMs)
     countdownEnd.current = end
+    setCountdownSeconds(Math.max(1, Math.ceil(durationMs / 1000)))
 
-    const tick = (): void => {
-      const remaining = Math.max(0, end - Date.now())
-      setCountdownSeconds(Math.ceil(remaining / 1000))
-      if (remaining <= 0) stopCountdown()
-    }
-
-    tick()
-    countdownTimer.current = setInterval(tick, 250)
+    countdownTimer.current = setInterval(() => {
+      if (!countdownEnd.current) return
+      const remaining = countdownEnd.current - Date.now()
+      if (remaining <= 0) {
+        stopCountdown()
+        setCountdownSeconds(0)
+        dispatch({ type: 'CLEAR' })
+        window.api.clearAllNotifications()
+      } else {
+        setCountdownSeconds(Math.ceil(remaining / 1000))
+      }
+    }, 250)
   }, [stopCountdown])
 
-  const pauseCountdown = useCallback(() => {
-    if (countdownEnd.current) {
-      setCountdownSeconds(Math.max(0, Math.ceil((countdownEnd.current - Date.now()) / 1000)))
-    }
-    stopCountdown()
-  }, [stopCountdown])
-
-  // Debounced hover handlers — prevents flicker from transparent gaps between cards
-  const handleMouseEnter = useCallback(() => {
+  const handleMouseEnter = (): void => {
     if (hoverOffTimer.current) {
       clearTimeout(hoverOffTimer.current)
       hoverOffTimer.current = null
     }
     isHovering.current = true
     setIsHovered(true)
-    pauseCountdown()
+    stopCountdown()
     window.api.setHover(true)
-  }, [pauseCountdown])
+  }
 
-  const handleMouseLeave = useCallback(() => {
-    if (hoverOffTimer.current) clearTimeout(hoverOffTimer.current)
-    hoverOffTimer.current = setTimeout(() => {
-      isHovering.current = false
-      setIsHovered(false)
-      window.api.setHover(false)
-      const duration = state.settings?.duration ?? 6000
-      startCountdown(duration + AUTO_HIDE_BUFFER_MS)
-      hoverOffTimer.current = null
-    }, 200)
-  }, [startCountdown, state.settings?.duration])
+  const handleMouseLeave = (): void => {
+    isHovering.current = false
+    setIsHovered(false)
+    window.api.setHover(false)
+    if (state.stack.length > 0 && state.settings) {
+      startCountdown(state.settings.duration + AUTO_HIDE_BUFFER_MS)
+    }
+  }
 
   // Clean up on unmount
   useEffect(() => {
@@ -185,10 +180,23 @@ export default function NotifierApp(): JSX.Element {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [stopCountdown])
 
-  // Keep the top bar gutter aligned with the cards' right edge.
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
+    setScrolledToBottom(atBottom)
+  }, [])
+
+  const scrollToBottom = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [])
+
+  // Keep the top bar gutter aligned with the cards' right edge and track scroll position.
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
+    setScrolledToBottom(atBottom)
     setScrollbarW(el.offsetWidth - el.clientWidth)
   }, [state.stack.length])
 
@@ -245,9 +253,8 @@ export default function NotifierApp(): JSX.Element {
   if (state.stack.length === 0) return <div />
 
   const maxStack = Math.max(1, Number(state.settings?.maxStack) || 2)
-  const visibleStack = state.stack.slice(0, maxStack)
   const overflowCount = Math.max(0, state.stack.length - maxStack)
-  const showMoreIndicator = overflowCount > 0
+  const showMoreIndicator = overflowCount > 0 && !scrolledToBottom
   const snoozeMinutes = state.settings?.snoozeMinutes ?? 30
   const snoozeLabel = formatSnoozeLabel(snoozeMinutes)
   const snoozeText = t.notifier.snooze.replace('{time}', snoozeLabel)
@@ -359,20 +366,22 @@ export default function NotifierApp(): JSX.Element {
       {/* Scrollable notification list */}
       <div
         ref={scrollRef}
+        onScroll={handleScroll}
         style={{
-          flexShrink: 0,
-          overflowY: 'hidden',
+          flex: 1,
+          minHeight: 0,
+          overflowY: state.stack.length > maxStack ? 'auto' : 'hidden',
           display: 'flex',
           flexDirection: 'column',
           gap: 6,
           paddingTop: 4,
           // Keep card right edge aligned whether or not the scrollbar is visible
-          paddingRight: 16,
+          paddingRight: state.stack.length > maxStack ? 0 : 16,
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(255,255,255,0.15) transparent'
         }}
       >
-        {visibleStack.map((item) => (
+        {state.stack.map((item) => (
           <div
             key={item.id}
             className={`notif-card ${dismissingIds.has(item.id) ? 'dismissing' : ''}`}
@@ -522,37 +531,34 @@ export default function NotifierApp(): JSX.Element {
       </div>
       {/* "More" floating indicator */}
       {showMoreIndicator && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            paddingTop: 6,
-            paddingBottom: 2,
-            paddingRight: 16
-          }}
-        >
-          <Tooltip label={t.notifier.moreTooltip} placement="top">
-            <div
-              style={{
-                background: 'rgba(0, 170, 255, 0.65)',
-                border: '1px solid rgba(0, 170, 255, 0.5)',
-                borderRadius: 12,
-                padding: '3px 12px',
-                fontSize: 10,
-                color: '#ffffff',
-                cursor: 'default',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
-              }}
-            >
-              <ChevronDown size={10} />
-              {overflowCount} {t.notifier.more}
-            </div>
-          </Tooltip>
-        </div>
+        <Tooltip label={t.notifier.moreTooltip} placement="top">
+          <div
+            onClick={scrollToBottom}
+            style={{
+              position: 'absolute',
+              bottom: 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(0, 170, 255, 0.75)',
+              border: '1px solid rgba(0, 170, 255, 0.6)',
+              borderRadius: 12,
+              padding: '3px 12px',
+              fontSize: 10,
+              color: '#ffffff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              zIndex: 10,
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+              transition: 'opacity 0.2s ease'
+            }}
+          >
+            <ChevronDown size={10} />
+            {overflowCount} {t.notifier.more}
+          </div>
+        </Tooltip>
       )}
     </div>
   )
