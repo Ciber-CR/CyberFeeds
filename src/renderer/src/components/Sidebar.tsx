@@ -54,6 +54,29 @@ async function waitForMinimumRefreshTime(startedAt: number): Promise<void> {
   }
 }
 
+const COLLAPSED_FOLDERS_STORAGE_KEY = 'cyberfeeds:collapsed_folders'
+
+function loadCollapsedFolders(): Set<string> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_FOLDERS_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed)
+    }
+  } catch {
+    /* ignore */
+  }
+  return new Set()
+}
+
+function saveCollapsedFolders(set: Set<string>): void {
+  try {
+    localStorage.setItem(COLLAPSED_FOLDERS_STORAGE_KEY, JSON.stringify(Array.from(set)))
+  } catch {
+    /* ignore */
+  }
+}
+
 const Sidebar = memo(function Sidebar(): JSX.Element {
   const {
     feeds,
@@ -71,7 +94,15 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
     deleteFolder
   } = useFeedsStore()
   const { selectedFeedId, unreadOnly, readOnly, selectFeed, openPanel } = useUIStore()
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [collapsed, setCollapsedState] = useState<Set<string>>(() => loadCollapsedFolders())
+
+  const setCollapsed = useCallback((updater: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    setCollapsedState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      saveCollapsedFolders(next)
+      return next
+    })
+  }, [])
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
   const [refreshingFeedIds, setRefreshingFeedIds] = useState<Set<string>>(new Set())

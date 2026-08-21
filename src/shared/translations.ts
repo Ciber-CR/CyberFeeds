@@ -71,7 +71,7 @@ export const translations = {
       readArticles: 'Read articles',
       monitoringActive: 'Automatic feed updates enabled',
       monitoringPaused: 'Automatic feed updates paused',
-      monitoringHeld: 'Paused while the window is open — resumes when minimized',
+      monitoringHeld: 'Paused while the window is focused — resumes in the background',
       feedFolder: 'Feed folder',
       pauseAutoUpdates: 'Pause automatic feed updates',
       resumeAutoUpdates: 'Resume automatic feed updates',
@@ -190,7 +190,7 @@ export const translations = {
           m5: '5 minutes'
         },
         pollOnlyWhenUnfocused: 'Only fetch articles automatically if the application is not focused',
-        pollOnlyWhenUnfocusedHint: 'Keeps your place in the list while you read. Automatic fetching resumes when CyberFeeds is minimized or in the tray.',
+        pollOnlyWhenUnfocusedHint: 'Keeps your place in the list while you read. Automatic fetching resumes when CyberFeeds is in the background or unfocused.',
         theme: 'Theme',
         themes: {
           dark: 'Dark (Default)',
@@ -533,7 +533,7 @@ export const translations = {
       readArticles: 'Artículos leídos',
       monitoringActive: 'Actualización automática de feeds activada',
       monitoringPaused: 'Actualización automática de feeds en pausa',
-      monitoringHeld: 'Pausada mientras la ventana está abierta — se reanuda al minimizar',
+      monitoringHeld: 'Pausada mientras la ventana está enfocada — se reanuda en segundo plano',
       feedFolder: 'Carpeta de feed',
       pauseAutoUpdates: 'Pausar actualización automática de feeds',
       resumeAutoUpdates: 'Reactivar actualización automática de feeds',
@@ -654,7 +654,7 @@ export const translations = {
           m5: '5 minutos'
         },
         pollOnlyWhenUnfocused: 'Sólo obtener artículos automáticamente si la aplicación no está enfocada',
-        pollOnlyWhenUnfocusedHint: 'Conserva tu posición en la lista mientras lees. La obtención automática se reanuda al minimizar o enviar a la bandeja.',
+        pollOnlyWhenUnfocusedHint: 'Conserva tu posición en la lista mientras lees. La obtención automática se reanuda cuando CyberFeeds pasa a segundo plano o pierde el foco.',
         theme: 'Tema',
         themes: {
           dark: 'Oscuro (Predeterminado)',

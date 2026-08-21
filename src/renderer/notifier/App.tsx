@@ -255,30 +255,15 @@ export default function NotifierApp(): JSX.Element {
   const cardOpenTooltip =
     state.settings?.openBehavior === 'browser' ? t.notifier.openTooltip : t.notifier.viewTooltip
 
-  const rootRef = useRef<HTMLDivElement>(null)
-
-  // Report measured content height to main process so the window wraps tightly
-  useEffect(() => {
-    if (state.stack.length === 0) return
-    const el = rootRef.current
-    if (!el) return
-    const height = Math.ceil(el.scrollHeight)
-    if (height > 40) {
-      window.api.reportNotifierHeight(height)
-    }
-  }, [state.stack.length, state.settings, visibleStack.length, showMoreIndicator])
-
   return (
     <div
-      ref={rootRef}
       className="notifier-root"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: 'auto',
-        minHeight: 0,
+        height: '100%',
         background: 'rgba(0,0,0,0.01)'
       }}
     >
