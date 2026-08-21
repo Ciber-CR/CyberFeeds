@@ -63,7 +63,8 @@ const api = {
   getNotificationHistory: () => ipcRenderer.invoke('notifications:getHistory'),
   clearNotificationHistory: () => ipcRenderer.invoke('notifications:clearHistory'),
   markNotificationsChecked: (ts?: number) => ipcRenderer.invoke('notifications:markChecked', ts),
-  previewNotification: (notifSettings?: object) => ipcRenderer.invoke('notifier:preview', notifSettings),
+  previewNotification: (notifSettings?: object, playSound?: boolean) =>
+    ipcRenderer.invoke('notifier:preview', notifSettings, playSound),
 
   // OPML
   importOpml: () => ipcRenderer.invoke('opml:import'),
@@ -167,6 +168,20 @@ const api = {
     ipcRenderer.on('window:maximized-change', handler)
     return () => {
       ipcRenderer.removeListener('window:maximized-change', handler)
+    }
+  },
+  onWindowShown: (cb: () => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('window:shown', handler)
+    return () => {
+      ipcRenderer.removeListener('window:shown', handler)
+    }
+  },
+  onWindowHidden: (cb: () => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('window:hidden', handler)
+    return () => {
+      ipcRenderer.removeListener('window:hidden', handler)
     }
   },
 

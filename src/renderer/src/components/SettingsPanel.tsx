@@ -297,6 +297,10 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
     persist({ ...cur, notifications: { ...cur.notifications, ...partial } }, debounceMs)
   }
 
+  const previewNow = (playSound = true): void => {
+    void window.api.previewNotification(localRef.current.notifications, playSound)
+  }
+
   const toggleIgnoredFeed = (feedId: string): void => {
     const current = localRef.current.notifications.feedFilters ?? []
     const feedFilters = current.includes(feedId)
@@ -829,7 +833,10 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                           <button
                             type="button"
                             className={`position-cell${isActive ? ' is-active' : ''}`}
-                            onClick={() => updateNotif({ position: cell.id! })}
+                            onClick={() => {
+                              updateNotif({ position: cell.id! })
+                              previewNow(false)
+                            }}
                             aria-label={t.settings.notifications.positions[cell.id]}
                             aria-pressed={isActive}
                           >
@@ -846,9 +853,9 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                     onClick={async () => {
                       setTesting(true)
                       try {
-                        await window.api.previewNotification(local.notifications)
+                        await window.api.previewNotification(local.notifications, true)
                       } finally {
-                        setTimeout(() => setTesting(false), 1600)
+                        setTimeout(() => setTesting(false), 700)
                       }
                     }}
                   >

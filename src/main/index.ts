@@ -280,6 +280,18 @@ function createMainWindow(): BrowserWindow {
 
   win.on('move', schedulePersist)
   win.on('resize', schedulePersist)
+  win.on('show', () => {
+    if (!win.isDestroyed()) win.webContents.send('window:shown')
+  })
+  win.on('restore', () => {
+    if (!win.isDestroyed()) win.webContents.send('window:shown')
+  })
+  win.on('hide', () => {
+    if (!win.isDestroyed()) win.webContents.send('window:hidden')
+  })
+  win.on('minimize', () => {
+    if (!win.isDestroyed()) win.webContents.send('window:hidden')
+  })
   win.on('maximize', () => {
     persistMainWindowState(win)
     win.webContents.send('window:maximized-change', true)

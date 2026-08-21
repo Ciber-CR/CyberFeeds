@@ -69,8 +69,12 @@ export const translations = {
       allFeeds: 'All Articles',
       unreadArticles: 'Unread articles',
       readArticles: 'Read articles',
-      monitoringActive: 'New feed monitoring enabled',
-      monitoringPaused: 'New feed monitoring paused',
+      monitoringActive: 'Automatic feed updates enabled',
+      monitoringPaused: 'Automatic feed updates paused',
+      monitoringHeld: 'Paused while the window is open — resumes when minimized',
+      feedFolder: 'Feed folder',
+      pauseAutoUpdates: 'Pause automatic feed updates',
+      resumeAutoUpdates: 'Resume automatic feed updates',
       monitoring: 'MONITORING',
       paused: 'PAUSED',
       unreadOnly: 'Unread only',
@@ -421,7 +425,7 @@ export const translations = {
       muteTooltip: 'Exclude this feed from future notifications',
       receivedAt: 'Received at {time}',
       more: 'more',
-      moreTooltip: 'Show remaining notifications'
+      moreTooltip: 'These will appear as you dismiss the current ones'
     },
     notificationHistory: {
       newCount: 'new',
@@ -526,8 +530,12 @@ export const translations = {
       allFeeds: 'Todos los artículos',
       unreadArticles: 'Artículos sin leer',
       readArticles: 'Artículos leídos',
-      monitoringActive: 'Monitoreo de nuevos feeds activado',
-      monitoringPaused: 'Monitoreo de nuevos feeds en pausa',
+      monitoringActive: 'Actualización automática de feeds activada',
+      monitoringPaused: 'Actualización automática de feeds en pausa',
+      monitoringHeld: 'Pausada mientras la ventana está abierta — se reanuda al minimizar',
+      feedFolder: 'Carpeta de feed',
+      pauseAutoUpdates: 'Pausar actualización automática de feeds',
+      resumeAutoUpdates: 'Reactivar actualización automática de feeds',
       monitoring: 'MONITOREANDO',
       paused: 'PAUSADO',
       unreadOnly: 'Solo no leídos',
@@ -883,7 +891,7 @@ export const translations = {
       muteTooltip: 'Excluir este feed de futuras notificaciones',
       receivedAt: 'Recibido a las {time}',
       more: 'más',
-      moreTooltip: 'Ver notificaciones restantes'
+      moreTooltip: 'Se mostrarán al cerrar las actuales'
     },
     notificationHistory: {
       newCount: 'nuevas',
