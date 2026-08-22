@@ -1093,6 +1093,14 @@ body {
   z-index: 100;
   display: flex;
   justify-content: flex-end;
+  transition: backdrop-filter 0.15s ease, background-color 0.15s ease;
+}
+.panel-overlay.is-peeking {
+  background: transparent;
+  backdrop-filter: none;
+}
+.panel-overlay.is-peeking .panel {
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
 }
 .panel {
   width: 480px;
