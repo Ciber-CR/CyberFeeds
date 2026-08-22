@@ -1,4 +1,4 @@
-import React, { memo, useRef, useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import React, { memo, useRef, useCallback, useEffect, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   Star,
@@ -378,56 +378,53 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const ITEM_H = 120
   const ITEM_H_WITH_THUMB = 230
 
-  const articlesRef = useRef(articles)
-  articlesRef.current = articles
+  const measuredHeightsRef = useRef<Map<string, number>>(new Map())
+
   const getItemKey = useCallback(
-    (index: number) => articlesRef.current[index]?.id ?? index,
-    []
+    (index: number) => articles[index]?.id ?? String(index),
+    [articles]
+  )
+
+  const estimateSize = useCallback(
+    (index: number) => {
+      const article = articles[index]
+      if (!article) return ITEM_H
+      const cached = measuredHeightsRef.current.get(article.id)
+      if (cached != null) return cached
+      if (article.thumbnail && settings.showArticleThumbnails) return ITEM_H_WITH_THUMB
+      return ITEM_H
+    },
+    [articles, settings.showArticleThumbnails]
   )
 
   const rowVirtualizer = useVirtualizer({
     count: articles.length,
     getScrollElement: () => parentRef.current,
     getItemKey,
-    estimateSize: (index) => {
-      const article = articlesRef.current[index]
-      if (article?.thumbnail && settings.showArticleThumbnails) return ITEM_H_WITH_THUMB
-      return ITEM_H
-    },
+    estimateSize,
     overscan: 8,
     // Never persist a 0px row. Hidden Electron windows can layout at height 0;
-    // storing that collapses several items onto the same translateY.
+    // protect against zero measurements corrupting the item heights.
     measureElement: (element) => {
       const height = element.getBoundingClientRect().height
-      if (height > 1) return Math.round(height)
       const index = Number(element.getAttribute('data-index'))
-      const article = Number.isFinite(index) ? articlesRef.current[index] : undefined
+      const article = Number.isFinite(index) ? articles[index] : undefined
+
+      if (height > 1) {
+        const rounded = Math.round(height)
+        if (article) measuredHeightsRef.current.set(article.id, rounded)
+        return rounded
+      }
+
+      const cached = article ? measuredHeightsRef.current.get(article.id) : undefined
+      if (cached != null) return cached
       if (article?.thumbnail && settings.showArticleThumbnails) return ITEM_H_WITH_THUMB
       return ITEM_H
     }
   })
 
-  const remeasureMountedRows = useCallback(() => {
-    const scrollElement = parentRef.current
-    if (!scrollElement || scrollElement.clientWidth === 0 || scrollElement.clientHeight === 0) {
-      return
-    }
-
-    rowVirtualizer.elementsCache.forEach((node) => {
-      if (!node.isConnected) return
-      rowVirtualizer.measureElement(node)
-    })
-  }, [rowVirtualizer])
-
-  // Re-measure mounted rows after the list changes. Do not call virtualizer.measure()
-  // — that wipes cached heights and rows overlap until the pane remounts.
-  useLayoutEffect(() => {
-    remeasureMountedRows()
-  }, [articles, remeasureMountedRows])
-
-  // A hidden Electron window can receive background refreshes while its rows
-  // have no usable layout box. Re-measure mounted rows after it is visible
-  // again without clearing the cache, which would briefly show large gaps.
+  // When window visibility changes or window is shown/focused,
+  // remeasure any mounted DOM rows to ensure their sizes match rendered layout.
   const remeasureFrameRef = useRef<number | undefined>(undefined)
   const remeasureAfterVisibility = useCallback((force?: boolean | Event) => {
     const mustRun = force === true
@@ -440,10 +437,25 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
       remeasureFrameRef.current = requestAnimationFrame(() => {
         remeasureFrameRef.current = undefined
         if (!mustRun && document.visibilityState === 'hidden') return
-        requestAnimationFrame(remeasureMountedRows)
+        const scrollElement = parentRef.current
+        if (!scrollElement || scrollElement.clientWidth === 0 || scrollElement.clientHeight === 0) return
+
+        const nodes = scrollElement.querySelectorAll<HTMLElement>('.article-item')
+        nodes.forEach((node) => {
+          const h = node.getBoundingClientRect().height
+          if (h > 1) {
+            const idxStr = node.getAttribute('data-index')
+            if (idxStr != null) {
+              const idx = parseInt(idxStr, 10)
+              if (Number.isFinite(idx) && idx >= 0) {
+                rowVirtualizer.resizeItem(idx, Math.round(h))
+              }
+            }
+          }
+        })
       })
     })
-  }, [remeasureMountedRows])
+  }, [rowVirtualizer])
 
   useEffect(() => {
     const handleFocusChange = (): void => {
@@ -634,7 +646,7 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         return
       }
 
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return
       const list = useArticlesStore.getState().articles
       if (list.length === 0) return
 
@@ -644,6 +656,16 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
       if (inArticleSearch) {
         ;(e.target as HTMLElement).blur()
         selectByIndex(0)
+        return
+      }
+
+      // Home → first article, End → last preloaded article
+      if (e.key === 'Home') {
+        selectByIndex(0)
+        return
+      }
+      if (e.key === 'End') {
+        selectByIndex(list.length - 1)
         return
       }
 
@@ -970,6 +992,11 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
           </div>
         )}
       </div>
+
+      {/* Bottom fade overlay — elegant gradient when content exceeds the viewport */}
+      {!loading && articles.length > 0 && belowCount > 0 && (
+        <div className="article-list-fade" />
+      )}
 
       {/* Floating "more below" indicator — mirrors the notifier popup pill */}
       {!loading && belowCount > 0 && (
