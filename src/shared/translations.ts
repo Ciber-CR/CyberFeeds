@@ -88,10 +88,14 @@ export const translations = {
       refreshFolder: 'Refresh folder "{folder}"',
       refreshAllFeeds: 'Refresh all feeds',
       searchPlaceholder: 'Search articles...',
+      searchFocusedPlaceholder: 'Type and press Enter...',
+      searchTooltipInstant: 'Instant search active (Esc to clear)',
+      searchTooltipEnter: 'Press Enter to search (Esc to clear)',
       noArticles: 'No articles',
       trash: 'Trash',
       emptyTrash: 'Empty trash',
       loadingFeed: 'Fetching the latest articles...',
+      searchingArticles: 'Searching articles...',
       moreBelow: 'more below',
       backToTop: 'Back to top',
       yesterday: 'Yesterday',
@@ -221,7 +225,10 @@ export const translations = {
           custom: 'Custom browser'
         },
         pickBtn: 'Pick…',
-        pickTooltip: 'Browse for browser executable'
+        pickTooltip: 'Browse for browser executable',
+        searchTitle: 'Article Search',
+        instantSearch: 'Instant search while typing',
+        instantSearchHint: 'When disabled, press Enter in the search bar to execute the search (recommended for large libraries with thousands of articles).'
       },
       notifications: {
         title: 'Notifications',
@@ -553,10 +560,14 @@ export const translations = {
       refreshFolder: 'Actualizar carpeta "{folder}"',
       refreshAllFeeds: 'Actualizar todos los feeds',
       searchPlaceholder: 'Buscar artículos...',
+      searchFocusedPlaceholder: 'Teclea y presiona Enter...',
+      searchTooltipInstant: 'Búsqueda instantánea activa (Esc para limpiar)',
+      searchTooltipEnter: 'Presiona Enter para buscar (Esc para limpiar)',
       noArticles: 'Sin artículos',
       trash: 'Papelera',
       emptyTrash: 'Vaciar papelera',
       loadingFeed: 'Descargando los últimos artículos...',
+      searchingArticles: 'Buscando artículos...',
       moreBelow: 'más abajo',
       backToTop: 'Volver al inicio',
       yesterday: 'Ayer',
@@ -688,7 +699,10 @@ export const translations = {
           custom: 'Navegador personalizado'
         },
         pickBtn: 'Seleccionar…',
-        pickTooltip: 'Buscar ejecutable del navegador'
+        pickTooltip: 'Buscar ejecutable del navegador',
+        searchTitle: 'Búsqueda de artículos',
+        instantSearch: 'Búsqueda instantánea al teclear',
+        instantSearchHint: 'Cuando está desactivada, presiona Enter en la barra para buscar (recomendado para librerías con miles de artículos).'
       },
       notifications: {
         title: 'Notificaciones',

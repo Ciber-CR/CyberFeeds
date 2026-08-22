@@ -95,25 +95,33 @@ export default function NotifierApp(): JSX.Element {
     countdownEnd.current = null
   }, [])
 
-  const startCountdown = useCallback((durationMs: number) => {
-    stopCountdown()
-    const end = Date.now() + Math.max(0, durationMs)
-    countdownEnd.current = end
-    setCountdownSeconds(Math.max(1, Math.ceil(durationMs / 1000)))
+  const startCountdown = useCallback(
+    (durationMs: number) => {
+      stopCountdown()
+      const end = Date.now() + Math.max(0, durationMs)
+      countdownEnd.current = end
+      const nominalSecs = Math.max(1, Math.round((state.settings?.duration ?? durationMs) / 1000))
+      setCountdownSeconds(nominalSecs)
 
-    countdownTimer.current = setInterval(() => {
-      if (!countdownEnd.current) return
-      const remaining = countdownEnd.current - Date.now()
-      if (remaining <= 0) {
-        stopCountdown()
-        setCountdownSeconds(0)
-        dispatch({ type: 'CLEAR' })
-        window.api.clearAllNotifications()
-      } else {
-        setCountdownSeconds(Math.ceil(remaining / 1000))
-      }
-    }, 250)
-  }, [stopCountdown])
+      countdownTimer.current = setInterval(() => {
+        if (!countdownEnd.current) return
+        const remaining = countdownEnd.current - Date.now()
+        if (remaining <= 0) {
+          stopCountdown()
+          setCountdownSeconds(0)
+          dispatch({ type: 'CLEAR' })
+          window.api.clearAllNotifications()
+        } else {
+          const secs = Math.max(
+            1,
+            Math.min(nominalSecs, Math.ceil((remaining - AUTO_HIDE_BUFFER_MS) / 1000))
+          )
+          setCountdownSeconds(secs)
+        }
+      }, 250)
+    },
+    [stopCountdown, state.settings?.duration]
+  )
 
   const handleMouseEnter = (): void => {
     if (hoverOffTimer.current) {
@@ -123,6 +131,8 @@ export default function NotifierApp(): JSX.Element {
     isHovering.current = true
     setIsHovered(true)
     stopCountdown()
+    const nominalSecs = Math.max(1, Math.round((Number(state.settings?.duration) || 6000) / 1000))
+    setCountdownSeconds(nominalSecs)
     window.api.setHover(true)
   }
 
@@ -347,7 +357,6 @@ export default function NotifierApp(): JSX.Element {
                 window.api.clearAllNotifications()
               }}
             >
-              <X size={12} style={{ flexShrink: 0 }} />
               <span
                 className={`notif-countdown-num ${!isHovered && countdownSeconds > 0 ? 'breathing' : ''}`}
                 style={{
@@ -358,6 +367,7 @@ export default function NotifierApp(): JSX.Element {
               >
                 {countdownSeconds}
               </span>
+              <X size={12} style={{ flexShrink: 0 }} />
             </button>
           </Tooltip>
         </div>
@@ -529,36 +539,51 @@ export default function NotifierApp(): JSX.Element {
           </div>
         ))}
       </div>
-      {/* "More" floating indicator */}
+      {/* "More" floating indicator with subtle gradient fade */}
       {showMoreIndicator && (
-        <Tooltip label={t.notifier.moreTooltip} placement="top">
-          <div
-            onClick={scrollToBottom}
-            style={{
-              position: 'absolute',
-              bottom: 8,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'rgba(0, 170, 255, 0.75)',
-              border: '1px solid rgba(0, 170, 255, 0.6)',
-              borderRadius: 12,
-              padding: '3px 12px',
-              fontSize: 10,
-              color: '#ffffff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              zIndex: 10,
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-              transition: 'opacity 0.2s ease'
-            }}
-          >
-            <ChevronDown size={10} />
-            {overflowCount} {t.notifier.more}
-          </div>
-        </Tooltip>
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 8,
+            left: 8,
+            right: state.stack.length > maxStack ? Math.max(scrollbarW, 16) + 8 : 8,
+            height: 48,
+            background:
+              'linear-gradient(to top, rgba(10, 12, 16, 0.96) 0%, rgba(10, 12, 16, 0.7) 50%, transparent 100%)',
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            paddingBottom: 4,
+            borderRadius: '0 0 8px 8px',
+            zIndex: 10
+          }}
+        >
+          <Tooltip label={t.notifier.moreTooltip} placement="top">
+            <div
+              onClick={scrollToBottom}
+              style={{
+                pointerEvents: 'auto',
+                background: 'var(--accent, #58a6ff)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: 12,
+                padding: '3px 12px',
+                fontSize: 10,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+                transition: 'opacity 0.2s ease, transform 0.15s ease'
+              }}
+            >
+              <ChevronDown size={11} strokeWidth={2.5} />
+              {overflowCount} {t.notifier.more}
+            </div>
+          </Tooltip>
+        </div>
       )}
     </div>
   )

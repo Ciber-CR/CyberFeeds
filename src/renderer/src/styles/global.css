@@ -2374,7 +2374,7 @@ body {
   will-change: transform, opacity;
 }
 .notif-countdown-num.breathing {
-  animation: notifCountdownBreath 1.3s ease-in-out infinite;
+  animation: notifCountdownBreath 1s ease-in-out infinite;
 }
 @keyframes notifCountdownBreath {
   0%,

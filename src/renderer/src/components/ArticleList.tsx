@@ -17,7 +17,8 @@ import {
   CheckCheck,
   RefreshCw,
   Pause,
-  Play
+  Play,
+  X
 } from 'lucide-react'
 import { useArticlesStore } from '../store/articles.store'
 import { useUIStore } from '../store/ui.store'
@@ -213,10 +214,17 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const { feeds, folders, unreadCounts, fetchAll, fetchFeed, fetchFolder } = useFeedsStore()
   const { settings, togglePolling } = useSettingsStore()
   const { t } = useTranslation()
+  const [searchInput, setSearchInput] = useState(search)
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
   const parentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const prevSelectedId = useRef<string | null>(null)
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm()
+
+  // Keep local search input synchronized when store's search resets (e.g. on feed switch)
+  useEffect(() => {
+    setSearchInput(search)
+  }, [search])
 
   // Auto-remove articles that no longer match the active read-state filter
   // when moving to the next article.
@@ -542,11 +550,40 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     }
   }, [rowVirtualizer.getVirtualItems()])
 
-  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value
+      setSearchInput(val)
+      if (settings.instantSearch) {
+        clearTimeout(searchRef.current)
+        searchRef.current = setTimeout(() => setSearch(val), 300)
+      }
+    },
+    [settings.instantSearch, setSearch]
+  )
+
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        clearTimeout(searchRef.current)
+        setSearch(searchInput.trim())
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        clearTimeout(searchRef.current)
+        setSearchInput('')
+        setSearch('')
+        e.currentTarget.blur()
+      }
+    },
+    [searchInput, setSearch]
+  )
+
+  const handleClearSearch = useCallback(() => {
     clearTimeout(searchRef.current)
-    const val = e.target.value
-    searchRef.current = setTimeout(() => setSearch(val), 300)
-  }, [])
+    setSearchInput('')
+    setSearch('')
+  }, [setSearch])
 
   useEffect(() => {
     const handleUp = () => setCtx(null)
@@ -696,25 +733,77 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
         }}
       >
         <div style={{ position: 'relative', flex: 1 }}>
-          <Search
-            size={13}
-            style={{
-              position: 'absolute',
-              left: 8,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--text-muted)',
-              pointerEvents: 'none'
-            }}
-          />
+          <Tooltip
+            label={settings.instantSearch ? t.articleList.searchTooltipInstant : t.articleList.searchTooltipEnter}
+            placement="bottom"
+          >
+            <div
+              style={{
+                position: 'absolute',
+                left: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                zIndex: 2
+              }}
+              onClick={() => {
+                clearTimeout(searchRef.current)
+                setSearch(searchInput.trim())
+              }}
+            >
+              <Search size={13} />
+            </div>
+          </Tooltip>
           <input
             className="search-input"
             data-article-search="true"
-            style={{ paddingLeft: 28, width: '100%' }}
-            placeholder={t.articleList.searchPlaceholder}
-            defaultValue={search}
+            style={{
+              paddingLeft: 28,
+              paddingRight: searchInput ? 26 : 10,
+              width: '100%'
+            }}
+            placeholder={
+              !settings.instantSearch && isSearchFocused
+                ? t.articleList.searchFocusedPlaceholder
+                : t.articleList.searchPlaceholder
+            }
+            value={searchInput}
             onChange={handleSearch}
+            onKeyDown={handleSearchKeyDown}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
           />
+          {searchInput ? (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleClearSearch}
+              style={{
+                position: 'absolute',
+                right: 5,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                padding: 0,
+                width: 18,
+                height: 18,
+                minWidth: 18,
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%'
+              }}
+              aria-label="Clear search"
+            >
+              <X size={12} />
+            </button>
+          ) : null}
         </div>
 
         <Tooltip
@@ -831,7 +920,9 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
             <div className="feed-loading-orbit" aria-hidden="true">
               <div className="feed-loading-orbit-dot" />
             </div>
-            <div className="feed-loading-label">{t.articleList.loadingFeed}</div>
+            <div className="feed-loading-label">
+              {search ? t.articleList.searchingArticles : t.articleList.loadingFeed}
+            </div>
             <div className="feed-loading-skeletons" aria-hidden="true">
               <span />
               <span />

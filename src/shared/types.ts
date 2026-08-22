@@ -79,6 +79,7 @@ export interface AppSettings {
   pollOnlyWhenUnfocused: boolean
   shortcuts: KeyboardShortcuts
   autoFetchFullContent: boolean
+  instantSearch: boolean
 }
 
 export interface NotificationSettings {
@@ -196,5 +197,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     settings: { enabled: false, accelerator: '', global: false },
     fetch: { enabled: false, accelerator: '', global: false }
   },
-  autoFetchFullContent: true
+  autoFetchFullContent: true,
+  instantSearch: false
 }
