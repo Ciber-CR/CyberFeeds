@@ -232,6 +232,9 @@ export const translations = {
       },
       notifications: {
         title: 'Notifications',
+        displayAndPositionTitle: 'Display & Position',
+        timingTitle: 'Timing & Stacking',
+        soundTitle: 'Alert Sound',
         enable: 'Enable notifications',
         showThumbnails: 'Show featured image',
         preloadImages: 'Show only when image is fully loaded',
@@ -706,6 +709,9 @@ export const translations = {
       },
       notifications: {
         title: 'Notificaciones',
+        displayAndPositionTitle: 'Pantalla y posición',
+        timingTitle: 'Tiempos y apilamiento',
+        soundTitle: 'Sonido de alerta',
         enable: 'Habilitar notificaciones',
         showThumbnails: 'Mostrar imagen destacada',
         preloadImages: 'Mostrar solo cuando la imagen esté cargada',

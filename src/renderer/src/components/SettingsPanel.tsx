@@ -734,248 +734,264 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
           )}
 
           {activeTab === 'notifications' && (
-            <div className="settings-card">
-              <h3>{t.settings.notifications.title}</h3>
-              <label className="toggle" style={{ marginBottom: 14 }}>
-                <div
-                  className={`toggle-track ${local.notifications.enabled ? 'on' : ''}`}
-                  onClick={() => updateNotif({ enabled: !local.notifications.enabled })}
-                >
-                  <div className="toggle-thumb" />
-                </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.enable}</span>
-              </label>
-
-              <label className="toggle" style={{ marginBottom: 14 }}>
-                <div
-                  className={`toggle-track ${local.notifications.showThumbnails ? 'on' : ''}`}
-                  onClick={() => updateNotif({ showThumbnails: !local.notifications.showThumbnails })}
-                >
-                  <div className="toggle-thumb" />
-                </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.showThumbnails}</span>
-              </label>
-
-              <label className="toggle" style={{ marginBottom: 14 }}>
-                <div
-                  className={`toggle-track ${local.notifications.disableOnFullscreen ? 'on' : ''}`}
-                  onClick={() => updateNotif({ disableOnFullscreen: !local.notifications.disableOnFullscreen })}
-                >
-                  <div className="toggle-thumb" />
-                </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.disableOnFullscreen}</span>
-              </label>
-
-              <div style={{ marginBottom: 14 }}>
-                <label className="toggle" style={{ marginBottom: 6 }}>
+            <>
+              {/* Card 1: General Notifications */}
+              <div className="settings-card">
+                <h3>{t.settings.notifications.title}</h3>
+                <label className="toggle" style={{ marginBottom: 14 }}>
                   <div
-                    className={`toggle-track ${local.notifications.closeOnViewInApp ? 'on' : ''}`}
-                    onClick={() => updateNotif({ closeOnViewInApp: !local.notifications.closeOnViewInApp })}
+                    className={`toggle-track ${local.notifications.enabled ? 'on' : ''}`}
+                    onClick={() => updateNotif({ enabled: !local.notifications.enabled })}
                   >
                     <div className="toggle-thumb" />
                   </div>
-                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.closeOnViewInApp}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.enable}</span>
                 </label>
-                <p className="settings-card-hint" style={{ margin: '0 0 0 46px' }}>
-                  {t.settings.notifications.closeOnViewInAppHint}
-                </p>
-              </div>
 
-              <div className="form-group">
-                <label className="form-label">{t.settings.notifications.openBehavior}</label>
-                <div className="open-behavior-picker">
-                  <button
-                    type="button"
-                    className={`open-behavior-option${(local.notifications.openBehavior || 'app') === 'app' ? ' is-active' : ''}`}
-                    onClick={() => updateNotif({ openBehavior: 'app' })}
+                <label className="toggle" style={{ marginBottom: 14 }}>
+                  <div
+                    className={`toggle-track ${local.notifications.showThumbnails ? 'on' : ''}`}
+                    onClick={() => updateNotif({ showThumbnails: !local.notifications.showThumbnails })}
                   >
-                    {t.settings.notifications.openInApp}
-                  </button>
-                  <button
-                    type="button"
-                    className={`open-behavior-option${local.notifications.openBehavior === 'browser' ? ' is-active' : ''}`}
-                    onClick={() => updateNotif({ openBehavior: 'browser' })}
-                  >
-                    {t.settings.notifications.openInBrowser}
-                  </button>
-                </div>
-                <p className="settings-card-hint" style={{ margin: '8px 0 0' }}>
-                  {t.settings.notifications.openBehaviorHint}
-                </p>
-              </div>
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.showThumbnails}</span>
+                </label>
 
-              {displays.length > 1 && (
-                <div className="form-group">
-                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Monitor size={12} />
-                    {t.settings.notifications.displayMonitor}
+                <label className="toggle" style={{ marginBottom: 14 }}>
+                  <div
+                    className={`toggle-track ${local.notifications.disableOnFullscreen ? 'on' : ''}`}
+                    onClick={() => updateNotif({ disableOnFullscreen: !local.notifications.disableOnFullscreen })}
+                  >
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.disableOnFullscreen}</span>
+                </label>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label className="toggle" style={{ marginBottom: 6 }}>
+                    <div
+                      className={`toggle-track ${local.notifications.closeOnViewInApp ? 'on' : ''}`}
+                      onClick={() => updateNotif({ closeOnViewInApp: !local.notifications.closeOnViewInApp })}
+                    >
+                      <div className="toggle-thumb" />
+                    </div>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.closeOnViewInApp}</span>
                   </label>
+                  <p className="settings-card-hint" style={{ margin: '0 0 0 46px' }}>
+                    {t.settings.notifications.closeOnViewInAppHint}
+                  </p>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">{t.settings.notifications.openBehavior}</label>
+                  <div className="open-behavior-picker">
+                    <button
+                      type="button"
+                      className={`open-behavior-option${(local.notifications.openBehavior || 'app') === 'app' ? ' is-active' : ''}`}
+                      onClick={() => updateNotif({ openBehavior: 'app' })}
+                    >
+                      {t.settings.notifications.openInApp}
+                    </button>
+                    <button
+                      type="button"
+                      className={`open-behavior-option${local.notifications.openBehavior === 'browser' ? ' is-active' : ''}`}
+                      onClick={() => updateNotif({ openBehavior: 'browser' })}
+                    >
+                      {t.settings.notifications.openInBrowser}
+                    </button>
+                  </div>
+                  <p className="settings-card-hint" style={{ margin: '8px 0 0' }}>
+                    {t.settings.notifications.openBehaviorHint}
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 2: Display & Position */}
+              <div className="settings-card">
+                <h3>{t.settings.notifications.displayAndPositionTitle}</h3>
+                {displays.length > 1 && (
+                  <div className="form-group">
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Monitor size={12} />
+                      {t.settings.notifications.displayMonitor}
+                    </label>
+                    <select
+                      className="form-select"
+                      value={local.notifications.displayId}
+                      onChange={e => {
+                        const selectedId = Number(e.target.value)
+                        const selectedDisplay = displays.find(d => d.id === selectedId)
+                        updateNotif({
+                          displayId: selectedId,
+                          displayBounds: selectedDisplay?.bounds
+                        })
+                      }}
+                    >
+                      {displays.map(d => (
+                        <option key={d.id} value={d.id}>{d.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {displays.length === 1 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Monitor size={12} />
+                    {t.settings.notifications.singleDisplay
+                      .replace('{width}', String(displays[0]?.bounds.width))
+                      .replace('{height}', String(displays[0]?.bounds.height))}
+                  </div>
+                )}
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">{t.settings.notifications.position}</label>
+                  <div className="notif-placement-row">
+                    <div className="position-monitor" role="group" aria-label={t.settings.notifications.position}>
+                      {positionCells.map((cell, idx) => {
+                        if (!cell.id) {
+                          return (
+                            <div key={idx} className="position-cell is-spacer">
+                              {cell.dot === 'center' && <span className="position-center-mark" />}
+                            </div>
+                          )
+                        }
+                        const isActive = local.notifications.position === cell.id
+                        return (
+                          <Tooltip key={cell.id} label={t.settings.notifications.positions[cell.id]} placement="top">
+                            <button
+                              type="button"
+                              className={`position-cell${isActive ? ' is-active' : ''}`}
+                              onClick={() => {
+                                updateNotif({ position: cell.id! })
+                                previewNow(false)
+                              }}
+                              aria-label={t.settings.notifications.positions[cell.id]}
+                              aria-pressed={isActive}
+                            >
+                              <span className={`position-dot ${cell.dot}`} />
+                            </button>
+                          </Tooltip>
+                        )
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      className={`btn settings-preview-btn${testing ? ' is-sending' : ''}`}
+                      disabled={testing}
+                      onClick={async () => {
+                        setTesting(true)
+                        try {
+                          await window.api.previewNotification(local.notifications, true)
+                        } finally {
+                          setTimeout(() => setTesting(false), 700)
+                        }
+                      }}
+                    >
+                      {testing ? <Zap size={15} /> : <Bell size={15} />}
+                      {testing ? t.settings.notifications.sendingBtn : t.settings.notifications.previewBtn}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Timing & Stacking */}
+              <div className="settings-card">
+                <h3>{t.settings.notifications.timingTitle}</h3>
+                <div className="form-group">
+                  <label className="form-label">{t.settings.notifications.duration}</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={1000}
+                    step={500}
+                    value={local.notifications.duration}
+                    onChange={e => updateNotif({ duration: Number(e.target.value) }, 300)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{t.settings.notifications.maxStack}</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={local.notifications.maxStack}
+                    onChange={e => updateNotif({ maxStack: Number(e.target.value) }, 300)}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">{t.settings.notifications.snoozeDuration}</label>
                   <select
                     className="form-select"
-                    value={local.notifications.displayId}
-                    onChange={e => {
-                      const selectedId = Number(e.target.value)
-                      const selectedDisplay = displays.find(d => d.id === selectedId)
-                      updateNotif({
-                        displayId: selectedId,
-                        displayBounds: selectedDisplay?.bounds
-                      })
-                    }}
+                    value={local.notifications.snoozeMinutes ?? 30}
+                    onChange={e => updateNotif({ snoozeMinutes: Number(e.target.value) })}
                   >
-                    {displays.map(d => (
-                      <option key={d.id} value={d.id}>{d.label}</option>
-                    ))}
+                    <option value={15}>15m</option>
+                    <option value={30}>30m</option>
+                    <option value={60}>1h</option>
+                    <option value={120}>2h</option>
+                    <option value={240}>4h</option>
+                    <option value={480}>8h</option>
+                    <option value={1440}>24h</option>
                   </select>
                 </div>
-              )}
-              {displays.length === 1 && (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Monitor size={12} />
-                  {t.settings.notifications.singleDisplay
-                    .replace('{width}', String(displays[0]?.bounds.width))
-                    .replace('{height}', String(displays[0]?.bounds.height))}
-                </div>
-              )}
+              </div>
 
-              <div className="form-group">
-                <label className="form-label">{t.settings.notifications.position}</label>
-                <div className="notif-placement-row">
-                  <div className="position-monitor" role="group" aria-label={t.settings.notifications.position}>
-                    {positionCells.map((cell, idx) => {
-                      if (!cell.id) {
-                        return (
-                          <div key={idx} className="position-cell is-spacer">
-                            {cell.dot === 'center' && <span className="position-center-mark" />}
-                          </div>
-                        )
-                      }
-                      const isActive = local.notifications.position === cell.id
-                      return (
-                        <Tooltip key={cell.id} label={t.settings.notifications.positions[cell.id]} placement="top">
-                          <button
-                            type="button"
-                            className={`position-cell${isActive ? ' is-active' : ''}`}
-                            onClick={() => {
-                              updateNotif({ position: cell.id! })
-                              previewNow(false)
-                            }}
-                            aria-label={t.settings.notifications.positions[cell.id]}
-                            aria-pressed={isActive}
-                          >
-                            <span className={`position-dot ${cell.dot}`} />
-                          </button>
-                        </Tooltip>
-                      )
-                    })}
+              {/* Card 4: Sound */}
+              <div className="settings-card">
+                <h3>{t.settings.notifications.soundTitle}</h3>
+                <label className="toggle" style={{ marginBottom: 14 }}>
+                  <div
+                    className={`toggle-track ${local.notifications.soundEnabled ? 'on' : ''}`}
+                    onClick={() => updateNotif({ soundEnabled: !local.notifications.soundEnabled })}
+                  >
+                    <div className="toggle-thumb" />
                   </div>
-                  <button
-                    type="button"
-                    className={`btn settings-preview-btn${testing ? ' is-sending' : ''}`}
-                    disabled={testing}
-                    onClick={async () => {
-                      setTesting(true)
-                      try {
-                        await window.api.previewNotification(local.notifications, true)
-                      } finally {
-                        setTimeout(() => setTesting(false), 700)
-                      }
-                    }}
-                  >
-                    {testing ? <Zap size={15} /> : <Bell size={15} />}
-                    {testing ? t.settings.notifications.sendingBtn : t.settings.notifications.previewBtn}
-                  </button>
-                </div>
-              </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.soundEnabled}</span>
+                </label>
 
-              <div className="form-group">
-                <label className="form-label">{t.settings.notifications.duration}</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min={1000}
-                  step={500}
-                  value={local.notifications.duration}
-                  onChange={e => updateNotif({ duration: Number(e.target.value) }, 300)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">{t.settings.notifications.maxStack}</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={local.notifications.maxStack}
-                  onChange={e => updateNotif({ maxStack: Number(e.target.value) }, 300)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">{t.settings.notifications.snoozeDuration}</label>
-                <select
-                  className="form-select"
-                  value={local.notifications.snoozeMinutes ?? 30}
-                  onChange={e => updateNotif({ snoozeMinutes: Number(e.target.value) })}
-                >
-                  <option value={15}>15m</option>
-                  <option value={30}>30m</option>
-                  <option value={60}>1h</option>
-                  <option value={120}>2h</option>
-                  <option value={240}>4h</option>
-                  <option value={480}>8h</option>
-                  <option value={1440}>24h</option>
-                </select>
-              </div>
-
-              <label className="toggle" style={{ marginBottom: 14 }}>
-                <div
-                  className={`toggle-track ${local.notifications.soundEnabled ? 'on' : ''}`}
-                  onClick={() => updateNotif({ soundEnabled: !local.notifications.soundEnabled })}
-                >
-                  <div className="toggle-thumb" />
-                </div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.settings.notifications.soundEnabled}</span>
-              </label>
-
-              <div className="form-group" style={{ opacity: local.notifications.soundEnabled ? 1 : 0.5, pointerEvents: local.notifications.soundEnabled ? 'auto' : 'none' }}>
-                <label className="form-label">{t.settings.notifications.alertSound}</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ fontSize: 12 }}
-                    disabled={!local.notifications.soundEnabled}
-                    onClick={async () => {
-                      const filePath = await window.api.pickSoundFile()
-                      if (filePath) updateNotif({ soundFile: filePath })
-                    }}
-                  >
-                    {t.settings.notifications.browseBtn}
-                  </button>
-                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                    {local.notifications.soundFile
-                      ? local.notifications.soundFile.split(/[\\/]/).pop()
-                      : t.settings.notifications.systemDefaultSound}
-                  </span>
-                  {local.notifications.soundFile && (
-                    <Tooltip label={t.settings.notifications.resetToDefault} placement="bottom">
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        style={{ fontSize: 11, padding: '2px 6px' }}
-                        disabled={!local.notifications.soundEnabled}
-                        onClick={() => updateNotif({ soundFile: null })}
+                <div className="form-group" style={{ marginBottom: 0, opacity: local.notifications.soundEnabled ? 1 : 0.5, pointerEvents: local.notifications.soundEnabled ? 'auto' : 'none' }}>
+                  <label className="form-label">{t.settings.notifications.alertSound}</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ fontSize: 12 }}
+                      disabled={!local.notifications.soundEnabled}
+                      onClick={async () => {
+                        const filePath = await window.api.pickSoundFile()
+                        if (filePath) updateNotif({ soundFile: filePath })
+                      }}
                     >
-                        ✕
-                      </button>
-                    </Tooltip>
-                  )}
+                      {t.settings.notifications.browseBtn}
+                    </button>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {local.notifications.soundFile
+                        ? local.notifications.soundFile.split(/[\\/]/).pop()
+                        : t.settings.notifications.systemDefaultSound}
+                    </span>
+                    {local.notifications.soundFile && (
+                      <Tooltip label={t.settings.notifications.resetToDefault} placement="bottom">
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          style={{ fontSize: 11, padding: '2px 6px' }}
+                          disabled={!local.notifications.soundEnabled}
+                          onClick={() => updateNotif({ soundFile: null })}
+                        >
+                          ✕
+                        </button>
+                      </Tooltip>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginTop: 16 }}>
-                <label className="form-label">{t.settings.notifications.ignoredFeeds}</label>
+              {/* Card 5: Ignored/Muted Feeds */}
+              <div className="settings-card">
+                <h3>{t.settings.notifications.ignoredFeeds}</h3>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
                   {t.settings.notifications.ignoredFeedsHint}
                   {mutedCount > 0 && (
@@ -1015,7 +1031,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                   </div>
                 )}
               </div>
-            </div>
+            </>
           )}
 
           {activeTab === 'keyboard' && (
