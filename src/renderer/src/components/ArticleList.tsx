@@ -423,52 +423,15 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     }
   })
 
-  // When window visibility changes or window is shown/focused,
-  // remeasure any mounted DOM rows to ensure their sizes match rendered layout.
-  const remeasureFrameRef = useRef<number | undefined>(undefined)
-  const remeasureAfterVisibility = useCallback((force?: boolean | Event) => {
-    const mustRun = force === true
-    if (!mustRun && document.visibilityState === 'hidden') return
-    if (remeasureFrameRef.current != null) {
-      cancelAnimationFrame(remeasureFrameRef.current)
-    }
-
-    remeasureFrameRef.current = requestAnimationFrame(() => {
-      remeasureFrameRef.current = requestAnimationFrame(() => {
-        remeasureFrameRef.current = undefined
-        if (!mustRun && document.visibilityState === 'hidden') return
-        const scrollElement = parentRef.current
-        if (!scrollElement || scrollElement.clientWidth === 0 || scrollElement.clientHeight === 0) return
-
-        const nodes = scrollElement.querySelectorAll<HTMLElement>('.article-item')
-        nodes.forEach((node) => {
-          const h = node.getBoundingClientRect().height
-          if (h > 1) {
-            const idxStr = node.getAttribute('data-index')
-            if (idxStr != null) {
-              const idx = parseInt(idxStr, 10)
-              if (Number.isFinite(idx) && idx >= 0) {
-                rowVirtualizer.resizeItem(idx, Math.round(h))
-              }
-            }
-          }
-        })
-      })
-    })
-  }, [rowVirtualizer])
-
   useEffect(() => {
     const handleFocusChange = (): void => {
       setWindowFocused(document.hasFocus())
-      remeasureAfterVisibility()
     }
     const handleFocus = (): void => {
       setWindowFocused(true)
-      remeasureAfterVisibility()
     }
     const handleBlur = (): void => {
       setWindowFocused(false)
-      remeasureAfterVisibility()
     }
     window.addEventListener('focus', handleFocus)
     window.addEventListener('blur', handleBlur)
@@ -476,7 +439,6 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     window.addEventListener('resize', handleFocusChange)
     const unsubShown = window.api.onWindowShown(() => {
       setWindowFocused(document.hasFocus())
-      remeasureAfterVisibility(true)
     })
     const unsubHidden = window.api.onWindowHidden(() => setWindowFocused(false))
     return () => {
@@ -486,16 +448,20 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
       window.removeEventListener('resize', handleFocusChange)
       unsubShown()
       unsubHidden()
-      if (remeasureFrameRef.current != null) {
-        cancelAnimationFrame(remeasureFrameRef.current)
-      }
     }
-  }, [remeasureAfterVisibility])
+  }, [])
 
-  // Keep keyboard/context-menu navigation visible when the selected article
-  // advances beyond the current viewport.
+  // Keep keyboard/context-menu navigation visible when the selected article changes.
+  // Only scroll when selectedArticleId changes to a new ID, NOT on background data refreshes!
+  const prevSelectedRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!selectedArticleId || loading) return
+    if (!selectedArticleId || loading) {
+      prevSelectedRef.current = selectedArticleId
+      return
+    }
+    if (prevSelectedRef.current === selectedArticleId) return
+    prevSelectedRef.current = selectedArticleId
+
     const index = articles.findIndex((article) => article.id === selectedArticleId)
     if (index < 0) return
 
@@ -515,9 +481,6 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
   const [showScrollTop, setShowScrollTop] = useState(false)
   const rafRef = useRef<number | undefined>(undefined)
 
-  // NOTE: this must NOT run inside the getVirtualItems() effect — doing so creates
-  // a render→measure→setState→render feedback loop that visibly jitters the list.
-  // It is driven by real scroll events (rAF-throttled) and by data changes only.
   const computeScrollState = useCallback(() => {
     const el = parentRef.current
     if (!el) return
@@ -553,14 +516,21 @@ const ArticleList = memo(function ArticleList(): JSX.Element {
     []
   )
 
+  const virtualItems = rowVirtualizer.getVirtualItems()
+  const lastVirtualIndex =
+    virtualItems.length > 0 ? virtualItems[virtualItems.length - 1].index : -1
+
+  // Trigger loadMore only when reaching the end of the loaded articles list.
   useEffect(() => {
-    const items = rowVirtualizer.getVirtualItems()
-    if (items.length === 0) return
-    const lastItem = items[items.length - 1]
-    if (lastItem.index >= articles.length - 10 && !loadingMore) {
+    if (
+      lastVirtualIndex >= 0 &&
+      lastVirtualIndex >= articles.length - 10 &&
+      !loadingMore &&
+      totalCount > articles.length
+    ) {
       loadMore()
     }
-  }, [rowVirtualizer.getVirtualItems()])
+  }, [lastVirtualIndex, articles.length, loadingMore, totalCount, loadMore])
 
   const handleSearch = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
