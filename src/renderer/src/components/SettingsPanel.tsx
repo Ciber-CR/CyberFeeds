@@ -534,6 +534,25 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
               </div>
 
               <div className="settings-card">
+                <h3>{t.settings.general.searchTitle}</h3>
+                <label
+                  className="toggle"
+                  style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}
+                  onClick={() => update({ instantSearch: !local.instantSearch })}
+                >
+                  <div className={`toggle-track ${local.instantSearch ? 'on' : ''}`}>
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                    {t.settings.general.instantSearch}
+                  </span>
+                </label>
+                <p className="settings-card-hint" style={{ margin: '6px 0 0 46px' }}>
+                  {t.settings.general.instantSearchHint}
+                </p>
+              </div>
+
+              <div className="settings-card">
                 <h3>{t.settings.general.linksOpenIn}</h3>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <select
