@@ -595,6 +595,23 @@ body {
   overflow-anchor: none;
 }
 
+/* Bottom fade overlay — elegant gradient that hints at more content below */
+.article-list-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: linear-gradient(
+    to top,
+    var(--bg-0) 0%,
+    color-mix(in srgb, var(--bg-0) 70%, transparent) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 8;
+}
+
 /* Floating pill: count of articles below the fold (mirrors the notifier pill, accent-tinted) */
 .list-more-pill {
   position: absolute;
