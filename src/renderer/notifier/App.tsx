@@ -491,6 +491,18 @@ export default function NotifierApp(): JSX.Element {
                 </button>
               </Tooltip>
               {item.feedId && (
+                <Tooltip label={t.notifier.muteTooltip} placement="bottom">
+                  <button
+                    className="notif-btn"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                    onClick={() => window.api.muteFeedNotifications(item.feedId!)}
+                  >
+                    <BellOff size={11} />
+                    {t.notifier.mute}
+                  </button>
+                </Tooltip>
+              )}
+              {item.feedId && (
                 <Tooltip label={t.notifier.viewTooltip} placement="bottom">
                   <button
                     className="notif-btn"
@@ -511,18 +523,6 @@ export default function NotifierApp(): JSX.Element {
                   >
                     <ExternalLink size={11} />
                     {t.notifier.open}
-                  </button>
-                </Tooltip>
-              )}
-              {item.feedId && (
-                <Tooltip label={t.notifier.muteTooltip} placement="bottom">
-                  <button
-                    className="notif-btn"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                    onClick={() => window.api.muteFeedNotifications(item.feedId!)}
-                  >
-                    <BellOff size={11} />
-                    {t.notifier.mute}
                   </button>
                 </Tooltip>
               )}

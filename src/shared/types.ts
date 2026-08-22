@@ -162,7 +162,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notifications: {
     enabled: true,
     position: 'bottom-left',
-    displayId: 0,
+    displayId: -1,
     marginX: 16,
     marginY: 16,
     maxWidth: 360,
