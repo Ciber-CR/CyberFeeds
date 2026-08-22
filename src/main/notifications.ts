@@ -795,6 +795,16 @@ export function registerNotifierIpc(): void {
     }
   })
 
+  ipcMain.on('notifier:openSettings', (_, tab?: string) => {
+    cancelPendingBatch()
+    notifierWindow?.hide()
+    const mainWin = BrowserWindow.getAllWindows().find(w => w !== notifierWindow)
+    if (mainWin) {
+      restoreMainWindow()
+      mainWin.webContents.send('app:openSettings', tab || 'notifications')
+    }
+  })
+
   ipcMain.on('notifier:hover', (_, hovering: boolean) => {
     isHovering = hovering
     if (isHovering) {

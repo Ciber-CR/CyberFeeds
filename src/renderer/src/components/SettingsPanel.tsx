@@ -200,9 +200,17 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
   const [importing, setImporting] = useState(false)
   const [displays, setDisplays] = useState<DisplayInfo[]>([])
   const [testing, setTesting] = useState(false)
-  const [activeTab, setActiveTab] = useState<ActiveTab>('general')
+  const initialTab = useUIStore((s) => s.settingsInitialTab) as ActiveTab | null
+  const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab || 'general')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const { t } = useTranslation()
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab)
+      useUIStore.setState({ settingsInitialTab: null })
+    }
+  }, [initialTab])
 
   const localRef = useRef(local)
   const saveGen = useRef(0)

@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState, useCallback } from 'react'
-import { X, ExternalLink, ChevronDown, Bell, BellOff, Clock, Check, Eye } from 'lucide-react'
+import { X, ExternalLink, ChevronDown, Bell, BellOff, Clock, Check, Eye, Settings } from 'lucide-react'
 import type { NotificationHistoryItem, NotificationSettings } from '@shared/types'
 import { translations } from '@shared/translations'
 import Tooltip from '../src/components/Tooltip'
@@ -193,25 +193,32 @@ export default function NotifierApp(): JSX.Element {
 
   const computeBelowCount = useCallback(() => {
     const el = scrollRef.current
-    if (!el) return
-    const containerRect = el.getBoundingClientRect()
-    if (containerRect.height === 0) return
+    const maxStack = Math.max(1, Number(state.settings?.maxStack) || 2)
+    const totalOverflow = Math.max(0, state.stack.length - maxStack)
+    if (!el || totalOverflow === 0) {
+      setBelowCount(0)
+      return
+    }
+    const clientH = el.clientHeight
+    if (clientH === 0) {
+      setBelowCount(totalOverflow)
+      return
+    }
+    const bottom = el.scrollTop + clientH
     const cards = el.querySelectorAll<HTMLElement>('[data-notif-item="true"]')
     if (cards.length === 0) {
-      setBelowCount(0)
+      setBelowCount(totalOverflow)
       return
     }
     let lastVisibleIndex = -1
     cards.forEach((card, idx) => {
-      const cardRect = card.getBoundingClientRect()
-      // Card is visible if at least 20px of its top is inside the visible container area
-      if (cardRect.top + 20 < containerRect.bottom) {
+      if (card.offsetTop + 20 < bottom) {
         lastVisibleIndex = Math.max(lastVisibleIndex, idx)
       }
     })
-    const remaining = lastVisibleIndex < 0 ? 0 : Math.max(0, cards.length - (lastVisibleIndex + 1))
+    const remaining = lastVisibleIndex < 0 ? totalOverflow : Math.max(0, cards.length - (lastVisibleIndex + 1))
     setBelowCount(remaining)
-  }, [])
+  }, [state.settings?.maxStack, state.stack.length])
 
   const handleScroll = useCallback(() => {
     if (rafRef.current != null) return
@@ -227,6 +234,8 @@ export default function NotifierApp(): JSX.Element {
 
   // Keep the top bar gutter aligned with the cards' right edge and track belowCount.
   useEffect(() => {
+    const maxStack = Math.max(1, Number(state.settings?.maxStack) || 2)
+    setBelowCount(Math.max(0, state.stack.length - maxStack))
     const el = scrollRef.current
     if (!el) return
     setScrollbarW(el.offsetWidth - el.clientWidth)
@@ -234,7 +243,7 @@ export default function NotifierApp(): JSX.Element {
       computeBelowCount()
     })
     return () => cancelAnimationFrame(timer)
-  }, [state.stack.length, computeBelowCount])
+  }, [state.stack.length, state.settings?.maxStack, computeBelowCount])
 
   const [dismissingIds, setDismissingIds] = useState<Set<string>>(() => new Set())
 
@@ -314,6 +323,7 @@ export default function NotifierApp(): JSX.Element {
         <div
           style={{
             display: 'flex',
+            alignItems: 'center',
             justifyContent: 'space-between',
             paddingLeft: 4,
             paddingRight: Math.max(scrollbarW, 16) + 4,
@@ -366,35 +376,66 @@ export default function NotifierApp(): JSX.Element {
               {snoozeText}
             </button>
           </Tooltip>
-          <Tooltip
-            label={state.stack.length > 1 ? t.notifier.closeAllTooltip : t.notifier.closeTooltip}
-            placement="bottom"
-          >
-            <button
-              className="clear-all-btn"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
-              onClick={(e) => {
-                e.stopPropagation()
-                isHovering.current = false
-                setIsHovered(false)
-                stopCountdown()
-                window.api.setHover(false)
-                window.api.clearAllNotifications()
-              }}
-            >
-              <span
-                className={`notif-countdown-num ${!isHovered && countdownSeconds > 0 ? 'breathing' : ''}`}
+
+          {/* Right: Settings button + Separator + Countdown / Close button */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <Tooltip label={t.notifier.settingsTooltip} placement="bottom">
+              <button
+                className="clear-all-btn"
                 style={{
-                  minWidth: 12,
-                  textAlign: 'center',
-                  fontVariantNumeric: 'tabular-nums'
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px 8px'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  window.api.openSettingsInApp('notifications')
                 }}
               >
-                {countdownSeconds}
-              </span>
-              <X size={12} style={{ flexShrink: 0 }} />
-            </button>
-          </Tooltip>
+                <Settings size={12} style={{ flexShrink: 0 }} />
+              </button>
+            </Tooltip>
+
+            <div
+              style={{
+                width: 1,
+                height: 14,
+                backgroundColor: 'var(--border, #30363d)',
+                opacity: 0.6
+              }}
+            />
+
+            <Tooltip
+              label={state.stack.length > 1 ? t.notifier.closeAllTooltip : t.notifier.closeTooltip}
+              placement="bottom"
+            >
+              <button
+                className="clear-all-btn"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  isHovering.current = false
+                  setIsHovered(false)
+                  stopCountdown()
+                  window.api.setHover(false)
+                  window.api.clearAllNotifications()
+                }}
+              >
+                <span
+                  className={`notif-countdown-num ${!isHovered && countdownSeconds > 0 ? 'breathing' : ''}`}
+                  style={{
+                    minWidth: 12,
+                    textAlign: 'center',
+                    fontVariantNumeric: 'tabular-nums'
+                  }}
+                >
+                  {countdownSeconds}
+                </span>
+                <X size={12} style={{ flexShrink: 0 }} />
+              </button>
+            </Tooltip>
+          </div>
         </div>
       )}
 

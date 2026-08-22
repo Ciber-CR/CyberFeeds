@@ -6,6 +6,7 @@ interface UIState {
   selectedFeedId: string | null    // null = All Feeds
   selectedArticleId: string | null
   activePanel: Panel
+  settingsInitialTab: string | null
   editFeedId: string | null
   editFolderId: string | null
   unseenNotificationsCount: number
@@ -32,6 +33,7 @@ export const useUIStore = create<UIState>((set) => ({
   selectedFeedId: null,
   selectedArticleId: null,
   activePanel: null,
+  settingsInitialTab: null,
   editFeedId: null,
   editFolderId: null,
   unseenNotificationsCount: 0,

@@ -440,7 +440,8 @@ export const translations = {
       muteTooltip: 'Exclude this feed from future notifications',
       receivedAt: 'Received at {time}',
       more: 'more',
-      moreTooltip: 'These will appear as you dismiss the current ones'
+      moreTooltip: 'These will appear as you dismiss the current ones',
+      settingsTooltip: 'Notification settings'
     },
     notificationHistory: {
       newCount: 'new',
@@ -921,7 +922,8 @@ export const translations = {
       muteTooltip: 'Excluir este feed de futuras notificaciones',
       receivedAt: 'Recibido a las {time}',
       more: 'más',
-      moreTooltip: 'Se mostrarán al cerrar las actuales'
+      moreTooltip: 'Se mostrarán al cerrar las actuales',
+      settingsTooltip: 'Configuración de notificaciones'
     },
     notificationHistory: {
       newCount: 'nuevas',
