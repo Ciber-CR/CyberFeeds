@@ -82,6 +82,7 @@ export default function AboutModal(): JSX.Element {
   }
 
   const handleDownload = async (): Promise<void> => {
+    setStatus({ state: 'downloading', percent: 0 })
     await window.api.downloadUpdate()
   }
 

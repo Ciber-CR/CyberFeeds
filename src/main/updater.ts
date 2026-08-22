@@ -28,19 +28,14 @@ function broadcast(status: UpdateStatus): void {
 
 export function initUpdater(settings: AppSettings): void {
   autoUpdateEnabled = settings.autoUpdate
-  // We manage download timing ourselves based on the autoUpdate setting.
+  // We manage download timing ourselves based on user confirmation.
   autoUpdater.autoDownload = false
-  autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.autoInstallOnAppQuit = false
 
   autoUpdater.on('checking-for-update', () => broadcast({ state: 'checking' }))
 
   autoUpdater.on('update-available', (info) => {
     broadcast({ state: 'available', version: info.version })
-    if (autoUpdateEnabled) {
-      autoUpdater.downloadUpdate().catch((err) => {
-        broadcast({ state: 'error', message: String(err?.message || err) })
-      })
-    }
   })
 
   autoUpdater.on('update-not-available', (info) => {
@@ -97,10 +92,13 @@ function registerUpdateIpc(): void {
   })
 
   ipcMain.handle('update:download', async () => {
+    broadcast({ state: 'downloading', percent: 0 })
     try {
       await autoUpdater.downloadUpdate()
       return { ok: true }
     } catch (err) {
+      console.error('[Updater] Download failed:', err)
+      broadcast({ state: 'error', message: String((err as Error)?.message || err) })
       return { ok: false, error: String((err as Error)?.message || err) }
     }
   })
