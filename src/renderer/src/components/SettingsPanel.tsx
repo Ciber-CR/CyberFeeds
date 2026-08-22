@@ -209,23 +209,32 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const startPeeking = useCallback((target: HTMLElement) => {
+    const overlay = target.closest('.panel-overlay')
+    if (!overlay) return
 
-  const handleSliderStart = useCallback((e: React.PointerEvent<HTMLInputElement> | React.MouseEvent<HTMLInputElement> | React.TouchEvent<HTMLInputElement>) => {
-    const overlay = e.currentTarget.closest('.panel-overlay')
-    if (overlay) {
-      overlay.classList.add('is-peeking')
-      const handleEnd = (): void => {
+    overlay.classList.add('is-peeking')
+    if (peekTimer.current) clearTimeout(peekTimer.current)
+
+    peekTimer.current = setTimeout(() => {
+      overlay.classList.remove('is-peeking')
+    }, 1200)
+
+    const stopPeeking = (): void => {
+      if (peekTimer.current) clearTimeout(peekTimer.current)
+      peekTimer.current = setTimeout(() => {
         overlay.classList.remove('is-peeking')
-        window.removeEventListener('pointerup', handleEnd)
-        window.removeEventListener('mouseup', handleEnd)
-        window.removeEventListener('touchend', handleEnd)
-        window.removeEventListener('pointercancel', handleEnd)
-      }
-      window.addEventListener('pointerup', handleEnd)
-      window.addEventListener('mouseup', handleEnd)
-      window.addEventListener('touchend', handleEnd)
-      window.addEventListener('pointercancel', handleEnd)
+      }, 120)
+      window.removeEventListener('pointerup', stopPeeking)
+      window.removeEventListener('mouseup', stopPeeking)
+      window.removeEventListener('touchend', stopPeeking)
+      window.removeEventListener('pointercancel', stopPeeking)
     }
+
+    window.addEventListener('pointerup', stopPeeking)
+    window.addEventListener('mouseup', stopPeeking)
+    window.addEventListener('touchend', stopPeeking)
+    window.addEventListener('pointercancel', stopPeeking)
   }, [])
 
   useEffect(() => {
@@ -729,20 +738,21 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                     max={16}
                     step={1}
                     value={local.sidebarFontSize ?? 13}
-                    onPointerDown={handleSliderStart}
+                    onPointerDown={e => startPeeking(e.currentTarget)}
+                    onMouseDown={e => startPeeking(e.currentTarget)}
+                    onTouchStart={e => startPeeking(e.currentTarget)}
+                    onInput={e => startPeeking(e.currentTarget)}
                     onKeyDown={e => {
                       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
-                        const overlay = e.currentTarget.closest('.panel-overlay')
-                        if (overlay) {
-                          overlay.classList.add('is-peeking')
-                          if (peekTimer.current) clearTimeout(peekTimer.current)
-                          peekTimer.current = setTimeout(() => overlay.classList.remove('is-peeking'), 800)
-                        }
+                        startPeeking(e.currentTarget)
                       }
                     }}
                     onBlur={e => {
                       const overlay = e.currentTarget.closest('.panel-overlay')
-                      if (overlay) overlay.classList.remove('is-peeking')
+                      if (overlay) {
+                        if (peekTimer.current) clearTimeout(peekTimer.current)
+                        overlay.classList.remove('is-peeking')
+                      }
                     }}
                     onChange={e => {
                       const v = Number(e.target.value)
@@ -762,20 +772,21 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                     max={16}
                     step={1}
                     value={local.listFontSize ?? 13}
-                    onPointerDown={handleSliderStart}
+                    onPointerDown={e => startPeeking(e.currentTarget)}
+                    onMouseDown={e => startPeeking(e.currentTarget)}
+                    onTouchStart={e => startPeeking(e.currentTarget)}
+                    onInput={e => startPeeking(e.currentTarget)}
                     onKeyDown={e => {
                       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
-                        const overlay = e.currentTarget.closest('.panel-overlay')
-                        if (overlay) {
-                          overlay.classList.add('is-peeking')
-                          if (peekTimer.current) clearTimeout(peekTimer.current)
-                          peekTimer.current = setTimeout(() => overlay.classList.remove('is-peeking'), 800)
-                        }
+                        startPeeking(e.currentTarget)
                       }
                     }}
                     onBlur={e => {
                       const overlay = e.currentTarget.closest('.panel-overlay')
-                      if (overlay) overlay.classList.remove('is-peeking')
+                      if (overlay) {
+                        if (peekTimer.current) clearTimeout(peekTimer.current)
+                        overlay.classList.remove('is-peeking')
+                      }
                     }}
                     onChange={e => {
                       const v = Number(e.target.value)
