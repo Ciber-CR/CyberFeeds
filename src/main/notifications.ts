@@ -18,10 +18,10 @@ let lastSoundTime = 0
 let isHovering = false
 
 // Pixel height of each notification card (content + gap)
-const CARD_BASE_H = 126
-const THUMB_H = 102 // 100px img + 2px margin-bottom
+const CARD_BASE_H = 92
+const THUMB_H = 105 // 100px img + gap
 const CARD_GAP = 6
-const CLEAR_BAR_H = 34
+const CLEAR_BAR_H = 32
 const WIN_PAD = 16
 const HARD_CAP = 50
 // Extra width reserved for the scrollbar so action buttons aren't cramped/clipped
@@ -153,7 +153,7 @@ function calcPosition(
   return { x: Math.round(p.x), y: Math.round(p.y) }
 }
 
-const PEEK_H = 36
+const PEEK_H = 0
 
 /** Resize window to fit N cards (capped at maxStack), then place it correctly. */
 function applyPositionToWindow(

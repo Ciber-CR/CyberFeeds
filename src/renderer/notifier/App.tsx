@@ -193,30 +193,33 @@ export default function NotifierApp(): JSX.Element {
 
   const computeBelowCount = useCallback(() => {
     const el = scrollRef.current
-    const maxStack = Math.max(1, Number(state.settings?.maxStack) || 2)
-    const totalOverflow = Math.max(0, state.stack.length - maxStack)
-    if (!el || totalOverflow === 0) {
+    if (!el) return
+    const cards = el.querySelectorAll<HTMLElement>('.notif-card:not(.dismissing)')
+    if (cards.length === 0) {
       setBelowCount(0)
       return
     }
     const clientH = el.clientHeight
     if (clientH === 0) {
-      setBelowCount(totalOverflow)
+      const maxStack = Math.max(1, Number(state.settings?.maxStack) || 2)
+      setBelowCount(Math.max(0, state.stack.length - maxStack))
+      return
+    }
+    // If all cards fit in viewport without scroll, or user is scrolled to bottom:
+    const atBottom = el.scrollHeight - el.scrollTop - clientH < 10
+    const noScrollNeeded = el.scrollHeight <= clientH + 10
+    if (atBottom || noScrollNeeded) {
+      setBelowCount(0)
       return
     }
     const bottom = el.scrollTop + clientH
-    const cards = el.querySelectorAll<HTMLElement>('[data-notif-item="true"]')
-    if (cards.length === 0) {
-      setBelowCount(totalOverflow)
-      return
-    }
     let lastVisibleIndex = -1
     cards.forEach((card, idx) => {
       if (card.offsetTop + 20 < bottom) {
         lastVisibleIndex = Math.max(lastVisibleIndex, idx)
       }
     })
-    const remaining = lastVisibleIndex < 0 ? totalOverflow : Math.max(0, cards.length - (lastVisibleIndex + 1))
+    const remaining = lastVisibleIndex < 0 ? 0 : Math.max(0, cards.length - (lastVisibleIndex + 1))
     setBelowCount(remaining)
   }, [state.settings?.maxStack, state.stack.length])
 
@@ -234,16 +237,19 @@ export default function NotifierApp(): JSX.Element {
 
   // Keep the top bar gutter aligned with the cards' right edge and track belowCount.
   useEffect(() => {
-    const maxStack = Math.max(1, Number(state.settings?.maxStack) || 2)
-    setBelowCount(Math.max(0, state.stack.length - maxStack))
     const el = scrollRef.current
     if (!el) return
     setScrollbarW(el.offsetWidth - el.clientWidth)
-    const timer = requestAnimationFrame(() => {
-      computeBelowCount()
-    })
-    return () => cancelAnimationFrame(timer)
-  }, [state.stack.length, state.settings?.maxStack, computeBelowCount])
+    computeBelowCount()
+    const timer1 = requestAnimationFrame(() => computeBelowCount())
+    const timer2 = setTimeout(() => computeBelowCount(), 60)
+    const timer3 = setTimeout(() => computeBelowCount(), 200)
+    return () => {
+      cancelAnimationFrame(timer1)
+      clearTimeout(timer2)
+      clearTimeout(timer3)
+    }
+  }, [state.stack, state.settings?.maxStack, computeBelowCount])
 
   const [dismissingIds, setDismissingIds] = useState<Set<string>>(() => new Set())
 
@@ -460,6 +466,7 @@ export default function NotifierApp(): JSX.Element {
         {state.stack.map((item) => (
           <div
             key={item.id}
+            data-notif-item="true"
             className={`notif-card ${dismissingIds.has(item.id) ? 'dismissing' : ''}`}
             onClick={() => handleOpen(item)}
           >
