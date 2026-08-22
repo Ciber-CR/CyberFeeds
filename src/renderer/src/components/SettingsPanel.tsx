@@ -208,6 +208,32 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
   const saveGen = useRef(0)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleSliderStart = useCallback((e: React.PointerEvent<HTMLInputElement> | React.MouseEvent<HTMLInputElement> | React.TouchEvent<HTMLInputElement>) => {
+    const overlay = e.currentTarget.closest('.panel-overlay')
+    if (overlay) {
+      overlay.classList.add('is-peeking')
+      const handleEnd = (): void => {
+        overlay.classList.remove('is-peeking')
+        window.removeEventListener('pointerup', handleEnd)
+        window.removeEventListener('mouseup', handleEnd)
+        window.removeEventListener('touchend', handleEnd)
+        window.removeEventListener('pointercancel', handleEnd)
+      }
+      window.addEventListener('pointerup', handleEnd)
+      window.addEventListener('mouseup', handleEnd)
+      window.addEventListener('touchend', handleEnd)
+      window.addEventListener('pointercancel', handleEnd)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (peekTimer.current) clearTimeout(peekTimer.current)
+      document.querySelectorAll('.panel-overlay.is-peeking').forEach((el) => el.classList.remove('is-peeking'))
+    }
+  }, [])
 
   useEffect(() => {
     localRef.current = local
@@ -703,6 +729,21 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                     max={16}
                     step={1}
                     value={local.sidebarFontSize ?? 13}
+                    onPointerDown={handleSliderStart}
+                    onKeyDown={e => {
+                      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
+                        const overlay = e.currentTarget.closest('.panel-overlay')
+                        if (overlay) {
+                          overlay.classList.add('is-peeking')
+                          if (peekTimer.current) clearTimeout(peekTimer.current)
+                          peekTimer.current = setTimeout(() => overlay.classList.remove('is-peeking'), 800)
+                        }
+                      }
+                    }}
+                    onBlur={e => {
+                      const overlay = e.currentTarget.closest('.panel-overlay')
+                      if (overlay) overlay.classList.remove('is-peeking')
+                    }}
                     onChange={e => {
                       const v = Number(e.target.value)
                       document.documentElement.style.setProperty('--sidebar-font-size', `${v}px`)
@@ -721,6 +762,21 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                     max={16}
                     step={1}
                     value={local.listFontSize ?? 13}
+                    onPointerDown={handleSliderStart}
+                    onKeyDown={e => {
+                      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
+                        const overlay = e.currentTarget.closest('.panel-overlay')
+                        if (overlay) {
+                          overlay.classList.add('is-peeking')
+                          if (peekTimer.current) clearTimeout(peekTimer.current)
+                          peekTimer.current = setTimeout(() => overlay.classList.remove('is-peeking'), 800)
+                        }
+                      }
+                    }}
+                    onBlur={e => {
+                      const overlay = e.currentTarget.closest('.panel-overlay')
+                      if (overlay) overlay.classList.remove('is-peeking')
+                    }}
                     onChange={e => {
                       const v = Number(e.target.value)
                       document.documentElement.style.setProperty('--list-font-size', `${v}px`)
