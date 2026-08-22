@@ -1,7 +1,7 @@
 /** Shared Reddit feed URL helpers — used by main IPC and feed-fetcher worker. */
 
 export const FEED_USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 CyberFeeds/1.13.0'
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 CyberFeeds/1.14.0'
 
 export type RedditTarget = {
   kind: 'subreddit' | 'user'
