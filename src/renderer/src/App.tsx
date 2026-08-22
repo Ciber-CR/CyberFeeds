@@ -473,6 +473,7 @@ export default function App(): JSX.Element {
                   alignItems: 'center'
                 }}
                 onClick={async () => {
+                  setUpdateStatus({ state: 'downloading', percent: 0 })
                   await window.api.downloadUpdate()
                 }}
               >
