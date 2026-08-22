@@ -75,8 +75,9 @@ export default function NotifierApp(): JSX.Element {
   const [state, dispatch] = useReducer(reducer, { stack: [], settings: null, unseenCount: 0 })
   const [lang, setLang] = useState<'en' | 'es'>('en')
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [scrolledToBottom, setScrolledToBottom] = useState(false)
+  const [belowCount, setBelowCount] = useState(0)
   const [scrollbarW, setScrollbarW] = useState(0)
+  const rafRef = useRef<number | undefined>(undefined)
   const hoverOffTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isHovering = useRef(false)
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -190,25 +191,50 @@ export default function NotifierApp(): JSX.Element {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [stopCountdown])
 
-  const handleScroll = useCallback(() => {
+  const computeBelowCount = useCallback(() => {
     const el = scrollRef.current
     if (!el) return
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
-    setScrolledToBottom(atBottom)
+    const containerRect = el.getBoundingClientRect()
+    if (containerRect.height === 0) return
+    const cards = el.querySelectorAll<HTMLElement>('[data-notif-item="true"]')
+    if (cards.length === 0) {
+      setBelowCount(0)
+      return
+    }
+    let lastVisibleIndex = -1
+    cards.forEach((card, idx) => {
+      const cardRect = card.getBoundingClientRect()
+      // Card is visible if at least 20px of its top is inside the visible container area
+      if (cardRect.top + 20 < containerRect.bottom) {
+        lastVisibleIndex = Math.max(lastVisibleIndex, idx)
+      }
+    })
+    const remaining = lastVisibleIndex < 0 ? 0 : Math.max(0, cards.length - (lastVisibleIndex + 1))
+    setBelowCount(remaining)
   }, [])
+
+  const handleScroll = useCallback(() => {
+    if (rafRef.current != null) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = undefined
+      computeBelowCount()
+    })
+  }, [computeBelowCount])
 
   const scrollToBottom = useCallback(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [])
 
-  // Keep the top bar gutter aligned with the cards' right edge and track scroll position.
+  // Keep the top bar gutter aligned with the cards' right edge and track belowCount.
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
-    setScrolledToBottom(atBottom)
     setScrollbarW(el.offsetWidth - el.clientWidth)
-  }, [state.stack.length])
+    const timer = requestAnimationFrame(() => {
+      computeBelowCount()
+    })
+    return () => cancelAnimationFrame(timer)
+  }, [state.stack.length, computeBelowCount])
 
   const [dismissingIds, setDismissingIds] = useState<Set<string>>(() => new Set())
 
@@ -263,8 +289,7 @@ export default function NotifierApp(): JSX.Element {
   if (state.stack.length === 0) return <div />
 
   const maxStack = Math.max(1, Number(state.settings?.maxStack) || 2)
-  const overflowCount = Math.max(0, state.stack.length - maxStack)
-  const showMoreIndicator = overflowCount > 0 && !scrolledToBottom
+  const showMoreIndicator = belowCount > 0
   const snoozeMinutes = state.settings?.snoozeMinutes ?? 30
   const snoozeLabel = formatSnoozeLabel(snoozeMinutes)
   const snoozeText = t.notifier.snooze.replace('{time}', snoozeLabel)
@@ -580,7 +605,7 @@ export default function NotifierApp(): JSX.Element {
               }}
             >
               <ChevronDown size={11} strokeWidth={2.5} />
-              {overflowCount} {t.notifier.more}
+              {belowCount} {t.notifier.more}
             </div>
           </Tooltip>
         </div>
