@@ -39,7 +39,7 @@ function contentWidth(s: NotificationSettings): number {
 export function initNotifier(s: NotificationSettings): void {
   settings = s
   try {
-    if (settings.displayBounds) {
+    if (settings.displayId !== -1 && settings.displayBounds) {
       const displays = screen.getAllDisplays()
       const saved = settings.displayBounds
       const matched = displays.find(d =>
@@ -90,8 +90,18 @@ function calcPosition(
 
   let display: any = null
 
+  // 0. Active monitor mode: displayId === -1 places notifications on monitor where mouse cursor is
+  if (s.displayId === -1) {
+    try {
+      const cursorPt = screen.getCursorScreenPoint()
+      display = screen.getDisplayNearestPoint(cursorPt)
+    } catch (err) {
+      console.warn('[Notifier] Failed to get active display from cursor point:', err)
+    }
+  }
+
   // 1. Try to match by saved bounds first (most stable across reboots/hotplugs)
-  if (s.displayBounds) {
+  if (!display && s.displayBounds) {
     const saved = s.displayBounds
     display = displays.find(d =>
       d.bounds.x === saved.x &&

@@ -877,38 +877,29 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
               {/* Card 2: Display & Position */}
               <div className="settings-card">
                 <h3>{t.settings.notifications.displayAndPositionTitle}</h3>
-                {displays.length > 1 && (
-                  <div className="form-group">
-                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Monitor size={12} />
-                      {t.settings.notifications.displayMonitor}
-                    </label>
-                    <select
-                      className="form-select"
-                      value={local.notifications.displayId}
-                      onChange={e => {
-                        const selectedId = Number(e.target.value)
-                        const selectedDisplay = displays.find(d => d.id === selectedId)
-                        updateNotif({
-                          displayId: selectedId,
-                          displayBounds: selectedDisplay?.bounds
-                        })
-                      }}
-                    >
-                      {displays.map(d => (
-                        <option key={d.id} value={d.id}>{d.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                {displays.length === 1 && (
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <Monitor size={12} />
-                    {t.settings.notifications.singleDisplay
-                      .replace('{width}', String(displays[0]?.bounds.width))
-                      .replace('{height}', String(displays[0]?.bounds.height))}
-                  </div>
-                )}
+                    {t.settings.notifications.displayMonitor}
+                  </label>
+                  <select
+                    className="form-select"
+                    value={local.notifications.displayId}
+                    onChange={e => {
+                      const selectedId = Number(e.target.value)
+                      const selectedDisplay = displays.find(d => d.id === selectedId)
+                      updateNotif({
+                        displayId: selectedId,
+                        displayBounds: selectedDisplay?.bounds
+                      })
+                    }}
+                  >
+                    <option value={-1}>{t.settings.notifications.activeDisplay}</option>
+                    {displays.map(d => (
+                      <option key={d.id} value={d.id}>{d.label}</option>
+                    ))}
+                  </select>
+                </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">{t.settings.notifications.position}</label>
@@ -969,10 +960,16 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
                   <input
                     className="form-input"
                     type="number"
-                    min={1000}
-                    step={500}
-                    value={local.notifications.duration}
-                    onChange={e => updateNotif({ duration: Number(e.target.value) }, 300)}
+                    min={1}
+                    max={60}
+                    step={0.5}
+                    value={local.notifications.duration ? local.notifications.duration / 1000 : 6}
+                    onChange={e => {
+                      const val = Number(e.target.value)
+                      if (!isNaN(val) && val > 0) {
+                        updateNotif({ duration: Math.round(val * 1000) }, 300)
+                      }
+                    }}
                   />
                 </div>
 

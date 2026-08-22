@@ -242,6 +242,7 @@ export const translations = {
         closeOnViewInApp: 'Close all cards when viewing in the app',
         closeOnViewInAppHint: 'If off, only the notification you open is dismissed; the rest stay on screen.',
         displayMonitor: 'Display / Monitor',
+        activeDisplay: 'Active monitor (where cursor is)',
         singleDisplay: 'Single display detected ({width}×{height})',
         position: 'Position',
         positions: {
@@ -252,7 +253,7 @@ export const translations = {
           'bottom-center': 'bottom center',
           'bottom-right': 'bottom right'
         },
-        duration: 'Duration (ms)',
+        duration: 'Duration (seconds)',
         maxStack: 'Max Stack',
         snoozeDuration: 'Snooze duration',
         soundEnabled: 'Enable sound',
@@ -719,6 +720,7 @@ export const translations = {
         closeOnViewInApp: 'Cerrar todas las tarjetas al ver en la app',
         closeOnViewInAppHint: 'Si está desactivado, solo se descarta la notificación que abres; las demás siguen visibles.',
         displayMonitor: 'Pantalla / Monitor',
+        activeDisplay: 'Monitor activo (donde está el cursor)',
         singleDisplay: 'Se detectó una sola pantalla ({width}×{height})',
         position: 'Posición',
         positions: {
@@ -729,7 +731,7 @@ export const translations = {
           'bottom-center': 'inferior centro',
           'bottom-right': 'inferior derecha'
         },
-        duration: 'Duración (ms)',
+        duration: 'Duración (segundos)',
         maxStack: 'Pila máxima',
         snoozeDuration: 'Duración de posponer',
         soundEnabled: 'Habilitar sonido',
