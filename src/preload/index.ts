@@ -101,8 +101,8 @@ const api = {
     ipcRenderer.on('app:openArticle', handler)
     return () => { ipcRenderer.removeListener('app:openArticle', handler) }
   },
-  onOpenSettings: (cb: () => void) => {
-    const handler = (): void => cb()
+  onOpenSettings: (cb: (tab?: string) => void) => {
+    const handler = (_: unknown, tab?: string) => cb(tab)
     ipcRenderer.on('app:openSettings', handler)
     return () => { ipcRenderer.removeListener('app:openSettings', handler) }
   },
@@ -150,6 +150,7 @@ const api = {
   muteFeedNotifications: (feedId: string) => ipcRenderer.send('notifier:muteFeed', feedId),
   openInApp: (feedId: string, articleId: string) => ipcRenderer.send('notifier:openInApp', feedId, articleId),
   openHistoryInApp: () => ipcRenderer.send('notifier:openHistory'),
+  openSettingsInApp: (tab?: string) => ipcRenderer.send('notifier:openSettings', tab),
   setHover: (isHovering: boolean) => ipcRenderer.send('notifier:hover', isHovering),
   pickSoundFile: () => ipcRenderer.invoke('notifications:pickSoundFile'),
   onNotifierStack: (cb: (stack: object[], settings: object, language?: string, unseenCount?: number) => void) => {

@@ -176,10 +176,13 @@ export default function App(): JSX.Element {
     return unsub
   }, [])
 
-  // Listen for open settings requests (e.g. from tray menu)
+  // Listen for open settings requests (e.g. from tray menu or notifier)
   useEffect(() => {
-    const unsub = window.api.onOpenSettings(() => {
-      useUIStore.setState({ activePanel: 'settings' })
+    const unsub = window.api.onOpenSettings((tab) => {
+      useUIStore.setState({
+        activePanel: 'settings',
+        settingsInitialTab: tab || null
+      })
     })
     return unsub
   }, [])
