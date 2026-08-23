@@ -246,8 +246,8 @@ export default function NotifierApp(): JSX.Element {
     for (let i = 0; i < count; i++) {
       cardsH += cards[i].offsetHeight + (i > 0 ? 6 : 0)
     }
-    // 16px root padding + 32px topbar + 4px scrollRef paddingTop + 4px bottom padding safety
-    const totalH = cardsH + 16 + 32 + 8
+    // 16px root padding + 34px topbar + 4px scrollRef paddingTop + 4px bottom padding safety
+    const totalH = cardsH + 16 + 34 + 8
     window.api.resizeNotifier?.(totalH)
   }, [state.stack, state.settings?.maxStack])
 
