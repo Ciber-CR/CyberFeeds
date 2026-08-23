@@ -18,7 +18,7 @@ let lastSoundTime = 0
 let isHovering = false
 
 // Pixel height of each notification card (content + gap)
-const CARD_BASE_H = 92
+const CARD_BASE_H = 130
 const THUMB_H = 105 // 100px img + gap
 const CARD_GAP = 6
 const CLEAR_BAR_H = 32
@@ -802,6 +802,20 @@ export function registerNotifierIpc(): void {
     if (mainWin) {
       restoreMainWindow()
       mainWin.webContents.send('app:openSettings', tab || 'notifications')
+    }
+  })
+
+  ipcMain.on('notifier:resize', (_, height: number) => {
+    if (!notifierWindow || notifierWindow.isDestroyed() || !height || height <= 0) return
+    const s = settings
+    const winW = contentWidth(s) + SCROLLBAR_W
+    const targetH = Math.round(height)
+    const currentBounds = notifierWindow.getBounds()
+    if (currentBounds.height === targetH && currentBounds.width === winW) return
+    const { x, y } = calcPosition(winW, targetH, s)
+    notifierWindow.setBounds({ x, y, width: winW, height: targetH }, false)
+    if (process.platform === 'win32') {
+      notifierWindow.setPosition(x, y, false)
     }
   })
 
