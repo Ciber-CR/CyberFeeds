@@ -151,6 +151,7 @@ const api = {
   openInApp: (feedId: string, articleId: string) => ipcRenderer.send('notifier:openInApp', feedId, articleId),
   openHistoryInApp: () => ipcRenderer.send('notifier:openHistory'),
   openSettingsInApp: (tab?: string) => ipcRenderer.send('notifier:openSettings', tab),
+  resizeNotifier: (height: number) => ipcRenderer.send('notifier:resize', height),
   setHover: (isHovering: boolean) => ipcRenderer.send('notifier:hover', isHovering),
   pickSoundFile: () => ipcRenderer.invoke('notifications:pickSoundFile'),
   onNotifierStack: (cb: (stack: object[], settings: object, language?: string, unseenCount?: number) => void) => {

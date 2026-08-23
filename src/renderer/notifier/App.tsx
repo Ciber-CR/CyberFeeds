@@ -235,21 +235,47 @@ export default function NotifierApp(): JSX.Element {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [])
 
-  // Keep the top bar gutter aligned with the cards' right edge and track belowCount.
+  const measureAndResize = useCallback(() => {
+    const el = scrollRef.current
+    if (!el || state.stack.length === 0) return
+    const maxStack = Math.max(1, Number(state.settings?.maxStack) || 2)
+    const cards = el.querySelectorAll<HTMLElement>('.notif-card:not(.dismissing)')
+    if (cards.length === 0) return
+    let cardsH = 0
+    const count = Math.min(cards.length, maxStack)
+    for (let i = 0; i < count; i++) {
+      cardsH += cards[i].offsetHeight + (i > 0 ? 6 : 0)
+    }
+    // 16px root padding + 32px topbar + 4px scrollRef paddingTop + 4px bottom padding safety
+    const totalH = cardsH + 16 + 32 + 8
+    window.api.resizeNotifier?.(totalH)
+  }, [state.stack, state.settings?.maxStack])
+
+  // Keep the top bar gutter aligned with the cards' right edge, track belowCount, and size window.
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     setScrollbarW(el.offsetWidth - el.clientWidth)
     computeBelowCount()
-    const timer1 = requestAnimationFrame(() => computeBelowCount())
-    const timer2 = setTimeout(() => computeBelowCount(), 60)
-    const timer3 = setTimeout(() => computeBelowCount(), 200)
+    measureAndResize()
+    const timer1 = requestAnimationFrame(() => {
+      computeBelowCount()
+      measureAndResize()
+    })
+    const timer2 = setTimeout(() => {
+      computeBelowCount()
+      measureAndResize()
+    }, 60)
+    const timer3 = setTimeout(() => {
+      computeBelowCount()
+      measureAndResize()
+    }, 200)
     return () => {
       cancelAnimationFrame(timer1)
       clearTimeout(timer2)
       clearTimeout(timer3)
     }
-  }, [state.stack, state.settings?.maxStack, computeBelowCount])
+  }, [state.stack, state.settings?.maxStack, computeBelowCount, measureAndResize])
 
   const [dismissingIds, setDismissingIds] = useState<Set<string>>(() => new Set())
 
