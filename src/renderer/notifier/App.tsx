@@ -645,7 +645,7 @@ export default function NotifierApp(): JSX.Element {
             position: 'absolute',
             bottom: 8,
             left: 8,
-            right: state.stack.length > maxStack ? Math.max(scrollbarW, 16) + 8 : 8,
+            right: 8,
             height: 48,
             background:
               'linear-gradient(to top, rgba(10, 12, 16, 0.96) 0%, rgba(10, 12, 16, 0.7) 50%, transparent 100%)',
