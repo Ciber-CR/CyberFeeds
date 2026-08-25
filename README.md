@@ -2,6 +2,8 @@
 
 A performance-first, full-featured RSS reader built with Electron, React, and TypeScript.
 
+*Free and open source (GPLv3) — no ads, no tracking, and no data collection. Just enjoy it.*
+
 ## Features
 
 - **Feed Support** — RSS, Atom, and XML feeds with automatic discovery
