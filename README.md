@@ -1,5 +1,14 @@
 # CyberFeeds
 
+<p align="center">
+  <a href="https://github.com/CyberGems/CyberFeeds/releases/latest">
+    <img src="https://img.shields.io/badge/⚡_Download_Latest_Release-(Windows_64--bit)-00F2FF?style=for-the-badge&logo=windows&logoColor=000000" alt="Download Latest Release" />
+  </a>
+  <a href="https://github.com/CyberGems/CyberFeeds/releases">
+    <img src="https://img.shields.io/badge/All_Releases-Changelog-18181B?style=for-the-badge&logo=github&logoColor=white" alt="All Releases" />
+  </a>
+</p>
+
 A performance-first, full-featured RSS reader built with Electron, React, and TypeScript.
 
 *Free and open source (GPLv3) — no ads, no tracking, and no data collection. Just enjoy it.*
