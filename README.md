@@ -1,4 +1,8 @@
-# CyberFeeds
+<h1 align="center">CyberFeeds — RSS Reader</h1>
+
+<p align="center">
+  <strong>A performance-first, full-featured RSS reader</strong> — built with Electron, React, and TypeScript. Stay informed with smart notifications, full-content extraction, and a clean reading experience.
+</p>
 
 <p align="center">
   <a href="https://github.com/CyberGems/CyberFeeds/releases/latest">
@@ -9,122 +13,121 @@
   </a>
 </p>
 
-A performance-first, full-featured RSS reader built with Electron, React, and TypeScript.
+<p align="center">
+  <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License" />
+  <img src="https://img.shields.io/badge/platform-Windows-0078D4.svg?logo=windows&logoColor=white" alt="Platform" />
+  <img src="https://img.shields.io/badge/version-1.16.0-00F0FF.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/Electron-34-512BD4.svg?logo=electron&logoColor=white" alt="Electron" />
+</p>
+
+A performance-first, full-featured **RSS/Atom feed reader** built with **Electron + React + TypeScript**. Subscribe to feeds, read articles with full-content extraction, manage your reading flow with star/read/unread/trash, and receive smart notifications when new articles are published.
 
 *Free and open source (GPLv3) — no ads, no tracking, and no data collection. Just enjoy it.*
 
-## Features
+---
 
-- **Feed Support** — RSS, Atom, and XML feeds with automatic discovery
-- **Reddit Integration** — Native support for subreddit and user feeds with fallback chain (RSS → JSON API)
-- **Background Polling** — Configurable refresh intervals with per-feed and per-folder pause/resume
-- **Full-Content Extraction** — Fetches complete article content via worker threads
-- **Smart Notifications** — Custom notification window with batching, keyword filtering, snooze, and multi-monitor support
-- **System Tray** — Minimize to tray, quick actions menu, activity indicator
+## 📡 Why CyberFeeds?
+
+Most RSS readers are either slow web wrappers or abandoned projects. CyberFeeds is built from the ground up for **performance and usability** — worker threads keep fetching responsive, SQLite WAL mode handles thousands of articles smoothly, and a custom notification system ensures you never miss important updates.
+
+| Need | Solution |
+|---|---|
+| Follow RSS, Atom, and Reddit | Native support for all formats + Reddit subreddits and user feeds |
+| Read full articles | Content extraction via worker threads — no truncated summaries |
+| Stay updated | Smart notifications with keyword filtering, snooze, and multi-monitor support |
+| Manage large libraries | Virtualized lists, search, star/read/unread, auto-cleanup |
+| Migrate from another reader | OPML import/export with folder structure preserved |
+| Keep your data | Local SQLite database — no cloud, no accounts, no tracking |
+
+---
+
+## ✨ Key Features
+
+### 📰 Feed Management
+- **Universal Feed Support** — RSS, Atom, and XML with automatic discovery
+- **Reddit Integration** — Native subreddit and user feed support with fallback chain (RSS → JSON API)
 - **OPML Import/Export** — Migrate your feeds with folder structure preserved
-- **Backup & Restore** — JSON-based backup of feeds, folders, and settings
-- **Article Management** — Star, read/unread, soft-delete with 30-day trash auto-purge
-- **Multiple Layouts** — Three-panel, two-panel, one-panel, and horizontal-split views
-- **Virtualized Lists** — Smooth scrolling for large article libraries
-- **Bilingual UI** — English and Spanish
-- **Auto Updates** — Built-in update checker with manual download control
-- **Keyboard Shortcuts** — Configurable global hotkeys
+- **Feed Preview** — Preview feed content before subscribing
 - **Feed Doctor** — Diagnostic scanner for connectivity and parsing issues
+- **Background Polling** — Configurable refresh intervals with per-feed and per-folder pause/resume
 
-## Tech Stack
+### 📖 Article Management
+- **Full-Content Extraction** — Fetch complete article content via worker threads
+- **Star/Unstar** — Mark articles as favorites
+- **Read/Unread Tracking** — Know what you've read at a glance
+- **Soft Delete** — Move articles to trash with 30-day auto-purge
+- **Instant Search** — Search articles with instant or Enter-to-search modes
+- **Virtualized Lists** — Smooth scrolling for large article libraries
+- **Multiple Layouts** — Three-panel, two-panel, one-panel, and horizontal-split views
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Electron 34 |
-| Build | electron-vite 5 (Vite 6) |
-| UI | React 19 + TypeScript 5.9 |
-| State | Zustand 5 |
-| Database | better-sqlite3 (WAL mode) |
-| Parsing | rss-parser, fast-xml-parser, linkedom |
-| Virtualization | TanStack Virtual |
-| Icons | Lucide React |
-| Packaging | electron-builder (NSIS) |
+### 🔔 Smart Notifications
+- **Custom Notification Window** — Built-in notifier with batching and action buttons
+- **Keyword Filtering** — Only get notified about topics that matter
+- **Snooze** — Pause notifications for a configurable duration
+- **Multi-Monitor Support** — Choose which display shows notifications
+- **Sound Alerts** — Custom notification sounds
+- **Fullscreen Detection** — Suppress notifications during games or videos
 
-## Prerequisites
+### 🖥️ Desktop Integration
+- **System Tray** — Minimize to tray, quick actions menu, activity indicator
+- **Global Hotkeys** — Configurable shortcuts (default show/hide: `Alt+Shift+S`)
+- **Auto-Start** — Start with Windows option
+- **Auto-Updates** — Built-in update checker with manual download control
+- **Custom Browser** — Open links in a user-selected browser
 
-- [Node.js](https://nodejs.org/) 18+
-- [npm](https://www.npmjs.com/)
+### 🎨 Customization
+- **7 Themes** — Dark, Light, Dracula, Nord, Hacker, Monokai, and Default
+- **Reading Preferences** — Font size, line height, max width, reading theme (Default, Sepia, Dark)
+- **Bilingual UI** — Full English and Spanish interface
 
-## Installation
+### 💾 Data Management
+- **Backup & Restore** — JSON-based backup of feeds, folders, and settings
+- **Auto-Cleanup** — Automatically delete old read articles
+- **SQLite Database** — High-performance local storage with WAL mode
 
-```bash
-npm install
-```
+---
 
-> **Note:** The `postinstall` script automatically rebuilds `better-sqlite3` for the current Electron version.
+## 🛠️ Tech Stack & Architecture
 
-## Development
-
-```bash
-npm run dev
-```
-
-Starts the app in development mode with hot reload for both main and renderer processes.
-
-## Build
-
-```bash
-# Production build
-npm run build
-
-# Build Windows installer
-npm run build:win
-
-# Build without installer (directory output)
-npm run build:unpack
-```
-
-## Code Quality
-
-```bash
-# Type checking
-npm run typecheck
-
-# Linting
-npm run lint
-
-# Formatting
-npm run format
-```
-
-## Project Structure
+- **Platform:** Windows (primary target), macOS, Linux
+- **Framework:** Electron 34 + React 19 + TypeScript
+- **Build:** electron-vite 5 (Vite 6)
+- **State:** Zustand 5
+- **Database:** better-sqlite3 (WAL mode)
+- **Virtualization:** TanStack Virtual
+- **Packaging:** electron-builder (NSIS)
 
 ```
 src/
-├── main/                  # Electron main process
-│   ├── index.ts           # App initialization, window creation
-│   ├── ipc.ts             # IPC channel handlers
-│   ├── db.ts              # SQLite database layer
-│   ├── feed-parse.ts      # Feed parsing with fallbacks
-│   ├── polling.ts         # Background polling orchestration
-│   ├── tray.ts            # System tray, shortcuts, context menu
-│   ├── notifications.ts   # Custom notifier window
-│   ├── updater.ts         # Auto-update lifecycle
-│   ├── opml.ts            # OPML import/export
+├── main/                  Electron main process
+│   ├── index.ts           App initialization, window creation
+│   ├── ipc.ts             IPC channel handlers
+│   ├── db.ts              SQLite database layer
+│   ├── feed-parse.ts      Feed parsing with fallbacks
+│   ├── polling.ts         Background polling orchestration
+│   ├── tray.ts            System tray, shortcuts, context menu
+│   ├── notifications.ts   Custom notifier window
+│   ├── updater.ts         Auto-update lifecycle
+│   ├── opml.ts            OPML import/export
 │   └── workers/
-│       ├── feed-fetcher.worker.ts      # Parallel feed fetching
-│       └── content-extractor.worker.ts # Article content extraction
-├── preload/               # Context bridge API
-│   └── index.ts           # window.api exposure
-├── renderer/              # React application
-│   ├── notifier/          # Notification window React app
+│       ├── feed-fetcher.worker.ts      Parallel feed fetching
+│       └── content-extractor.worker.ts Article content extraction
+├── preload/               Context bridge API
+│   └── index.ts           window.api exposure
+├── renderer/              React application
+│   ├── notifier/          Notification window React app
 │   └── src/
-│       ├── components/    # UI components
-│       ├── hooks/         # Custom React hooks
-│       ├── store/         # Zustand stores
-│       └── styles/        # Global CSS and themes
-└── shared/                # Isolated shared code
-    ├── types.ts           # Shared TypeScript interfaces
-    ├── translations.ts    # EN/ES UI strings
-    └── reddit.ts          # Reddit URL handling
+│       ├── components/    UI components
+│       ├── hooks/         Custom React hooks
+│       ├── store/         Zustand stores
+│       └── styles/        Global CSS and themes
+└── shared/                Isolated shared code
+    ├── types.ts           Shared TypeScript interfaces
+    ├── translations.ts    EN/ES UI strings
+    └── reddit.ts          Reddit URL handling
 ```
 
-## Architecture
+### Architecture Highlights
 
 - **Worker Threads** — Feed fetching and content extraction run in dedicated workers to keep the main process responsive
 - **Optimistic UI** — Article state updates immediately in the renderer, then syncs with the main process
@@ -132,7 +135,78 @@ src/
 - **Context Bridge** — Strict preload API surface with no Node integration in renderer
 - **WAL Mode SQLite** — High-performance concurrent reads with write-ahead logging
 
-## Donate
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+
+- [npm](https://www.npmjs.com/)
+
+### Development
+
+```bash
+npm install
+npm run dev
+```
+
+> **Note:** The `postinstall` script automatically rebuilds `better-sqlite3` for the current Electron version.
+
+### Build
+
+```bash
+npm run build          # Production build
+npm run build:win      # Windows installer
+npm run build:unpack   # Directory output (no installer)
+```
+
+### Code Quality
+
+```bash
+npm run typecheck      # Type checking
+npm run lint           # Linting
+npm run format         # Formatting
+```
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action | Scope |
+|---|---|---|
+| `Alt+Shift+S` | Show/hide CyberFeeds | Global |
+| `Escape` | Close panel | Application |
+
+Additional shortcuts (Notifications, Settings, Fetch Now) are configurable in Settings → Keyboard.
+
+---
+
+## ❓ Frequently Asked Questions
+
+### What feed formats does CyberFeeds support?
+
+RSS, Atom, and XML feeds. It also supports Reddit subreddits and user feeds natively, with a fallback chain from RSS to the Reddit JSON API.
+
+### Can I import my feeds from another reader?
+
+Yes. CyberFeeds supports OPML import and export, preserving your folder structure. Go to the sidebar menu and select **Import OPML**.
+
+### How do notifications work?
+
+CyberFeeds has a custom notification system that shows a native-looking popup when new articles are published. You can filter notifications by keywords, snooze them, choose position and monitor, and suppress them during fullscreen applications.
+
+### Where is my data stored?
+
+All data is stored locally in a SQLite database. No cloud sync, no accounts, no tracking. You can export a JSON backup at any time from Settings → Maintenance.
+
+### Does CyberFeeds support macOS and Linux?
+
+Windows is the primary target, but Electron builds for macOS and Linux are supported. Check the releases page for available platforms.
+
+---
+
+## ❤️ Donate
 
 **CyberFeeds** is a personal open-source project within the **CyberGems** suite. I've spent thousands of hours building and refining it — both for my own use and to share premium-quality software with the world for free.
 
@@ -156,9 +230,12 @@ If you'd like to support this work, a donation would mean a lot. Thank you! 🙏
 
 </details>
 
-## License
+---
 
-This project is licensed under the [GNU General Public License v3.0](LICENSE).
+## 📄 License
+
+CyberFeeds is distributed under the terms of the GNU General Public License v3.0. See [LICENSE](LICENSE) for the full license text.
+
 ---
 
 <div align="center" style="background:#0D0F17; border:1px solid rgba(0,255,255,0.12); border-radius:12px; padding:28px 20px; margin-top:32px;">
@@ -168,4 +245,3 @@ This project is licensed under the [GNU General Public License v3.0](LICENSE).
 Made by [**CyberGems**](https://cybergems.org)
 
 </div>
-
