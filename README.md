@@ -1,10 +1,6 @@
 <h1 align="center">CyberFeeds — RSS Reader</h1>
 
 <p align="center">
-  <strong>A performance-first, full-featured RSS reader</strong> — built with Electron, React, and TypeScript. Stay informed with smart notifications, full-content extraction, and a clean reading experience.
-</p>
-
-<p align="center">
   <a href="https://github.com/CyberGems/CyberFeeds/releases/latest">
     <img src="https://img.shields.io/badge/⚡_Download_Latest_Release-(Windows_64--bit)-00F2FF?style=for-the-badge&logo=windows&logoColor=000000" alt="Download Latest Release" />
   </a>
