@@ -86,10 +86,16 @@ const TopBar = memo(function TopBar(): JSX.Element {
 
   return (
     <div className="topbar">
-      <div className="topbar-brand">
-        <img src={logoPng} alt="CyberFeeds" style={{ width: 16, height: 16, objectFit: 'contain', marginRight: 6 }} />
-        <span>Cyber<span className="brand-feeds">Feeds</span></span>
-      </div>
+      <Tooltip label={t.topBar.about} placement="bottom">
+        <button
+          className="topbar-brand"
+          onClick={() => openPanel('about')}
+          aria-label={t.topBar.about}
+        >
+          <img src={logoPng} alt="CyberFeeds" style={{ width: 16, height: 16, objectFit: 'contain', marginRight: 6 }} />
+          <span>Cyber<span className="brand-feeds">Feeds</span></span>
+        </button>
+      </Tooltip>
       <div className="topbar-drag" />
 
       <Tooltip label={t.topBar.notificationHistory} placement="bottom">

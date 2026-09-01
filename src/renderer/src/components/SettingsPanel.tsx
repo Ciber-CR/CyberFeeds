@@ -436,10 +436,10 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Elem
 
   const themes: Array<{ id: AppSettings['theme']; label: string }> = [
     { id: 'dark', label: t.settings.general.themes.dark },
+    { id: 'grayscale', label: t.settings.general.themes.grayscale },
     { id: 'light', label: t.settings.general.themes.light },
     { id: 'dracula', label: t.settings.general.themes.dracula },
     { id: 'nord', label: t.settings.general.themes.nord },
-    { id: 'hacker', label: t.settings.general.themes.hacker },
     { id: 'monokai', label: t.settings.general.themes.monokai }
   ]
 

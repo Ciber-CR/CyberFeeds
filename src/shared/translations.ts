@@ -213,12 +213,12 @@ export const translations = {
         pollOnlyWhenUnfocusedHint: 'Keeps your place in the list while you read. Automatic fetching resumes when CyberFeeds is in the background or unfocused.',
         theme: 'Theme',
         themes: {
-          dark: 'Dark (Default)',
-          light: 'Light',
-          dracula: 'Dracula',
-          nord: 'Nord',
-          hacker: 'Hacker',
-          monokai: 'Monokai'
+          dark: 'CyberFeeds',
+          grayscale: 'Gray',
+          light: 'White',
+          dracula: 'Purple',
+          nord: 'Blue',
+          monokai: 'Yellow'
         },
         layout: 'Layout',
         layouts: {
@@ -717,12 +717,12 @@ export const translations = {
         pollOnlyWhenUnfocusedHint: 'Conserva tu posición en la lista mientras lees. La obtención automática se reanuda cuando CyberFeeds pasa a segundo plano o pierde el foco.',
         theme: 'Tema',
         themes: {
-          dark: 'Oscuro (Predeterminado)',
-          light: 'Claro',
-          dracula: 'Dracula',
-          nord: 'Nord',
-          hacker: 'Hacker',
-          monokai: 'Monokai'
+          dark: 'CyberFeeds',
+          grayscale: 'Gris',
+          light: 'Blanco',
+          dracula: 'Morado',
+          nord: 'Azul',
+          monokai: 'Amarillo'
         },
         layout: 'Diseño',
         layouts: {
