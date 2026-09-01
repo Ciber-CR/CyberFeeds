@@ -1,4 +1,4 @@
-"""Refresh build/ and resources/ icons from artifacts/icon.ico.
+"""Refresh build/ and resources/ icons from artifacts/icon.ico and tray_frame*.png.
 
 Windows GDI (System.Drawing.Icon) must not be used:
   - the default constructor often loads 32x32
@@ -7,7 +7,7 @@ Windows GDI (System.Drawing.Icon) must not be used:
 
 The tray is 16 logical pixels. At 200% DPI that is 32 physical pixels, so
 tray.png is the 32x32 frame. Runtime code downscales resources/icon.png (256)
-to 16 * scaleFactor.
+or resources/tray-frame-*.png (256) to 16 * scaleFactor.
 """
 from __future__ import annotations
 
@@ -41,25 +41,31 @@ def save_frame(ico: Image.Image, size: tuple[int, int], dest: Path) -> None:
     print(f'  {dest.relative_to(ROOT)}  {w}x{h}')
 
 
-def generate_busy_overlay(src_png: Path, dest_png: Path, is_256: bool) -> None:
-    from PIL import ImageDraw
-    img = Image.open(src_png).convert('RGBA')
-    overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay)
-    if is_256:
-        # 256x256 frame: top-right LED
-        draw.ellipse([160, 10, 245, 95], fill=(13, 17, 23, 230), outline=(0, 229, 255, 255), width=6)
-        draw.ellipse([175, 25, 230, 80], fill=(0, 229, 255, 255))
-        draw.ellipse([192, 42, 213, 63], fill=(255, 255, 255, 255))
-    else:
-        # 32x32 frame: top-right LED
-        draw.ellipse([19, 1, 31, 13], fill=(13, 17, 23, 230), outline=(0, 229, 255, 255), width=1)
-        draw.ellipse([21, 3, 29, 11], fill=(0, 229, 255, 255))
-        draw.ellipse([23, 5, 27, 9], fill=(255, 255, 255, 255))
-    res = Image.alpha_composite(img, overlay)
-    res.save(dest_png, format='PNG')
-    w, h = png_size(dest_png)
-    print(f'  {dest_png.relative_to(ROOT)}  {w}x{h} (busy LED overlay)')
+def process_tray_frames() -> None:
+    for i in range(1, 5):
+        src_frame = ROOT / 'artifacts' / f'tray_frame{i}.png'
+        if src_frame.is_file():
+            dest_256 = ROOT / 'resources' / f'tray-frame-{i}.png'
+            dest_32 = ROOT / 'resources' / f'tray-frame-{i}-32.png'
+
+            img = Image.open(src_frame).convert('RGBA')
+            dest_256.parent.mkdir(parents=True, exist_ok=True)
+            img.save(dest_256, format='PNG')
+            w, h = png_size(dest_256)
+            print(f'  {dest_256.relative_to(ROOT)}  {w}x{h}')
+
+            img_32 = img.resize((32, 32), Image.Resampling.LANCZOS)
+            img_32.save(dest_32, format='PNG')
+            w32, h32 = png_size(dest_32)
+            print(f'  {dest_32.relative_to(ROOT)}  {w32}x{h32}')
+
+    # Maintain icon-busy / tray-busy for backward compatibility
+    f1_256 = ROOT / 'resources' / 'tray-frame-1.png'
+    f1_32 = ROOT / 'resources' / 'tray-frame-1-32.png'
+    if f1_256.is_file():
+        shutil.copy2(f1_256, ROOT / 'resources' / 'icon-busy.png')
+    if f1_32.is_file():
+        shutil.copy2(f1_32, ROOT / 'resources' / 'tray-busy.png')
 
 
 def main() -> None:
@@ -77,8 +83,7 @@ def main() -> None:
         save_frame(ico, (256, 256), ROOT / 'resources' / 'icon.png')
         save_frame(ico, (32, 32), ROOT / 'resources' / 'tray.png')
 
-    generate_busy_overlay(ROOT / 'resources' / 'icon.png', ROOT / 'resources' / 'icon-busy.png', is_256=True)
-    generate_busy_overlay(ROOT / 'resources' / 'tray.png', ROOT / 'resources' / 'tray-busy.png', is_256=False)
+    process_tray_frames()
 
     print('done')
 

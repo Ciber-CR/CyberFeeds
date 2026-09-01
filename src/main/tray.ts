@@ -11,29 +11,60 @@ let _mainWindow: BrowserWindow | null = null
 let registeredGlobalShortcuts: string[] = []
 
 const activeActivities = new Set<'polling' | 'batch'>()
-let blinkTimer: NodeJS.Timeout | null = null
-let isBlinkStateOn = false
+let animTimer: NodeJS.Timeout | null = null
+let currentFrame = 1
 
-function loadTrayImage(busy = false): Electron.NativeImage {
+let currentScaleFactor = 0
+let cachedIdleImage: Electron.NativeImage | null = null
+const cachedFrames: Electron.NativeImage[] = []
+
+function loadTrayFrame(frameNumber?: number): Electron.NativeImage {
   const resourcesDir = path.join(__dirname, '../../resources')
-  // Windows tray is 16 logical px; use physical px so HiDPI is not an upscaled 16x16.
-  const px = Math.max(16, Math.round(16 * screen.getPrimaryDisplay().scaleFactor))
-  const filename = busy ? 'icon-busy.png' : 'icon.png'
-  const trayFilename = busy ? 'tray-busy.png' : 'tray.png'
+  const scale = screen.getPrimaryDisplay().scaleFactor
+  const px = Math.max(16, Math.round(16 * scale))
 
-  const hiRes = nativeImage.createFromPath(path.join(resourcesDir, filename))
-  if (!hiRes.isEmpty()) {
-    return hiRes.resize({ width: px, height: px, quality: 'best' })
+  // Invalidate cache if DPI / scale factor changed
+  if (scale !== currentScaleFactor) {
+    currentScaleFactor = scale
+    cachedIdleImage = null
+    cachedFrames.length = 0
   }
 
-  const trayPng = nativeImage.createFromPath(path.join(resourcesDir, trayFilename))
+  if (frameNumber && frameNumber >= 1 && frameNumber <= 4) {
+    if (cachedFrames[frameNumber]) {
+      return cachedFrames[frameNumber]
+    }
+    const hiRes = nativeImage.createFromPath(path.join(resourcesDir, `tray-frame-${frameNumber}.png`))
+    if (!hiRes.isEmpty()) {
+      const resized = hiRes.resize({ width: px, height: px, quality: 'best' })
+      cachedFrames[frameNumber] = resized
+      return resized
+    }
+    const trayPng = nativeImage.createFromPath(path.join(resourcesDir, `tray-frame-${frameNumber}-32.png`))
+    if (!trayPng.isEmpty()) {
+      const resized = trayPng.getSize().width === px ? trayPng : trayPng.resize({ width: px, height: px, quality: 'best' })
+      cachedFrames[frameNumber] = resized
+      return resized
+    }
+  }
+
+  if (cachedIdleImage) return cachedIdleImage
+
+  const hiRes = nativeImage.createFromPath(path.join(resourcesDir, 'icon.png'))
+  if (!hiRes.isEmpty()) {
+    cachedIdleImage = hiRes.resize({ width: px, height: px, quality: 'best' })
+    return cachedIdleImage
+  }
+
+  const trayPng = nativeImage.createFromPath(path.join(resourcesDir, 'tray.png'))
   if (!trayPng.isEmpty()) {
     const { width } = trayPng.getSize()
-    if (width === px) return trayPng
-    return trayPng.resize({ width: px, height: px, quality: 'best' })
+    cachedIdleImage = width === px ? trayPng : trayPng.resize({ width: px, height: px, quality: 'best' })
+    return cachedIdleImage
   }
 
-  return nativeImage.createFromPath(path.join(resourcesDir, 'icon.ico'))
+  cachedIdleImage = nativeImage.createFromPath(path.join(resourcesDir, 'icon.ico'))
+  return cachedIdleImage
 }
 
 function updateTrayTooltip(busy: boolean): void {
@@ -63,47 +94,47 @@ export function setTrayActivity(source: 'polling' | 'batch', active: boolean): v
     activeActivities.delete(source)
   }
 
-  const shouldBlink = activeActivities.size > 0
+  const isBusy = activeActivities.size > 0
 
-  if (shouldBlink) {
-    if (!blinkTimer) {
-      isBlinkStateOn = true
+  if (isBusy) {
+    if (!animTimer) {
+      currentFrame = 1
       if (tray && !tray.isDestroyed()) {
         try {
-          tray.setImage(loadTrayImage(true))
+          tray.setImage(loadTrayFrame(currentFrame))
           updateTrayTooltip(true)
         } catch {
           /* ignore */
         }
       }
-      blinkTimer = setInterval(() => {
+      animTimer = setInterval(() => {
         if (!tray || tray.isDestroyed()) {
-          if (blinkTimer) {
-            clearInterval(blinkTimer)
-            blinkTimer = null
+          if (animTimer) {
+            clearInterval(animTimer)
+            animTimer = null
           }
           return
         }
-        isBlinkStateOn = !isBlinkStateOn
+        currentFrame = (currentFrame % 4) + 1
         try {
-          tray.setImage(loadTrayImage(isBlinkStateOn))
+          tray.setImage(loadTrayFrame(currentFrame))
         } catch {
-          if (blinkTimer) {
-            clearInterval(blinkTimer)
-            blinkTimer = null
+          if (animTimer) {
+            clearInterval(animTimer)
+            animTimer = null
           }
         }
-      }, 900)
+      }, 180)
     }
   } else {
-    if (blinkTimer) {
-      clearInterval(blinkTimer)
-      blinkTimer = null
+    if (animTimer) {
+      clearInterval(animTimer)
+      animTimer = null
     }
-    isBlinkStateOn = false
+    currentFrame = 1
     if (tray && !tray.isDestroyed()) {
       try {
-        tray.setImage(loadTrayImage(false))
+        tray.setImage(loadTrayFrame())
         updateTrayTooltip(false)
       } catch {
         /* ignore */
@@ -113,7 +144,7 @@ export function setTrayActivity(source: 'polling' | 'batch', active: boolean): v
 }
 
 export function createTray(mainWindow: BrowserWindow): Tray {
-  tray = new Tray(loadTrayImage(false))
+  tray = new Tray(loadTrayFrame())
   _mainWindow = mainWindow
 
   buildMenu()
@@ -338,9 +369,9 @@ function buildMenu(): void {
 }
 
 export function destroyTray(): void {
-  if (blinkTimer) {
-    clearInterval(blinkTimer)
-    blinkTimer = null
+  if (animTimer) {
+    clearInterval(animTimer)
+    animTimer = null
   }
   unregisterGlobalShortcuts()
   if (tray && !tray.isDestroyed()) {
