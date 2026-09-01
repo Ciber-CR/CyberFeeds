@@ -231,7 +231,7 @@ body {
   -webkit-app-region: no-drag;
 }
 .brand-feeds {
-  color: #EF8021;
+  color: #00D8F1;
 }
 .topbar-brand svg {
   color: var(--accent);
@@ -528,10 +528,10 @@ body {
   height: 42px;
   position: relative;
   border: 2px solid var(--border-muted);
-  border-top-color: #EF8021;
-  border-right-color: rgba(239, 128, 33, 0.42);
+  border-top-color: #00D8F1;
+  border-right-color: rgba(0, 216, 241, 0.42);
   border-radius: 50%;
-  box-shadow: 0 0 18px rgba(239, 128, 33, 0.12);
+  box-shadow: 0 0 18px rgba(0, 216, 241, 0.12);
   animation: feed-loading-spin 0.9s linear infinite;
 }
 .feed-loading-orbit-dot {
@@ -542,8 +542,8 @@ body {
   left: 50%;
   margin-left: -3px;
   border-radius: 50%;
-  background: #EF8021;
-  box-shadow: 0 0 10px rgba(239, 128, 33, 0.75);
+  background: #00D8F1;
+  box-shadow: 0 0 10px rgba(0, 216, 241, 0.75);
 }
 .feed-loading-label {
   font-size: 12px;
