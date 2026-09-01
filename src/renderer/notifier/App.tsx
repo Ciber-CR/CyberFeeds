@@ -146,10 +146,28 @@ export default function NotifierApp(): JSX.Element {
     }
   }
 
+  const [confirmMuteFeedId, setConfirmMuteFeedId] = useState<string | null>(null)
+  const confirmMuteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleMuteClick = (feedId: string): void => {
+    if (confirmMuteFeedId !== feedId) {
+      if (confirmMuteTimerRef.current) clearTimeout(confirmMuteTimerRef.current)
+      setConfirmMuteFeedId(feedId)
+      confirmMuteTimerRef.current = setTimeout(() => {
+        setConfirmMuteFeedId(null)
+      }, 3500)
+    } else {
+      if (confirmMuteTimerRef.current) clearTimeout(confirmMuteTimerRef.current)
+      setConfirmMuteFeedId(null)
+      window.api.muteFeedNotifications(feedId)
+    }
+  }
+
   // Clean up on unmount
   useEffect(() => {
     return () => {
       if (hoverOffTimer.current) clearTimeout(hoverOffTimer.current)
+      if (confirmMuteTimerRef.current) clearTimeout(confirmMuteTimerRef.current)
       stopCountdown()
     }
   }, [stopCountdown])
@@ -592,14 +610,33 @@ export default function NotifierApp(): JSX.Element {
                 </button>
               </Tooltip>
               {item.feedId && (
-                <Tooltip label={t.notifier.muteTooltip} placement="bottom">
+                <Tooltip
+                  label={
+                    confirmMuteFeedId === item.feedId
+                      ? t.notifier.confirmMuteTooltip
+                      : t.notifier.muteTooltip
+                  }
+                  placement="bottom"
+                >
                   <button
                     className="notif-btn"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                    onClick={() => window.api.muteFeedNotifications(item.feedId!)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      ...(confirmMuteFeedId === item.feedId
+                        ? {
+                            borderColor: '#e3b341',
+                            color: '#e3b341',
+                            background: 'rgba(227, 179, 65, 0.15)',
+                            fontWeight: 600
+                          }
+                        : {})
+                    }}
+                    onClick={() => handleMuteClick(item.feedId!)}
                   >
                     <BellOff size={11} />
-                    {t.notifier.mute}
+                    {confirmMuteFeedId === item.feedId ? t.notifier.confirmMute : t.notifier.mute}
                   </button>
                 </Tooltip>
               )}

@@ -16,6 +16,7 @@ interface UIState {
   layout: 'three-panel' | 'two-panel' | 'one-panel' | 'horizontal-split'
   isFetching: boolean
   pendingFeedId: string | null
+  aboutAutoCheck: boolean
 
   selectFeed: (id: string | null, options?: { unreadOnly?: boolean; readOnly?: boolean }) => void
   selectArticle: (id: string | null) => void
@@ -27,6 +28,7 @@ interface UIState {
   setLayout: (v: 'three-panel' | 'two-panel' | 'one-panel' | 'horizontal-split') => void
   setFetching: (v: boolean) => void
   setPendingFeedId: (id: string | null) => void
+  setAboutAutoCheck: (v: boolean) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -43,6 +45,7 @@ export const useUIStore = create<UIState>((set) => ({
   layout: 'three-panel',
   isFetching: false,
   pendingFeedId: null,
+  aboutAutoCheck: false,
 
   selectFeed: (id, options) =>
     set((state) => ({
@@ -63,11 +66,12 @@ export const useUIStore = create<UIState>((set) => ({
     editFeedId: panel === 'editFeed' ? (id || null) : null,
     editFolderId: panel === 'editFolder' ? (id || null) : null
   })),
-  closePanel: () => set({ activePanel: null, editFeedId: null, editFolderId: null }),
+  closePanel: () => set({ activePanel: null, editFeedId: null, editFolderId: null, aboutAutoCheck: false }),
   setUnreadOnly: (v) => set({ unreadOnly: v }),
   setReadOnly: (v) => set(v ? { readOnly: true, unreadOnly: false } : { readOnly: false }),
   setSearch: (v) => set({ search: v }),
   setLayout: (v) => set({ layout: v }),
   setFetching: (v) => set({ isFetching: v }),
-  setPendingFeedId: (id) => set({ pendingFeedId: id })
+  setPendingFeedId: (id) => set({ pendingFeedId: id }),
+  setAboutAutoCheck: (v) => set({ aboutAutoCheck: v })
 }))

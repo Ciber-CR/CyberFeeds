@@ -292,9 +292,9 @@ function buildMenu(): void {
   const iconAbout = nativeImage.createFromPath(path.join(iconsDir, 'about.png'))
   const iconUpdate = nativeImage.createFromPath(path.join(iconsDir, 'update.png'))
 
-  const brandIcon = nativeImage.createFromPath(path.join(resourcesDir, 'tray.png')).resize({ width: 16, height: 16, quality: 'best' })
+  const brandIcon = nativeImage.createFromPath(path.join(iconsDir, 'brand.png'))
   const iconBrand = brandIcon.isEmpty()
-    ? nativeImage.createFromPath(path.join(resourcesDir, 'icon.ico')).resize({ width: 16, height: 16, quality: 'best' })
+    ? nativeImage.createFromPath(path.join(resourcesDir, 'tray.png')).resize({ width: 16, height: 16, quality: 'best' })
     : brandIcon
 
   const isVisible = _mainWindow && !_mainWindow.isDestroyed() && _mainWindow.isVisible()
@@ -311,7 +311,7 @@ function buildMenu(): void {
         const win = _mainWindow
         if (!win || win.isDestroyed()) return
         restoreMainWindow()
-        win.webContents.send('app:openAbout')
+        win.webContents.send('app:openAbout', { checkUpdates: false })
       }
     },
     { type: 'separator' },
@@ -382,7 +382,7 @@ function buildMenu(): void {
         {
           label: t.faq,
           icon: iconFaq,
-          click: () => { void shell.openExternal('https://github.com/CyberGems/CyberFeeds/wiki') }
+          click: () => { void shell.openExternal('https://github.com/CyberGems/CyberFeeds/wiki/FAQ') }
         },
         {
           label: t.changelog,
@@ -402,7 +402,7 @@ function buildMenu(): void {
             const win = _mainWindow
             if (!win || win.isDestroyed()) return
             restoreMainWindow()
-            win.webContents.send('app:openAbout')
+            win.webContents.send('app:openAbout', { checkUpdates: false })
           }
         },
         {
@@ -412,7 +412,7 @@ function buildMenu(): void {
             const win = _mainWindow
             if (!win || win.isDestroyed()) return
             restoreMainWindow()
-            win.webContents.send('app:openAbout')
+            win.webContents.send('app:openAbout', { checkUpdates: true })
           }
         }
       ]

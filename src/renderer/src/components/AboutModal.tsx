@@ -41,7 +41,7 @@ function platformLabel(platform: string): string {
 }
 
 export default function AboutModal(): JSX.Element {
-  const { closePanel } = useUIStore()
+  const { closePanel, aboutAutoCheck, setAboutAutoCheck } = useUIStore()
   const { settings, update } = useSettingsStore()
   const [versions, setVersions] = useState<AppVersions | null>(null)
   const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
@@ -50,18 +50,9 @@ export default function AboutModal(): JSX.Element {
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { t, language } = useTranslation()
 
-  useEffect(() => {
-    window.api.getVersions().then((v) => setVersions(v as AppVersions))
-    const off = window.api.onUpdateStatus((s) => setStatus(s as UpdateStatus))
-    return () => {
-      off()
-      if (copiedTimer.current) clearTimeout(copiedTimer.current)
-    }
-  }, [])
-
   const appVersion = versions?.app || ''
 
-  const handleCheck = async (): Promise<void> => {
+  const handleCheck = useCallback(async (): Promise<void> => {
     setStatus({ state: 'checking' })
     try {
       const res = await window.api.checkForUpdates()
@@ -79,7 +70,23 @@ export default function AboutModal(): JSX.Element {
     } catch (e) {
       setStatus({ state: 'error', message: String((e as Error)?.message || e) })
     }
-  }
+  }, [appVersion])
+
+  useEffect(() => {
+    window.api.getVersions().then((v) => setVersions(v as AppVersions))
+    const off = window.api.onUpdateStatus((s) => setStatus(s as UpdateStatus))
+    return () => {
+      off()
+      if (copiedTimer.current) clearTimeout(copiedTimer.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (aboutAutoCheck) {
+      setAboutAutoCheck(false)
+      handleCheck()
+    }
+  }, [aboutAutoCheck, handleCheck, setAboutAutoCheck])
 
   const handleDownload = async (): Promise<void> => {
     setStatus({ state: 'downloading', percent: 0 })

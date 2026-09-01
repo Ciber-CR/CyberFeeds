@@ -189,8 +189,8 @@ export default function App(): JSX.Element {
 
   // Listen for open about requests (e.g. from tray branding, like CyberViewer)
   useEffect(() => {
-    const unsub = window.api.onOpenAbout(() => {
-      useUIStore.setState({ activePanel: 'about' })
+    const unsub = window.api.onOpenAbout((opts) => {
+      useUIStore.setState({ activePanel: 'about', aboutAutoCheck: !!opts?.checkUpdates })
     })
     return unsub
   }, [])
