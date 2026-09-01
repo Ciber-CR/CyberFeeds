@@ -303,6 +303,26 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
     }
   }, [article?.id, fullHtml, article?.content])
 
+  // Hide broken <img> tags that fail to load or error (CORS / 404 / dead URLs).
+  useEffect(() => {
+    const root = contentRef.current
+    if (!root) return
+    const handleImgError = (e: Event): void => {
+      const target = e.target as HTMLElement
+      if (target && target.tagName === 'IMG') {
+        const figure = target.closest('figure')
+        target.remove()
+        if (figure && figure.querySelectorAll('img').length === 0 && !figure.textContent?.trim()) {
+          figure.remove()
+        }
+      }
+    }
+    root.addEventListener('error', handleImgError, true)
+    return () => {
+      root.removeEventListener('error', handleImgError, true)
+    }
+  }, [article?.id, fullHtml, article?.content])
+
   const handleContentScroll = useCallback(() => {
     if (scrollRaf.current != null) return
     scrollRaf.current = requestAnimationFrame(() => {
@@ -597,6 +617,10 @@ const ArticleViewer = memo(function ArticleViewer(): JSX.Element {
               <img
                 src={article.thumbnail}
                 alt={article.title}
+                onError={(e) => {
+                  const el = (e.target as HTMLElement).closest('.reader-featured-image') as HTMLElement | null
+                  if (el) el.remove()
+                }}
               />
             </div>
           )}

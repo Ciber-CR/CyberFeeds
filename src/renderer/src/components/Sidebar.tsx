@@ -268,7 +268,7 @@ const Sidebar = memo(function Sidebar(): JSX.Element {
           <span className="item-label">{t.sidebar.allFeeds}</span>
           {totalAll > 0 && (
             <Tooltip label={formatCountBreakdown(totalUnread, totalAll, t)} placement="right">
-              <div className="cyber-badge" style={{ fontSize: 9, padding: '1px 4px' }}>
+              <div className="cyber-badge folder-badge">
                 {formatNum(totalAll)}
               </div>
             </Tooltip>
