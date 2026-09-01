@@ -70,7 +70,7 @@ export default function AddFeedModal(): JSX.Element {
                 ref={urlRef}
                 className="form-input"
                 style={{ flex: 1 }}
-                placeholder="https://example.com/feed.xml"
+                placeholder={t.addFeed.urlPlaceholder || 'https://example.com/feed.xml'}
                 value={url}
                 onChange={e => { setUrl(e.target.value); setPreview(null); setError('') }}
                 onKeyDown={e => e.key === 'Enter' && handlePreview()}

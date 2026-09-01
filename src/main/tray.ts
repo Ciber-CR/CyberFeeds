@@ -289,6 +289,7 @@ function buildMenu(): void {
   const iconFaq = nativeImage.createFromPath(path.join(iconsDir, 'faq.png'))
   const iconChangelog = nativeImage.createFromPath(path.join(iconsDir, 'changelog.png'))
   const iconHome = nativeImage.createFromPath(path.join(iconsDir, 'homepage.png'))
+  const iconDonate = nativeImage.createFromPath(path.join(iconsDir, 'donate.png'))
   const iconAbout = nativeImage.createFromPath(path.join(iconsDir, 'about.png'))
   const iconUpdate = nativeImage.createFromPath(path.join(iconsDir, 'update.png'))
 
@@ -393,6 +394,11 @@ function buildMenu(): void {
           label: t.homepage,
           icon: iconHome,
           click: () => { void shell.openExternal('https://cybergems.org') }
+        },
+        {
+          label: t.donate,
+          icon: iconDonate,
+          click: () => { void shell.openExternal('https://github.com/CyberGems/CyberFeeds#%EF%B8%8F-donate') }
         },
         { type: 'separator' },
         {
