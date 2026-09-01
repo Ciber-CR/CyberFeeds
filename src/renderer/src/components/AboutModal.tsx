@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react'
 import {
   X, Github, Folder, RefreshCw, Download,
-  CircleDot, Tag, ClipboardCopy, Check
+  CircleDot, Tag, ClipboardCopy, Check,
+  ExternalLink, Book
 } from 'lucide-react'
 import { useUIStore } from '../store/ui.store'
 import { useSettingsStore } from '../store/settings.store'
@@ -12,6 +13,7 @@ import Tooltip from './Tooltip'
 import logoPng from '../../../../resources/icon.png'
 
 const REPO_URL = 'https://github.com/CyberGems/CyberFeeds'
+const HOMEPAGE_URL = 'https://cybergems.org'
 
 type AppVersions = {
   app: string
@@ -261,6 +263,17 @@ export default function AboutModal(): JSX.Element {
             © CyberGems • 2026
           </div>
           <div className="about-footer-links">
+            <Tooltip label={t.about.websiteTooltip} placement="top">
+              <button
+                type="button"
+                className="btn btn-ghost btn-icon"
+                style={{ width: 28, height: 28, color: 'inherit' }}
+                onClick={() => window.api.openExternal(HOMEPAGE_URL)}
+                aria-label={t.about.websiteTooltip}
+              >
+                <ExternalLink size={14} />
+              </button>
+            </Tooltip>
             <Tooltip label={t.about.githubTooltip} placement="top">
               <button
                 type="button"
@@ -292,6 +305,17 @@ export default function AboutModal(): JSX.Element {
                 aria-label={t.about.releasesTooltip}
               >
                 <Tag size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip label={t.about.wikiTooltip} placement="top">
+              <button
+                type="button"
+                className="btn btn-ghost btn-icon"
+                style={{ width: 28, height: 28, color: 'inherit' }}
+                onClick={() => window.api.openExternal(`${REPO_URL}/wiki`)}
+                aria-label={t.about.wikiTooltip}
+              >
+                <Book size={14} />
               </button>
             </Tooltip>
           </div>

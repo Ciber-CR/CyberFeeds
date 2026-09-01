@@ -15,7 +15,7 @@ function ensureUrl(raw: string): URL | null {
     let trimmed = raw.trim()
     if (/^\/?(r|u|user)\//i.test(trimmed)) {
       trimmed = trimmed.replace(/^\/+/, '')
-      return new URL(`https://old.reddit.com/${trimmed}`)
+      return new URL(`https://www.reddit.com/${trimmed}`)
     }
     return new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`)
   } catch {
@@ -65,10 +65,10 @@ export function isRedditFeedUrl(raw: string): boolean {
 
 export function redditCanonicalRssUrl(target: RedditTarget): string {
   if (target.kind === 'user') {
-    return `https://old.reddit.com/user/${target.name}/.rss`
+    return `https://www.reddit.com/user/${target.name}/.rss`
   }
   const sort = target.sort ? `/${target.sort}` : ''
-  return `https://old.reddit.com/r/${target.name}${sort}/.rss`
+  return `https://www.reddit.com/r/${target.name}${sort}/.rss`
 }
 
 export function redditJsonApiUrl(target: RedditTarget): string {
@@ -79,22 +79,19 @@ export function redditJsonApiUrl(target: RedditTarget): string {
   return `https://www.reddit.com/r/${target.name}${sort}/.json?limit=100`
 }
 
-/** RSS URL variants to try after JSON fails (old.reddit is much more scraper-tolerant than www.reddit). */
+/** RSS URL variants to try (standard www.reddit.com RSS endpoint). */
 export function redditRssFallbackUrls(target: RedditTarget): string[] {
   if (target.kind === 'user') {
     return [
-      `https://old.reddit.com/user/${target.name}/.rss`,
       `https://www.reddit.com/user/${target.name}/.rss`
     ]
   }
   const sort = target.sort ? `/${target.sort}` : ''
   const urls = [
-    `https://old.reddit.com/r/${target.name}${sort}/.rss`,
     `https://www.reddit.com/r/${target.name}${sort}/.rss`
   ]
   if (sort) {
     urls.push(
-      `https://old.reddit.com/r/${target.name}/.rss`,
       `https://www.reddit.com/r/${target.name}/.rss`
     )
   }
