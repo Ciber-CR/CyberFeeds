@@ -21,3 +21,6 @@ CLAUDE.md
 ## Local AI/runtime artifacts
 .claude/
 /artifacts/
+
+## GitHub Wiki (local copy — wiki lives on GitHub Wiki)
+docs/wiki/

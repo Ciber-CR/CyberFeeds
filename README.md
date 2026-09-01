@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="resources/icon.png" width="128" height="128" alt="CyberFeeds Logo" />
+</p>
+
 <h1 align="center">CyberFeeds — RSS Reader</h1>
 
 <p align="center">
