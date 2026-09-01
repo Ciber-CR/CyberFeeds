@@ -16,7 +16,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License" />
   <img src="https://img.shields.io/badge/platform-Windows-0078D4.svg?logo=windows&logoColor=white" alt="Platform" />
-  <img src="https://img.shields.io/badge/version-1.16.0-00F0FF.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.17.0-00F0FF.svg" alt="Version" />
   <img src="https://img.shields.io/badge/Electron-34-512BD4.svg?logo=electron&logoColor=white" alt="Electron" />
   <a href="https://github.com/CyberGems/CyberFeeds/wiki"><img src="https://img.shields.io/badge/%F0%9F%93%96_Wiki-Documentation-222222?style=flat-square&logo=github&logoColor=white" alt="Wiki" /></a>
 </p>
