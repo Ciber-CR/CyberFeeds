@@ -12,7 +12,7 @@ import {
 } from '../shared/reddit'
 
 const rssParser = new RssParser({
-  timeout: 15000,
+  timeout: 5500,
   headers: {
     'User-Agent': FEED_USER_AGENT,
     Accept: 'application/rss+xml, application/xml, text/xml, */*'

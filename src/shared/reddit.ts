@@ -118,8 +118,8 @@ export async function fetchWithRetry(
   init: RequestInit = {},
   opts: { retries?: number; timeoutMs?: number } = {}
 ): Promise<Response> {
-  const retries = opts.retries ?? 3
-  const timeoutMs = opts.timeoutMs ?? 20000
+  const retries = opts.retries ?? 2
+  const timeoutMs = opts.timeoutMs ?? 5500
   let lastError: unknown
 
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -129,7 +129,7 @@ export async function fetchWithRetry(
       const headers = new Headers(init.headers || {})
       if (!headers.has('User-Agent')) headers.set('User-Agent', FEED_USER_AGENT)
       if (!headers.has('Accept')) {
-        headers.set('Accept', 'application/json, application/rss+xml, application/xml, text/xml, */*')
+        headers.set('Accept', 'application/atom+xml, application/rss+xml, application/xml, text/xml, */*')
       }
 
       const resp = await fetch(url, {
@@ -142,8 +142,8 @@ export async function fetchWithRetry(
         const retryAfter = Number(resp.headers.get('retry-after'))
         const waitMs =
           Number.isFinite(retryAfter) && retryAfter > 0
-            ? Math.min(retryAfter * 1000, 20000)
-            : 1200 * Math.pow(2, attempt) + Math.floor(Math.random() * 400)
+            ? Math.min(retryAfter * 1000, 3000)
+            : 1000 + Math.floor(Math.random() * 300)
         await sleep(waitMs)
         continue
       }
@@ -152,7 +152,7 @@ export async function fetchWithRetry(
     } catch (err) {
       lastError = err
       if (attempt < retries - 1) {
-        await sleep(800 * Math.pow(2, attempt))
+        await sleep(800)
         continue
       }
     } finally {
