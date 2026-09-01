@@ -308,12 +308,7 @@ function buildMenu(): void {
     {
       label: `CyberFeeds v${version}`,
       icon: iconBrand,
-      click: () => {
-        const win = _mainWindow
-        if (!win || win.isDestroyed()) return
-        restoreMainWindow()
-        win.webContents.send('app:openAbout', { checkUpdates: false })
-      }
+      enabled: false
     },
     { type: 'separator' },
     {

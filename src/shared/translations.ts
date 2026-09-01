@@ -352,9 +352,11 @@ export const translations = {
       openFolder: 'Open data folder',
       checkUpdates: 'Check for updates',
       close: 'Close',
+      websiteTooltip: 'Visit cybergems.org',
       githubTooltip: 'View project on GitHub',
       issuesTooltip: 'Report a bug or open an issue',
       releasesTooltip: 'View releases and changelogs',
+      wikiTooltip: 'View documentation & Wiki',
       copyDiagnostics: 'Copy diagnostic info',
       diagnosticsCopied: 'Diagnostic info copied',
       statuses: {
@@ -843,9 +845,11 @@ export const translations = {
       openFolder: 'Abrir carpeta de datos',
       checkUpdates: 'Buscar actualizaciones',
       close: 'Cerrar',
+      websiteTooltip: 'Visitar cybergems.org',
       githubTooltip: 'Ver el proyecto en GitHub',
       issuesTooltip: 'Reportar un error o abrir un issue',
       releasesTooltip: 'Ver versiones y notas de cambios',
+      wikiTooltip: 'Ver documentación y Wiki',
       copyDiagnostics: 'Copiar info de diagnóstico',
       diagnosticsCopied: 'Info de diagnóstico copiada',
       statuses: {

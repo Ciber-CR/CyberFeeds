@@ -446,14 +446,19 @@ export function registerIpc(): void {
   // ─── Shell ────────────────────────────────────────────────────────────────
 
   ipcMain.handle('shell:openExternal', async (_, url: string) => {
+    let targetUrl = url
+    if (typeof targetUrl === 'string' && targetUrl.includes('old.reddit.com/')) {
+      targetUrl = targetUrl.replace('https://old.reddit.com/', 'https://www.reddit.com/')
+                           .replace('http://old.reddit.com/', 'https://www.reddit.com/')
+    }
     const settings = db.getSettings()
     if (settings.customBrowserPath) {
       const { execFile } = require('child_process')
       return new Promise<void>((resolve) => {
-        execFile(settings.customBrowserPath, [url], () => resolve())
+        execFile(settings.customBrowserPath, [targetUrl], () => resolve())
       })
     }
-    return shell.openExternal(url)
+    return shell.openExternal(targetUrl)
   })
 
   ipcMain.handle('app:pickBrowser', async () => {

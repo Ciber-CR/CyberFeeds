@@ -80,11 +80,19 @@ async function parseRedditFeed(url: string): Promise<any> {
       }
       const feed = await rssParser.parseString(text)
       if (feed?.items?.length) {
+        const sanitizedItems = feed.items.map((item: any) => ({
+          ...item,
+          link: (item.link || '')
+            .replace('https://old.reddit.com/', 'https://www.reddit.com/')
+            .replace('http://old.reddit.com/', 'https://www.reddit.com/')
+        }))
         return {
           title: feed.title || title,
           description: feed.description || '',
-          link: feed.link || link,
-          items: feed.items
+          link: (feed.link || link)
+            .replace('https://old.reddit.com/', 'https://www.reddit.com/')
+            .replace('http://old.reddit.com/', 'https://www.reddit.com/'),
+          items: sanitizedItems
         }
       }
       errors.push(`${rssUrl} → no items`)
