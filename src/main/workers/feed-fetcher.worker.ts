@@ -13,6 +13,13 @@ import {
   redditJsonApiUrl,
   redditRssFallbackUrls
 } from '../../shared/reddit'
+import {
+  isYouTubeUrl,
+  resolveYouTubeFeedUrl,
+  getYouTubeCanonicalGuid,
+  extractYouTubeVideoId,
+  getYouTubeThumbnailUrl
+} from '../../shared/youtube'
 
 const USER_AGENT = FEED_USER_AGENT
 
@@ -281,21 +288,41 @@ async function fetchFeed(feedId: string, url: string): Promise<FeedResult> {
     const redditResult = await fetchRedditWithFallbacks(feedId, url)
     if (redditResult) return redditResult
 
+    // YouTube handling: resolve feed URL if it's not already the XML feed
+    let targetUrl = url
+    if (isYouTubeUrl(url)) {
+      if (!url.includes('youtube.com/feeds/videos.xml')) {
+        const resolved = await resolveYouTubeFeedUrl(url)
+        if (resolved) targetUrl = resolved
+      }
+    }
+
     let feed: any
     try {
-      feed = await parser.parseURL(url)
+      feed = await parser.parseURL(targetUrl)
     } catch (err) {
-      console.error(`[Worker] Standard RSS parsing failed for ${url}, trying robust fallback...`, err)
-      const resp = await fetchWithTimeout(url)
+      console.error(`[Worker] Standard RSS parsing failed for ${targetUrl}, trying robust fallback...`, err)
+      const resp = await fetchWithTimeout(targetUrl)
       let text = await resp.text()
 
       if (text.trim().toLowerCase().startsWith('<!doctype html') || text.trim().toLowerCase().startsWith('<html')) {
-        const lowerUrl = url.toLowerCase()
-        if (lowerUrl.endsWith('/rss') || lowerUrl.endsWith('/rss/')) {
-          const guessUrl = lowerUrl.endsWith('/') ? `${url}feed` : `${url}/feed`
-          const guessResp = await fetchWithTimeout(guessUrl)
-          if (guessResp.ok) {
-            text = await guessResp.text()
+        const rssLinkMatch = text.match(/<link[^>]+rel=["']alternate["'][^>]+type=["']application\/(rss\+xml|atom\+xml)["'][^>]+href=["']([^"']+)["']/i) ||
+                             text.match(/<link[^>]+type=["']application\/(rss\+xml|atom\+xml)["'][^>]+rel=["']alternate["'][^>]+href=["']([^"']+)["']/i) ||
+                             text.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']alternate["'][^>]+type=["']application\/(rss\+xml|atom\+xml)["']/i)
+        if (rssLinkMatch && rssLinkMatch[2]) {
+          let discoveredUrl = rssLinkMatch[2]
+          if (!discoveredUrl.startsWith('http')) {
+            const baseUrl = new URL(targetUrl)
+            discoveredUrl = new URL(discoveredUrl, baseUrl.origin).href
+          }
+          const subResp = await fetchWithTimeout(discoveredUrl)
+          if (subResp.ok) text = await subResp.text()
+        } else {
+          const lowerUrl = targetUrl.toLowerCase()
+          if (lowerUrl.endsWith('/rss') || lowerUrl.endsWith('/rss/')) {
+            const guessUrl = lowerUrl.endsWith('/') ? `${targetUrl}feed` : `${targetUrl}/feed`
+            const guessResp = await fetchWithTimeout(guessUrl)
+            if (guessResp.ok) text = await guessResp.text()
           }
         }
       }
@@ -314,7 +341,7 @@ async function fetchFeed(feedId: string, url: string): Promise<FeedResult> {
         const link = item.link?.['@_href'] || item.link || ''
         const content = item['content:encoded'] || item.content?.['#text'] || item.content || item.description || ''
         const pubDate = item.pubDate || item.published || item.updated || ''
-        const guid = item.guid?.['#text'] || item.guid || item.id || link
+        const guid = getYouTubeCanonicalGuid(item) || item.guid?.['#text'] || item.guid || item.id || link
         items.push({ title, link, content, contentSnippet: truncate(cleanHtml(content), 300), pubDate, guid })
       })
 
@@ -328,18 +355,30 @@ async function fetchFeed(feedId: string, url: string): Promise<FeedResult> {
     }
 
     const articles: ParsedArticle[] = (feed.items || []).slice(0, 100).map(item => {
-      const guid = item.guid || item.link || item.title || String(Math.random())
+      const ytGuid = getYouTubeCanonicalGuid(item)
+      const guid = ytGuid || item.guid || item.id || item.link || item.title || String(Math.random())
       const id = makeId(feedId, guid)
       const rawContent = item['content:encoded'] || item.content || item.contentSnippet || ''
       const rawSnippet = item.contentSnippet || cleanHtml(rawContent)
       const pubDate = item.pubDate ? new Date(item.pubDate).getTime() : lastFetched
-      const thumbnail = extractThumbnail(item)
+
+      let thumbnail = extractThumbnail(item)
+      let link = item.link || ''
+      if (ytGuid) {
+        const videoId = extractYouTubeVideoId(ytGuid)
+        if (videoId) {
+          if (!thumbnail || !thumbnail.includes('ytimg.com')) {
+            thumbnail = getYouTubeThumbnailUrl(videoId)
+          }
+          link = `https://www.youtube.com/watch?v=${videoId}`
+        }
+      }
 
       return {
         id,
         feedId,
         title: item.title?.trim() || '(No title)',
-        link: item.link || '',
+        link,
         pubDate: isNaN(pubDate) ? lastFetched : pubDate,
         content: rawContent,
         snippet: truncate(cleanHtml(rawSnippet), 300),

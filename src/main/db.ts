@@ -27,6 +27,33 @@ function migrate(): void {
   try { db.exec('ALTER TABLE feeds ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0') } catch { /* already exists */ }
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_articles_deleted ON articles(deletedAt)') } catch { /* already exists */ }
   try {
+    // Deduplicate any existing duplicate articles (keeping the earliest)
+    db.exec(`
+      DELETE FROM articles
+      WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM articles
+        GROUP BY feedId, CASE 
+          WHEN link LIKE '%youtube.com/watch?v=%' THEN SUBSTR(link, INSTR(link, 'v=') + 2, 11)
+          WHEN link LIKE '%youtu.be/%' THEN SUBSTR(link, INSTR(link, 'youtu.be/') + 9, 11)
+          WHEN link != '' THEN link
+          ELSE title
+        END
+      );
+    `)
+  } catch { /* ignore */ }
+  try {
+    // Deduplicate notification history
+    db.exec(`
+      DELETE FROM notification_history
+      WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM notification_history
+        GROUP BY feedName, link, title
+      );
+    `)
+  } catch { /* ignore */ }
+  try {
     const { DEFAULT_SETTINGS } = require('../shared/types')
     const shortcuts = JSON.stringify(DEFAULT_SETTINGS.shortcuts)
     db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)').run('shortcuts', shortcuts)

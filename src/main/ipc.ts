@@ -14,6 +14,7 @@ import { rebuildTrayMenu, rebuildGlobalShortcuts } from './tray'
 import { translations } from '../shared/translations'
 import { DEFAULT_SETTINGS } from '../shared/types'
 import { normalizeFeedUrl } from '../shared/reddit'
+import { isYouTubeUrl, resolveYouTubeFeedUrl } from '../shared/youtube'
 import { robustParse } from './feed-parse'
 import type { Feed, Folder } from './types'
 
@@ -80,25 +81,42 @@ export function registerIpc(): void {
 
   ipcMain.handle('feeds:add', async (_, url: string, folderId: string, customTitle?: string) => {
     try {
-      const normalizedUrl = normalizeFeedUrl(url)
+      let feedUrl = normalizeFeedUrl(url)
+      let channelPageUrl: string | undefined
 
-      // Check for duplicate (including alternate Reddit URL forms)
-      const existing = db.getFeeds().find(f => normalizeFeedUrl(f.url) === normalizedUrl)
+      if (isYouTubeUrl(feedUrl)) {
+        if (!feedUrl.includes('youtube.com/feeds/videos.xml')) {
+          channelPageUrl = feedUrl.startsWith('http') ? feedUrl : `https://${feedUrl}`
+        }
+        const ytFeed = await resolveYouTubeFeedUrl(feedUrl)
+        if (ytFeed) feedUrl = ytFeed
+      }
+
+      // Check for duplicate (including alternate Reddit and YouTube URL forms)
+      const existing = db.getFeeds().find(f => normalizeFeedUrl(f.url) === feedUrl || f.url === feedUrl)
       if (existing) return { error: 'Feed already exists' }
 
       // Parse to get title (using robust fallback)
-      const parsed = await robustParse(normalizedUrl)
-      const title = customTitle || parsed.title || normalizedUrl
+      const parsed = await robustParse(feedUrl)
+      const title = customTitle || parsed.title || feedUrl
 
       // Favicon from Google API
       let icon: string | undefined
       try {
-        const feedLink = parsed.link || normalizedUrl
+        const feedLink = parsed.link || channelPageUrl || feedUrl
         const domain = new URL(feedLink).hostname
         icon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
       } catch { /* no icon */ }
 
-      const feed: Feed = { id: uuid(), title, url: normalizedUrl, link: parsed.link, folderId, icon, errorCount: 0 }
+      const feed: Feed = {
+        id: uuid(),
+        title,
+        url: feedUrl,
+        link: parsed.link || channelPageUrl,
+        folderId,
+        icon,
+        errorCount: 0
+      }
       db.addFeed(feed)
 
       // Immediately fetch articles for new feed
@@ -112,8 +130,12 @@ export function registerIpc(): void {
 
   ipcMain.handle('feeds:preview', async (_, url: string) => {
     try {
-      const normalizedUrl = normalizeFeedUrl(url)
-      const parsed = await robustParse(normalizedUrl)
+      let previewUrl = normalizeFeedUrl(url)
+      if (isYouTubeUrl(previewUrl)) {
+        const ytFeed = await resolveYouTubeFeedUrl(previewUrl)
+        if (ytFeed) previewUrl = ytFeed
+      }
+      const parsed = await robustParse(previewUrl)
       return {
         title: parsed.title,
         description: parsed.description,

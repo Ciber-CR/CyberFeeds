@@ -10,6 +10,11 @@ import {
   redditJsonApiUrl,
   redditRssFallbackUrls
 } from '../shared/reddit'
+import {
+  isYouTubeUrl,
+  resolveYouTubeFeedUrl,
+  getYouTubeCanonicalGuid
+} from '../shared/youtube'
 
 const rssParser = new RssParser({
   timeout: 5500,
@@ -140,24 +145,40 @@ export async function robustParse(url: string): Promise<any> {
     return parseRedditFeed(url)
   }
 
+  let targetUrl = url
+  if (isYouTubeUrl(url)) {
+    const resolved = await resolveYouTubeFeedUrl(url)
+    if (resolved) targetUrl = resolved
+  }
+
   const headers = {
     'User-Agent': FEED_USER_AGENT,
     Accept: 'application/rss+xml, application/xml, text/xml, text/html, */*'
   }
 
   try {
-    return await rssParser.parseURL(url)
+    const feed = await rssParser.parseURL(targetUrl)
+    if (feed?.items) {
+      feed.items = feed.items.map((item: any) => {
+        const ytGuid = getYouTubeCanonicalGuid(item)
+        if (ytGuid) {
+          item.guid = ytGuid
+        }
+        return item
+      })
+    }
+    return feed
   } catch (err) {
-    console.error(`Standard RSS parsing failed for ${url}, trying robust fallback...`, err)
+    console.error(`Standard RSS parsing failed for ${targetUrl}, trying robust fallback...`, err)
 
-    const resp = await fetchWithRetry(url, { headers })
+    const resp = await fetchWithRetry(targetUrl, { headers })
     if (!resp.ok) {
       throw new Error(formatHttpFeedError(resp.status, uiLang()))
     }
     let text = await resp.text()
 
     if (text.trim().toLowerCase().startsWith('<!doctype html') || text.trim().toLowerCase().startsWith('<html')) {
-      console.log(`[Discovery] HTML detected at ${url}, searching for RSS links...`)
+      console.log(`[Discovery] HTML detected at ${targetUrl}, searching for RSS links...`)
       const rssLinkMatch = text.match(/<link[^>]+rel=["']alternate["'][^>]+type=["']application\/(rss\+xml|atom\+xml)["'][^>]+href=["']([^"']+)["']/i) ||
                            text.match(/<link[^>]+type=["']application\/(rss\+xml|atom\+xml)["'][^>]+rel=["']alternate["'][^>]+href=["']([^"']+)["']/i) ||
                            text.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']alternate["'][^>]+type=["']application\/(rss\+xml|atom\+xml)["']/i)
@@ -165,7 +186,7 @@ export async function robustParse(url: string): Promise<any> {
       if (rssLinkMatch && rssLinkMatch[2]) {
         let discoveredUrl = rssLinkMatch[2]
         if (!discoveredUrl.startsWith('http')) {
-          const baseUrl = new URL(url)
+          const baseUrl = new URL(targetUrl)
           discoveredUrl = new URL(discoveredUrl, baseUrl.origin).href
         }
         console.log(`[Discovery] Found RSS link: ${discoveredUrl}, fetching...`)
@@ -174,9 +195,9 @@ export async function robustParse(url: string): Promise<any> {
           text = await subResp.text()
         }
       } else {
-        const lowerUrl = url.toLowerCase()
+        const lowerUrl = targetUrl.toLowerCase()
         if (lowerUrl.endsWith('/rss') || lowerUrl.endsWith('/rss/')) {
-          const guessUrl = lowerUrl.endsWith('/') ? `${url}feed` : `${url}/feed`
+          const guessUrl = lowerUrl.endsWith('/') ? `${targetUrl}feed` : `${targetUrl}/feed`
           console.log(`[Discovery] Guessing feed URL: ${guessUrl}`)
           const guessResp = await fetchWithRetry(guessUrl, { headers })
           if (guessResp.ok) {
@@ -190,7 +211,7 @@ export async function robustParse(url: string): Promise<any> {
     const parsed = xmlParser.parse(text)
 
     const channel = parsed.rss?.channel || parsed.feed || parsed
-    const channelTitle = channel.title?.['#text'] || channel.title || url
+    const channelTitle = channel.title?.['#text'] || channel.title || targetUrl
     const channelDesc = channel.description || channel.subtitle || ''
 
     const extractLinkString = (linkObj: any): string => {
@@ -215,7 +236,7 @@ export async function robustParse(url: string): Promise<any> {
       const link = extractLinkString(item.link)
       const content = item['content:encoded'] || item.content?.['#text'] || item.content || item.description || ''
       const pubDate = item.pubDate || item.published || item.updated || ''
-      const guid = item.guid?.['#text'] || item.guid || item.id || link
+      const guid = getYouTubeCanonicalGuid(item) || item.guid?.['#text'] || item.guid || item.id || link
 
       return { title, link, content, pubDate, guid, isoDate: pubDate }
     })
