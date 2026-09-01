@@ -265,6 +265,90 @@ body {
   color: #fff;
 }
 
+/* ─── Topbar More Menu Dropdown ─────────────────────────────────────────── */
+.topbar-menu-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.topbar-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 224px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+  padding: 5px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: menuFadeIn 0.12s ease-out;
+  -webkit-app-region: no-drag;
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.topbar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  user-select: none;
+}
+
+.topbar-menu-item:hover {
+  background: var(--bg-2);
+  color: #ffffff;
+}
+
+.topbar-menu-item svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: color 0.12s ease;
+}
+
+.topbar-menu-item:hover svg {
+  color: var(--accent);
+}
+
+.topbar-menu-item.donate svg {
+  color: #00D8F1;
+}
+
+.topbar-menu-item.donate:hover svg {
+  color: #00D8F1;
+  filter: drop-shadow(0 0 4px rgba(0, 216, 241, 0.6));
+}
+
+.topbar-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 6px;
+}
+
 /* ─── Sidebar ───────────────────────────────────────────────────────────── */
 .sidebar-header {
   padding: 10px 8px 6px;
