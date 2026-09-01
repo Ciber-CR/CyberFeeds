@@ -148,7 +148,7 @@ export default function AboutModal(): JSX.Element {
           <div style={{ position: 'relative', width: 72, height: 72, margin: '8px auto 16px' }}>
             <div style={{
               position: 'absolute', inset: -4,
-              background: 'rgba(239, 128, 33, 0.14)',
+              background: 'rgba(0, 216, 241, 0.2)',
               borderRadius: '50%',
               filter: 'blur(12px)'
             }} />
@@ -160,7 +160,7 @@ export default function AboutModal(): JSX.Element {
                 width: 72,
                 height: 72,
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 0 6px rgba(239, 128, 33, 0.55)) drop-shadow(0 0 12px rgba(239, 128, 33, 0.22))'
+                filter: 'drop-shadow(0 0 8px rgba(0, 216, 241, 0.6)) drop-shadow(0 0 16px rgba(0, 216, 241, 0.25))'
               }}
             />
           </div>

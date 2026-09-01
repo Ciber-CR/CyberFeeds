@@ -269,7 +269,8 @@ function buildMenu(): void {
   const t = translations[lang].mainProcess.tray
   const shortcuts = settings.shortcuts as KeyboardShortcuts
 
-  const iconsDir = path.join(__dirname, '../../resources/menu-icons')
+  const resourcesDir = path.join(__dirname, '../../resources')
+  const iconsDir = path.join(resourcesDir, 'menu-icons')
   const iconShowHide = nativeImage.createFromPath(path.join(iconsDir, 'show-hide.png'))
   const iconNotifications = nativeImage.createFromPath(path.join(iconsDir, 'notifications.png'))
   const iconSettings = nativeImage.createFromPath(path.join(iconsDir, 'settings.png'))
@@ -277,9 +278,17 @@ function buildMenu(): void {
   const iconFetch = refreshIcon.isEmpty()
     ? nativeImage.createFromPath(path.join(iconsDir, 'fetch.png'))
     : refreshIcon
-  const iconPause = nativeImage.createFromPath(path.join(iconsDir, 'pause-blue.png'))
+  const neutralPause = nativeImage.createFromPath(path.join(iconsDir, 'pause.png'))
+  const iconPause = neutralPause.isEmpty()
+    ? nativeImage.createFromPath(path.join(iconsDir, 'pause-blue.png'))
+    : neutralPause
   const iconPlay = nativeImage.createFromPath(path.join(iconsDir, 'play-green.png'))
   const iconQuit = nativeImage.createFromPath(path.join(iconsDir, 'quit.png'))
+
+  const brandIcon = nativeImage.createFromPath(path.join(resourcesDir, 'tray.png')).resize({ width: 16, height: 16, quality: 'best' })
+  const iconBrand = brandIcon.isEmpty()
+    ? nativeImage.createFromPath(path.join(resourcesDir, 'icon.ico')).resize({ width: 16, height: 16, quality: 'best' })
+    : brandIcon
 
   const isVisible = _mainWindow && !_mainWindow.isDestroyed() && _mainWindow.isVisible()
   const parts = t.showHide.split(' / ')
@@ -290,7 +299,7 @@ function buildMenu(): void {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: `CyberFeeds v${version}`,
-      icon: nativeImage.createEmpty(),
+      icon: iconBrand,
       click: () => {
         const win = _mainWindow
         if (!win || win.isDestroyed()) return

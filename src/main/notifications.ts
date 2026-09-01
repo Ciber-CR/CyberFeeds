@@ -153,8 +153,6 @@ function calcPosition(
   return { x: Math.round(p.x), y: Math.round(p.y) }
 }
 
-const PEEK_H = 0
-
 /** Resize window to fit N cards (capped at maxStack), then place it correctly. */
 function applyPositionToWindow(
   win: BrowserWindow,
@@ -171,8 +169,8 @@ function applyPositionToWindow(
   const visible = displayStack.slice(0, visibleCards)
   const thumbCount = s.showThumbnails ? visible.filter(n => n.thumbnail).length : 0
 
-  const peekH = cardCount > maxStack ? PEEK_H + CARD_GAP : 0
-  const winH = visibleCards * CARD_BASE_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar + peekH
+  const moreH = cardCount > maxStack ? 30 : 0
+  const winH = visibleCards * CARD_BASE_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar + moreH
 
   const { x, y } = calcPosition(winW, winH, s)
   const bounds = { x, y, width: winW, height: winH }

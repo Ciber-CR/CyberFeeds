@@ -246,8 +246,10 @@ export default function NotifierApp(): JSX.Element {
     for (let i = 0; i < count; i++) {
       cardsH += cards[i].offsetHeight + (i > 0 ? 6 : 0)
     }
-    // 16px root padding + 34px topbar + 4px scrollRef paddingTop + 4px bottom padding safety
-    const totalH = cardsH + 16 + 34 + 8
+    const hasMore = state.stack.length > maxStack
+    const moreH = hasMore ? 30 : 0
+    // 16px root padding + 34px topbar + 4px scrollRef paddingTop + 4px bottom padding safety + moreH
+    const totalH = cardsH + 16 + 34 + 8 + moreH
     window.api.resizeNotifier?.(totalH)
   }, [state.stack, state.settings?.maxStack])
 
@@ -638,43 +640,34 @@ export default function NotifierApp(): JSX.Element {
           </div>
         ))}
       </div>
-      {/* "More" floating indicator with subtle gradient fade */}
+      {/* "More" in-flow indicator at bottom (never overlays card buttons) */}
       {showMoreIndicator && (
         <div
           style={{
-            position: 'absolute',
-            bottom: 8,
-            left: 8,
-            right: 8,
-            height: 48,
-            background:
-              'linear-gradient(to top, rgba(10, 12, 16, 0.96) 0%, rgba(10, 12, 16, 0.7) 50%, transparent 100%)',
-            pointerEvents: 'none',
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: 'center',
             justifyContent: 'center',
-            paddingBottom: 4,
-            borderRadius: '0 0 8px 8px',
-            zIndex: 10
+            paddingTop: 6,
+            paddingBottom: 2,
+            flexShrink: 0
           }}
         >
           <Tooltip label={t.notifier.moreTooltip} placement="top">
             <div
               onClick={scrollToBottom}
               style={{
-                pointerEvents: 'auto',
-                background: 'var(--accent, #58a6ff)',
-                color: '#ffffff',
+                background: 'var(--accent, #00D8F1)',
+                color: '#0d1117',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 borderRadius: 12,
                 padding: '3px 12px',
                 fontSize: 10,
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 4,
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
                 transition: 'opacity 0.2s ease, transform 0.15s ease'
               }}
             >
