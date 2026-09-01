@@ -390,6 +390,7 @@ export const translations = {
     addFeed: {
       title: 'Add Feed',
       urlLabel: 'Feed URL',
+      urlPlaceholder: 'https://example.com/feed.xml',
       previewBtn: 'Preview',
       folderLabel: 'Folder (optional)',
       noFolder: 'No folder',
@@ -463,7 +464,8 @@ export const translations = {
         help: 'Help',
         faq: 'Frequently Asked Questions',
         changelog: 'Changelog',
-        homepage: 'Homepage',
+        homepage: 'Website',
+        donate: 'Donate',
         about: 'About...',
         checkUpdates: 'Check for Update...',
         quit: 'Exit'
@@ -880,6 +882,7 @@ export const translations = {
     addFeed: {
       title: 'Añadir feed',
       urlLabel: 'URL del feed',
+      urlPlaceholder: 'https://ejemplo.com/feed.xml',
       previewBtn: 'Vista previa',
       folderLabel: 'Carpeta (opcional)',
       noFolder: 'Sin carpeta',
@@ -953,7 +956,8 @@ export const translations = {
         help: 'Ayuda',
         faq: 'Preguntas frecuentes',
         changelog: 'Changelog',
-        homepage: 'Página web',
+        homepage: 'Sitio web',
+        donate: 'Donar',
         about: 'Acerca de...',
         checkUpdates: 'Buscar actualizaciones...',
         quit: 'Salir'

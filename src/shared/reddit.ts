@@ -1,7 +1,7 @@
 /** Shared Reddit feed URL helpers — used by main IPC and feed-fetcher worker. */
 
 export const FEED_USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 CyberFeeds/1.16.0'
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
 export type RedditTarget = {
   kind: 'subreddit' | 'user'
@@ -12,7 +12,11 @@ export type RedditTarget = {
 
 function ensureUrl(raw: string): URL | null {
   try {
-    const trimmed = raw.trim()
+    let trimmed = raw.trim()
+    if (/^\/?(r|u|user)\//i.test(trimmed)) {
+      trimmed = trimmed.replace(/^\/+/, '')
+      return new URL(`https://old.reddit.com/${trimmed}`)
+    }
     return new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`)
   } catch {
     return null
@@ -44,9 +48,9 @@ export function parseRedditFeedUrl(raw: string): RedditTarget | null {
     return { kind: 'subreddit', name: legacySub[1] }
   }
 
-  // /user/Name[/submitted|/comments][/.rss|...]
+  // /user/Name[/submitted|/comments][/.rss|...] or /u/Name[...]
   const user = path.match(
-    /^\/user\/([^/]+)(?:\/(?:submitted|comments))?\/?(?:\.rss|rss|\.json)?\/?$/i
+    /^\/(?:user|u)\/([^/]+)(?:\/(?:submitted|comments))?\/?(?:\.rss|rss|\.json)?\/?$/i
   )
   if (user?.[1]) {
     return { kind: 'user', name: user[1] }
@@ -61,10 +65,10 @@ export function isRedditFeedUrl(raw: string): boolean {
 
 export function redditCanonicalRssUrl(target: RedditTarget): string {
   if (target.kind === 'user') {
-    return `https://www.reddit.com/user/${target.name}/.rss`
+    return `https://old.reddit.com/user/${target.name}/.rss`
   }
   const sort = target.sort ? `/${target.sort}` : ''
-  return `https://www.reddit.com/r/${target.name}${sort}/.rss`
+  return `https://old.reddit.com/r/${target.name}${sort}/.rss`
 }
 
 export function redditJsonApiUrl(target: RedditTarget): string {
@@ -75,23 +79,23 @@ export function redditJsonApiUrl(target: RedditTarget): string {
   return `https://www.reddit.com/r/${target.name}${sort}/.json?limit=100`
 }
 
-/** RSS URL variants to try after JSON fails (old.reddit is often more scraper-tolerant). */
+/** RSS URL variants to try after JSON fails (old.reddit is much more scraper-tolerant than www.reddit). */
 export function redditRssFallbackUrls(target: RedditTarget): string[] {
   if (target.kind === 'user') {
     return [
-      `https://www.reddit.com/user/${target.name}/.rss`,
-      `https://old.reddit.com/user/${target.name}/.rss`
+      `https://old.reddit.com/user/${target.name}/.rss`,
+      `https://www.reddit.com/user/${target.name}/.rss`
     ]
   }
   const sort = target.sort ? `/${target.sort}` : ''
   const urls = [
-    `https://www.reddit.com/r/${target.name}${sort}/.rss`,
-    `https://old.reddit.com/r/${target.name}${sort}/.rss`
+    `https://old.reddit.com/r/${target.name}${sort}/.rss`,
+    `https://www.reddit.com/r/${target.name}${sort}/.rss`
   ]
   if (sort) {
     urls.push(
-      `https://www.reddit.com/r/${target.name}/.rss`,
-      `https://old.reddit.com/r/${target.name}/.rss`
+      `https://old.reddit.com/r/${target.name}/.rss`,
+      `https://www.reddit.com/r/${target.name}/.rss`
     )
   }
   return [...new Set(urls)]
@@ -100,9 +104,9 @@ export function redditRssFallbackUrls(target: RedditTarget): string[] {
 /** Normalize a Reddit URL for storage; leave non-Reddit URLs unchanged. */
 export function normalizeFeedUrl(raw: string): string {
   const trimmed = raw.trim()
-  const withProto = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`
-  const target = parseRedditFeedUrl(withProto)
-  return target ? redditCanonicalRssUrl(target) : withProto
+  const target = parseRedditFeedUrl(trimmed)
+  if (target) return redditCanonicalRssUrl(target)
+  return trimmed.startsWith('http') ? trimmed : `https://${trimmed}`
 }
 
 function sleep(ms: number): Promise<void> {
