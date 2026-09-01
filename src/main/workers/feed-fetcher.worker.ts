@@ -16,7 +16,7 @@ import {
 
 const USER_AGENT = FEED_USER_AGENT
 
-async function fetchWithTimeout(url: string, timeoutMs = 30000): Promise<Response> {
+async function fetchWithTimeout(url: string, timeoutMs = 6000): Promise<Response> {
   return fetchWithRetry(url, { headers: { 'User-Agent': USER_AGENT } }, { timeoutMs, retries: 2 })
 }
 
@@ -46,7 +46,7 @@ interface FeedResult {
 }
 
 const parser = new RssParser({
-  timeout: 10000,
+  timeout: 6000,
   headers: {
     'User-Agent': USER_AGENT,
     Accept: 'application/rss+xml, application/xml, text/xml, */*'
