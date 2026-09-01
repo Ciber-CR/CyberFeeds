@@ -37,10 +37,10 @@ let mainWindow: BrowserWindow | null = null
 
 const THEME_BACKGROUND: Record<string, string> = {
   dark: '#0d1117',
+  grayscale: '#18181b',
   light: '#f6f8fa',
   dracula: '#282a36',
   nord: '#2e3440',
-  hacker: '#0d0d0d',
   monokai: '#272822'
 }
 
