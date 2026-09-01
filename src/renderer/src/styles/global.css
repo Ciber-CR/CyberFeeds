@@ -394,8 +394,8 @@ body {
   transform: translateY(0);
 }
 .cyber-badge.folder-badge {
-  font-size: 11px;
-  padding: 2px 6px;
+  font-size: 10px;
+  padding: 1.5px 5px;
   font-weight: 700;
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
 }
@@ -411,7 +411,7 @@ body {
   padding: 12px 8px 8px;
   cursor: pointer;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;

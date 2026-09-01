@@ -169,8 +169,8 @@ function applyPositionToWindow(
   const visible = displayStack.slice(0, visibleCards)
   const thumbCount = s.showThumbnails ? visible.filter(n => n.thumbnail).length : 0
 
-  const moreH = cardCount > maxStack ? 30 : 0
-  const winH = visibleCards * CARD_BASE_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar + moreH
+  const peekH = cardCount > maxStack ? 44 : 0
+  const winH = visibleCards * CARD_BASE_H + thumbCount * THUMB_H + gaps + WIN_PAD + clearBar + peekH
 
   const { x, y } = calcPosition(winW, winH, s)
   const bounds = { x, y, width: winW, height: winH }

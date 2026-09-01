@@ -458,6 +458,12 @@ export const translations = {
         pauseFeeds: 'Pause feeds',
         resumeFeeds: 'Resume feeds',
         loadingFeeds: 'Loading feeds...',
+        help: 'Help',
+        faq: 'Frequently Asked Questions',
+        changelog: 'Changelog',
+        homepage: 'Homepage',
+        about: 'About...',
+        checkUpdates: 'Check for Update...',
         quit: 'Exit'
       },
       webviewCtx: {
@@ -940,6 +946,12 @@ export const translations = {
         pauseFeeds: 'Pausar feeds',
         resumeFeeds: 'Reactivar feeds',
         loadingFeeds: 'Cargando feeds...',
+        help: 'Ayuda',
+        faq: 'Preguntas frecuentes',
+        changelog: 'Changelog',
+        homepage: 'Página web',
+        about: 'Acerca de...',
+        checkUpdates: 'Buscar actualizaciones...',
         quit: 'Salir'
       },
       webviewCtx: {

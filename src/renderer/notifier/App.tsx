@@ -247,9 +247,9 @@ export default function NotifierApp(): JSX.Element {
       cardsH += cards[i].offsetHeight + (i > 0 ? 6 : 0)
     }
     const hasMore = state.stack.length > maxStack
-    const moreH = hasMore ? 30 : 0
-    // 16px root padding + 34px topbar + 4px scrollRef paddingTop + 4px bottom padding safety + moreH
-    const totalH = cardsH + 16 + 34 + 8 + moreH
+    const peekH = hasMore ? 44 : 0
+    // 16px root padding + 34px topbar + 4px scrollRef paddingTop + 8px bottom safety + peekH
+    const totalH = cardsH + 16 + 34 + 8 + peekH
     window.api.resizeNotifier?.(totalH)
   }, [state.stack, state.settings?.maxStack])
 
@@ -640,22 +640,31 @@ export default function NotifierApp(): JSX.Element {
           </div>
         ))}
       </div>
-      {/* "More" in-flow indicator at bottom (never overlays card buttons) */}
+      {/* "More" floating indicator with gradient fade over the peek area */}
       {showMoreIndicator && (
         <div
           style={{
+            position: 'absolute',
+            bottom: 8,
+            left: 8,
+            right: 8,
+            height: 48,
+            background:
+              'linear-gradient(to top, rgba(13, 17, 23, 0.96) 0%, rgba(13, 17, 23, 0.8) 45%, rgba(13, 17, 23, 0.25) 80%, transparent 100%)',
+            pointerEvents: 'none',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-end',
             justifyContent: 'center',
-            paddingTop: 6,
-            paddingBottom: 2,
-            flexShrink: 0
+            paddingBottom: 4,
+            borderRadius: '0 0 8px 8px',
+            zIndex: 10
           }}
         >
           <Tooltip label={t.notifier.moreTooltip} placement="top">
             <div
               onClick={scrollToBottom}
               style={{
+                pointerEvents: 'auto',
                 background: 'var(--accent, #00D8F1)',
                 color: '#0d1117',
                 border: '1px solid rgba(255, 255, 255, 0.2)',

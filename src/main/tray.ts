@@ -1,4 +1,4 @@
-import { Tray, Menu, app, BrowserWindow, nativeImage, globalShortcut, screen } from 'electron'
+import { Tray, Menu, app, BrowserWindow, nativeImage, globalShortcut, screen, shell } from 'electron'
 import path from 'path'
 import { pollFeeds } from './polling'
 import { restoreMainWindow } from './index'
@@ -285,6 +285,13 @@ function buildMenu(): void {
   const iconPlay = nativeImage.createFromPath(path.join(iconsDir, 'play-green.png'))
   const iconQuit = nativeImage.createFromPath(path.join(iconsDir, 'quit.png'))
 
+  const iconHelp = nativeImage.createFromPath(path.join(iconsDir, 'help.png'))
+  const iconFaq = nativeImage.createFromPath(path.join(iconsDir, 'faq.png'))
+  const iconChangelog = nativeImage.createFromPath(path.join(iconsDir, 'changelog.png'))
+  const iconHome = nativeImage.createFromPath(path.join(iconsDir, 'homepage.png'))
+  const iconAbout = nativeImage.createFromPath(path.join(iconsDir, 'about.png'))
+  const iconUpdate = nativeImage.createFromPath(path.join(iconsDir, 'update.png'))
+
   const brandIcon = nativeImage.createFromPath(path.join(resourcesDir, 'tray.png')).resize({ width: 16, height: 16, quality: 'best' })
   const iconBrand = brandIcon.isEmpty()
     ? nativeImage.createFromPath(path.join(resourcesDir, 'icon.ico')).resize({ width: 16, height: 16, quality: 'best' })
@@ -362,6 +369,53 @@ function buildMenu(): void {
         restoreMainWindow()
         win.webContents.send('app:openSettings')
       }
+    },
+    {
+      label: t.help,
+      icon: iconHelp,
+      submenu: [
+        {
+          label: t.help,
+          icon: iconHelp,
+          click: () => { void shell.openExternal('https://github.com/CyberGems/CyberFeeds/wiki') }
+        },
+        {
+          label: t.faq,
+          icon: iconFaq,
+          click: () => { void shell.openExternal('https://github.com/CyberGems/CyberFeeds/wiki') }
+        },
+        {
+          label: t.changelog,
+          icon: iconChangelog,
+          click: () => { void shell.openExternal('https://github.com/CyberGems/CyberFeeds/releases') }
+        },
+        {
+          label: t.homepage,
+          icon: iconHome,
+          click: () => { void shell.openExternal('https://cybergems.org') }
+        },
+        { type: 'separator' },
+        {
+          label: t.about,
+          icon: iconAbout,
+          click: () => {
+            const win = _mainWindow
+            if (!win || win.isDestroyed()) return
+            restoreMainWindow()
+            win.webContents.send('app:openAbout')
+          }
+        },
+        {
+          label: t.checkUpdates,
+          icon: iconUpdate,
+          click: () => {
+            const win = _mainWindow
+            if (!win || win.isDestroyed()) return
+            restoreMainWindow()
+            win.webContents.send('app:openAbout')
+          }
+        }
+      ]
     },
     { type: 'separator' },
     {
