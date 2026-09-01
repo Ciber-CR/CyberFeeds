@@ -106,8 +106,8 @@ const api = {
     ipcRenderer.on('app:openSettings', handler)
     return () => { ipcRenderer.removeListener('app:openSettings', handler) }
   },
-  onOpenAbout: (cb: () => void) => {
-    const handler = (): void => cb()
+  onOpenAbout: (cb: (opts?: { checkUpdates?: boolean }) => void) => {
+    const handler = (_: unknown, opts?: { checkUpdates?: boolean }): void => cb(opts)
     ipcRenderer.on('app:openAbout', handler)
     return () => { ipcRenderer.removeListener('app:openAbout', handler) }
   },
