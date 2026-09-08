@@ -170,6 +170,15 @@ npm run lint           # Linting
 npm run format         # Formatting
 ```
 
+### 🛡️ Windows SmartScreen
+
+Windows may show a SmartScreen warning the first time you run the CyberFeeds installer — this is expected until Windows builds enough reputation for the file.
+
+To continue:
+
+1. Click **More info**.
+2. Click **Run anyway**.
+
 ---
 
 ## ⌨️ Keyboard Shortcuts
